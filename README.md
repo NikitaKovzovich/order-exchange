@@ -91,7 +91,7 @@ Clean Architecture отделяет бизнес-логику от технич�
 
 #### Компонентный уровень
 
-![Иллюстрация к проекту](https://github.com/NikitaKovzovich/order-exchange/blob/89a36dc83f5184937beb93fc321ce48a5c477205/%D1%814%20%D0%BA%D0%BE%D0%BD%D1%82%D0%B5%D0%B9%D0%BD%D0%B5%D1%80%D0%BD%D1%8B%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C.png)
+![Иллюстрация к проекту](https://github.com/NikitaKovzovich/order-exchange/blob/ce5fb5865478682d3efc8694169f32209141b23e/%D1%814%20%D0%BA%D0%BE%D0%BC%D0%BF%D0%BE%D0%BD%D0%B5%D0%BD%D1%82%D0%BD%D1%8B%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C.png)
 
 ### Схема данных
 
