@@ -63,7 +63,7 @@ Clean Architecture отделяет бизнес-логику от технич�
 
 ### C4-модель
 
-![Иллюстрация к проекту](https://github.com/NikitaKovzovich/order-exchange/blob/eb9e360bd3db410f0388af562feb3e8f6b276c6c/%D1%814%20%D0%BA%D0%BE%D0%BD%D1%82%D0%B5%D0%B9%D0%BD%D0%B5%D1%80%D0%BD%D1%8B%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C.pdf)
+![Иллюстрация к проекту](https://github.com/NikitaKovzovich/order-exchange/blob/89a36dc83f5184937beb93fc321ce48a5c477205/%D1%814%20%D0%BA%D0%BE%D0%BD%D1%82%D0%B5%D0%B9%D0%BD%D0%B5%D1%80%D0%BD%D1%8B%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C.png)
 
 ### Схема данных
 
