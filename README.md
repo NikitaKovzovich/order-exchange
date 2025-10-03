@@ -135,6 +135,9 @@
 #### **User-flow для роли "Поставщик"**
 <img width="6884" height="8084" alt="image" src="https://github.com/user-attachments/assets/671d2d40-50a0-4087-b76c-35e210425ebf" />
 
+#### **User-flow для роли "Администратор"**
+<img width="6888" height="5684" alt="image" src="https://github.com/user-attachments/assets/ca283753-ba89-4396-91f0-bc794db96ad9" />
+
 ---
 
 ## **Детали реализации**
