@@ -130,8 +130,7 @@
 ### User-flow диаграммы
 
 #### User-flow для роли "Торговая сеть"
-<img width="5128" height="8424" alt="image" src="https://github.com/user-attachments/assets/6eef621b-8ab5-404d-9efb-ce28a15d8fff" />
-
+<img width="5284" height="8484" alt="image" src="https://github.com/user-attachments/assets/1f60d282-ca9c-4c56-8b27-2f88de73cb41" />
 
 ---
 
