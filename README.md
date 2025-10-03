@@ -91,7 +91,7 @@
 
 #### Компонентный уровень
 
-![Иллюстрация к проекту](https://github.com/NikitaKovzovich/order-exchange/blob/09658109b7dc216b116981b875db7c9ef899231d/C4/%D0%A14%20%D0%BA%D0%BE%D0%BC%D0%BF%D0%BE%D0%BD%D0%B5%D0%BD%D1%82%D0%BD%D1%8B%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C/C4%20%D0%BA%D0%BE%D0%BC%D0%BF%D0%BE%D0%BD%D0%B5%D0%BD%D1%82%D0%BD%D1%8B%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C.png)
+<img width="16384" height="8744" alt="image" src="https://github.com/user-attachments/assets/c0c53526-d7ba-4a59-8ada-3ca17cc39713" />
 
 На компонентном уровне каждая подсистема **Order Exchange** разделена на контроллеры, сервисы, доменные модели и интеграционные компоненты.  
 Такой подход отражает принципы **DDD** и **Clean Architecture**, где бизнес-логика изолирована от инфраструктуры, а все взаимодействия между модулями происходят через чётко определённые интерфейсы.  
