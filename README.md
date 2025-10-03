@@ -71,7 +71,7 @@
 
 #### Контейнерный уровень
 
-![Иллюстрация к проекту](https://github.com/NikitaKovzovich/order-exchange/blob/9cb22b7c90c6121c199ccbdc49d6b95de47bd06d/C4/%D0%A14%20%D0%BA%D0%BE%D0%BD%D1%82%D0%B5%D0%B9%D0%BD%D0%B5%D1%80%D0%BD%D1%8B%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C/C4%20%D0%BA%D0%BE%D0%BD%D1%82%D0%B5%D0%B9%D0%BD%D0%B5%D1%80%D0%BD%D1%8B%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C.png)
+<img width="10524" height="7524" alt="image" src="https://github.com/user-attachments/assets/22d395e0-1634-4a36-90ac-6932de413619" />
 
 Архитектура **Order Exchange** построена по микросервисному принципу и разделена на несколько контейнеров, каждый из которых отвечает за свой бизнес-домен. 
 Пользователи – администратор, торговая сеть и поставщик — работают через веб-приложение (**Angular + TypeScript**), 
