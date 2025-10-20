@@ -189,6 +189,9 @@
 - добавление товара шаг 3
 <img width="3212" height="2000" alt="добавление товара шаг 3" src="https://github.com/user-attachments/assets/97d5041a-ff4e-47b5-b75e-ca15374d1daa" />
 
+- каталог (неопубликованный)
+  <img width="3212" height="2000" alt="каталог (неопубликованный)" src="https://github.com/user-attachments/assets/c1ba3902-3df4-4fbf-bff9-d0a7f974fa98" />
+
 #### **Примеры экранов UI для роли "Торговая сеть"**
 
 #### **Примеры экранов UI для роли "Администратор"**
