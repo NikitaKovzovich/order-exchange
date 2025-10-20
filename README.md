@@ -278,6 +278,34 @@
 - заказы
 <img width="3212" height="2164" alt="заказы" src="https://github.com/user-attachments/assets/6cdc070c-2a05-425a-9d1a-8feadfe38bac" />
 
+- закказ (ожидает подтверждения)
+<img width="3212" height="2260" alt="закказ (ожидает подтверждения)" src="https://github.com/user-attachments/assets/0b3d37bc-57a3-4714-925e-c46f28759579" />
+
+- заказ (отклонен)
+<img width="3212" height="1848" alt="заказ (отклонен)" src="https://github.com/user-attachments/assets/c1060d71-cae4-4b5b-97d5-f3189d361dfb" />
+
+- заказ (ожидает подтверждение оплаты)
+<img width="3212" height="2288" alt="заказ (ожидает подтверждение оплаты)" src="https://github.com/user-attachments/assets/9de875f6-4232-40b7-a3a9-b9871aba86dd" />
+
+- заказ (оплачен)
+<img width="3212" height="2288" alt="заказ (оплачен)" src="https://github.com/user-attachments/assets/cae087f0-f796-44ff-9e9c-2ec0db587712" />
+
+- заказ (проблемы с оплатой)
+<img width="3212" height="2412" alt="заказ (проблемы с оплатой)" src="https://github.com/user-attachments/assets/c9064edb-8aba-419c-b9f3-9cce16866f7f" />
+
+- заказ (ожидает отгрузки)
+<img width="3212" height="2412" alt="заказ (ожидает отгрузки)" src="https://github.com/user-attachments/assets/af32c214-e11d-4494-9cb4-162b0f257be0" />
+
+- заказ (в пути)
+<img width="3212" height="2412" alt="заказ (в пути)" src="https://github.com/user-attachments/assets/7c330be9-1bb1-4193-b5d2-f978faacb1c2" />
+
+- заказ (доставлен)
+<img width="3212" height="2412" alt="заказ (доставлен)" src="https://github.com/user-attachments/assets/ca609526-6516-44a5-963c-44848ce71ad5" />
+
+- заказ (закрыт)
+<img width="3212" height="2412" alt="заказ (закрыт)" src="https://github.com/user-attachments/assets/d0500aa8-892a-4d15-b022-7aab971ec7f6" />
+
+
 
 #### **Примеры экранов UI для роли "Администратор"**
 
