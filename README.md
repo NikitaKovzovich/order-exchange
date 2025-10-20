@@ -305,6 +305,24 @@
 - заказ (закрыт)
 <img width="3212" height="2412" alt="заказ (закрыт)" src="https://github.com/user-attachments/assets/d0500aa8-892a-4d15-b022-7aab971ec7f6" />
 
+- уведомления
+<img width="3212" height="2412" alt="уведомления" src="https://github.com/user-attachments/assets/acbde121-bc0e-447b-a386-cd71452da395" />
+
+- коммуникации
+<img width="3212" height="2412" alt="коммуникации" src="https://github.com/user-attachments/assets/0bf1613a-7504-46a8-9d80-c3bd3568ef1f" />
+
+- поддержка
+<img width="3212" height="1196" alt="поддержка" src="https://github.com/user-attachments/assets/fba00139-8e6f-4b0c-9415-f166cf60b4dc" />
+
+- создание обращения в поддержку
+<img width="3212" height="1764" alt="создание обращения в поддержку" src="https://github.com/user-attachments/assets/f23698fa-e9c0-46ec-8379-6ae3e45fdf53" />
+
+- аналитика
+<img width="3212" height="2684" alt="аналитика" src="https://github.com/user-attachments/assets/4e40afdb-3660-4096-ba51-a32386aace60" />
+
+- журнал приемки
+<img width="3212" height="1892" alt="журнал приемки" src="https://github.com/user-attachments/assets/3a0fd7cc-25e4-4e25-aff1-0ee4f8be27a0" />
+
 
 
 #### **Примеры экранов UI для роли "Администратор"**
