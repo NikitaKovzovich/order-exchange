@@ -172,7 +172,7 @@
 <img width="3212" height="2528" alt="регистрация шаг 5" src="https://github.com/user-attachments/assets/f45e9b1f-cea9-422d-99e7-e4942245df21" />
 
 - отказ в регистрации
-  <img width="3212" height="2000" alt="отказ в регистрации" src="https://github.com/user-attachments/assets/df9c25f5-99e4-45c1-b4c5-db0eb436f3a9" />
+<img width="3212" height="2000" alt="отказ в регистрации" src="https://github.com/user-attachments/assets/df9c25f5-99e4-45c1-b4c5-db0eb436f3a9" />
 
 - главная панель
 <img width="3212" height="2000" alt="главная панель" src="https://github.com/user-attachments/assets/99f2cfea-701f-44a7-af30-5abe73ae2dbf" />
@@ -190,15 +190,15 @@
 <img width="3212" height="2000" alt="добавление товара шаг 3" src="https://github.com/user-attachments/assets/97d5041a-ff4e-47b5-b75e-ca15374d1daa" />
 
 - каталог (неопубликованный)
-  <img width="3212" height="2000" alt="каталог (неопубликованный)" src="https://github.com/user-attachments/assets/c1ba3902-3df4-4fbf-bff9-d0a7f974fa98" />
+<img width="3212" height="2000" alt="каталог (неопубликованный)" src="https://github.com/user-attachments/assets/c1ba3902-3df4-4fbf-bff9-d0a7f974fa98" />
 
 - каталог (с черновиками)
-  <img width="3212" height="2000" alt="каталог (с черновиками)" src="https://github.com/user-attachments/assets/913497b6-2f3b-42ac-8b26-783814631f8d" />
+<img width="3212" height="2000" alt="каталог (с черновиками)" src="https://github.com/user-attachments/assets/913497b6-2f3b-42ac-8b26-783814631f8d" />
 
 - каталог (опубликован)
 <img width="3212" height="2000" alt="каталог (опубликован)" src="https://github.com/user-attachments/assets/15418421-beea-4780-9178-41d3ee22d1a3" />
 
--карточка товара
+- карточка товара
 <img width="3212" height="2000" alt="карточка товара" src="https://github.com/user-attachments/assets/68e3b68d-b07f-4ee2-ad52-c23c3a802897" />
 
 - заказы
@@ -215,6 +215,30 @@
 
 - заказ (оплачен)
 <img width="3212" height="2548" alt="заказ (оплачен)" src="https://github.com/user-attachments/assets/70c08352-48c4-405f-9a1e-56c3ec8b59bc" />
+
+- заказ (ожидает отгрузки)
+<img width="3212" height="2644" alt="заказ (ожидает отгрузки)" src="https://github.com/user-attachments/assets/e468ed79-1f67-4620-a88e-ee192bd7dbe5" />
+
+- заказ (в пути)
+<img width="3212" height="2644" alt="заказ (в пути)" src="https://github.com/user-attachments/assets/16d7c6ba-f478-4e1a-8a60-88422da8ec5f" />
+
+- заказ (доставлен)
+<img width="3212" height="2644" alt="заказ (доставлен)" src="https://github.com/user-attachments/assets/499cd3ae-8ce0-4394-bafb-aa3253b8fef0" />
+
+- уведомления
+<img width="3212" height="1508" alt="уведомления" src="https://github.com/user-attachments/assets/fc3e2356-aa79-4b75-9eb8-ee9a93a91f54" />
+
+- коммуникации
+<img width="3212" height="1508" alt="коммуникации" src="https://github.com/user-attachments/assets/b3521a99-5fb8-4743-882e-1aaf1c6ee230" />
+
+- поддержка
+<img width="3212" height="1508" alt="поддержка" src="https://github.com/user-attachments/assets/da2c8b1c-81fb-4c5a-ac71-18b82a185cf9" />
+
+- создание обращения в поддержку
+<img width="3212" height="1508" alt="создание обращения в поддержку" src="https://github.com/user-attachments/assets/e25517d0-867d-4067-b6ea-e1dc3af8befc" />
+
+- аналитика
+<img width="3212" height="2752" alt="аналитика" src="https://github.com/user-attachments/assets/ae9eb26b-6311-4fa9-b9d5-d33e64a4441d" />
 
 #### **Примеры экранов UI для роли "Торговая сеть"**
 
