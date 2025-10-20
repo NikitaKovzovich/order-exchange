@@ -1,4 +1,4 @@
-<img width="3212" height="1712" alt="регистрация шаг 1" src="https://github.com/user-attachments/assets/a77165f3-48cd-44eb-94ae-286c77c1f84d" /># **Программное средство автоматизации обмена заказами между торговыми сетями и поставщиками**
+<img width="3212" height="2000" alt="каталог (с черновиками)" src="https://github.com/user-attachments/assets/f0180baa-1133-4422-82e6-1ae86d60cfb8" /><img width="3212" height="1712" alt="регистрация шаг 1" src="https://github.com/user-attachments/assets/a77165f3-48cd-44eb-94ae-286c77c1f84d" /># **Программное средство автоматизации обмена заказами между торговыми сетями и поставщиками**
 
 ---
 
@@ -191,6 +191,30 @@
 
 - каталог (неопубликованный)
   <img width="3212" height="2000" alt="каталог (неопубликованный)" src="https://github.com/user-attachments/assets/c1ba3902-3df4-4fbf-bff9-d0a7f974fa98" />
+
+- каталог (с черновиками)
+  <img width="3212" height="2000" alt="каталог (с черновиками)" src="https://github.com/user-attachments/assets/913497b6-2f3b-42ac-8b26-783814631f8d" />
+
+- каталог (опубликован)
+<img width="3212" height="2000" alt="каталог (опубликован)" src="https://github.com/user-attachments/assets/15418421-beea-4780-9178-41d3ee22d1a3" />
+
+-карточка товара
+<img width="3212" height="2000" alt="карточка товара" src="https://github.com/user-attachments/assets/68e3b68d-b07f-4ee2-ad52-c23c3a802897" />
+
+- заказы
+<img width="3212" height="2000" alt="заказы" src="https://github.com/user-attachments/assets/e67d3495-0633-4069-999c-19b13c40d669" />
+
+- заказ (ожидает подтверждения)
+<img width="3212" height="2400" alt="заказ (ожидает подтверждения)" src="https://github.com/user-attachments/assets/3e84aca6-5a4f-40b0-919a-98f8a5e8c745" />
+
+- заказ (ожидает оплаты)
+<img width="3212" height="2400" alt="заказ (ожидает оплаты)" src="https://github.com/user-attachments/assets/4f2fcb07-df48-4c14-ae56-dc32d1baebea" />
+
+- заказ (ожидает проверки оплаты)
+<img width="3212" height="2548" alt="заказ (ожидает проверки оплаты)" src="https://github.com/user-attachments/assets/c6c71ed5-60f4-42e7-b0c5-3fe87606f4c4" />
+
+- заказ (оплачен)
+<img width="3212" height="2548" alt="заказ (оплачен)" src="https://github.com/user-attachments/assets/70c08352-48c4-405f-9a1e-56c3ec8b59bc" />
 
 #### **Примеры экранов UI для роли "Торговая сеть"**
 
