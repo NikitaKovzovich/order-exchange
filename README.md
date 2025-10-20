@@ -1,4 +1,4 @@
-# **Программное средство автоматизации обмена заказами между торговыми сетями и поставщиками**
+<img width="3212" height="1712" alt="регистрация шаг 1" src="https://github.com/user-attachments/assets/a77165f3-48cd-44eb-94ae-286c77c1f84d" /># **Программное средство автоматизации обмена заказами между торговыми сетями и поставщиками**
 
 ---
 
@@ -146,11 +146,34 @@
 
 ### Примеры экранов UI
 
-#### Примеры экранов UI для роли "Поставщик"
+#### **Главная страница**
 
-#### Примеры экранов UI для роли "Торговая сеть"
+<img width="3868" height="4016" alt="главная" src="https://github.com/user-attachments/assets/e00fbbf8-4e35-463b-8581-bd3f5cae128a" />
 
-#### Примеры экранов UI для роли "Администратор"
+#### **Примеры экранов UI для роли "Поставщик"**
+
+- регистрация шаг 1
+<img width="3212" height="1712" alt="регистрация шаг 1" src="https://github.com/user-attachments/assets/6d3f6f46-2be8-48a9-85e7-885f8193e20a" />
+
+- регистрация шаг 2
+<img width="3212" height="2528" alt="регистрация шаг 2" src="https://github.com/user-attachments/assets/f4256b54-3146-4924-8d03-c8ef26febcf0" />
+
+- регистрация шаг 3
+<img width="3212" height="2528" alt="регистрация шаг 3" src="https://github.com/user-attachments/assets/86e29f14-ab9f-4dcc-a53d-304b68f112a3" />
+
+- регистрация шаг 4
+<img width="3212" height="2528" alt="регистрация шаг 4" src="https://github.com/user-attachments/assets/0b258129-23bf-4d84-ac89-261adef86542" />
+
+- регистрация шаг 5
+<img width="3212" height="2528" alt="регистрация шаг 5" src="https://github.com/user-attachments/assets/f45e9b1f-cea9-422d-99e7-e4942245df21" />
+
+- отказ в регистрации
+  <img width="3212" height="2000" alt="отказ в регистрации" src="https://github.com/user-attachments/assets/df9c25f5-99e4-45c1-b4c5-db0eb436f3a9" />
+
+
+#### **Примеры экранов UI для роли "Торговая сеть"**
+
+#### **Примеры экранов UI для роли "Администратор"**
 
 ---
 
