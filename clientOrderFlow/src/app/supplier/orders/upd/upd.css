@@ -1,0 +1,57 @@
+.document-container-wrapper {
+  background-color: #a0a0a0;
+  min-height: 100vh;
+  padding: 2rem 0;
+}
+
+.document-container {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 10mm 12mm;
+  margin: 2rem auto;
+  background: white;
+  box-shadow: 0 0 15px rgba(0,0,0,0.1);
+  color: black;
+  font-family: 'Times New Roman', Times, serif;
+}
+
+.upd-table, .upd-table th, .upd-table td {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+
+.upd-table th, .upd-table td {
+  padding: 1px 2px;
+  font-size: 7px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.signature-line {
+  border-bottom: 1px solid black;
+  height: 1px;
+  display: block;
+}
+
+.signature-label {
+  font-size: 6px;
+  text-align: center;
+  border: 0;
+  padding-top: 0;
+}
+
+@media print {
+  .no-print {
+    display: none;
+  }
+
+  .document-container-wrapper {
+    background-color: white;
+    padding: 0;
+  }
+
+  .document-container {
+    box-shadow: none;
+    margin: 0;
+  }
+}

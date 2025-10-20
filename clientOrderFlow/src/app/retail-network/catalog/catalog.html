@@ -1,0 +1,49 @@
+<div class="bg-white p-6 rounded-lg shadow mb-6">
+  <h2 class="text-2xl font-bold mb-4">Каталог товаров</h2>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div>
+      <input type="text" [(ngModel)]="searchQuery" (input)="applyFilters()" placeholder="Поиск товаров..." class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+    </div>
+    <div>
+      <select [(ngModel)]="selectedSupplier" (change)="applyFilters()" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <option *ngFor="let supplier of suppliers" [value]="supplier">{{ supplier }}</option>
+      </select>
+    </div>
+    <div>
+      <select [(ngModel)]="selectedCategory" (change)="applyFilters()" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <option *ngFor="let category of categories" [value]="category">{{ category }}</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <div *ngFor="let product of filteredProducts" class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
+    <div class="p-6">
+      <div class="flex justify-between items-start mb-3">
+        <h3 class="text-lg font-semibold">{{ product.name }}</h3>
+      </div>
+      <p class="text-sm text-gray-600 mb-2">{{ product.supplier }}</p>
+      <p class="text-sm text-gray-500 mb-4">{{ product.category }}</p>
+      <div class="flex justify-between items-center mb-4">
+        <div>
+          <p class="text-2xl font-bold text-indigo-600">{{ product.price }} BYN</p>
+          <p class="text-sm text-gray-500">В наличии: {{ product.stock }} шт</p>
+        </div>
+      </div>
+      <button (click)="addToCart(product)" class="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition-colors">
+        Добавить в заказ
+      </button>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="filteredProducts.length === 0" class="bg-white p-12 rounded-lg shadow text-center">
+  <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+  <h3 class="mt-2 text-sm font-medium text-gray-900">Товары не найдены</h3>
+  <p class="mt-1 text-sm text-gray-500">Попробуйте изменить параметры поиска</p>
+</div>
+

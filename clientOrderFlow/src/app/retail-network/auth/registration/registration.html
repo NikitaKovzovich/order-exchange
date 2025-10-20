@@ -1,0 +1,169 @@
+<div class="gradient-bg flex flex-col min-h-screen">
+  <header class="bg-white shadow-sm">
+    <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+      <a routerLink="/" class="text-2xl font-bold text-gray-800">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block mr-2 text-indigo-600">
+          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+        OrderFlow
+      </a>
+      <div>
+        <span class="text-gray-600">Уже есть аккаунт?</span>
+        <a routerLink="/retail/auth/login" class="ml-2 text-indigo-600 font-semibold hover:underline">Войти</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-grow container mx-auto px-6 py-12 flex items-center justify-center">
+    <div class="bg-white p-8 md:p-12 rounded-xl shadow-2xl w-full max-w-4xl">
+
+      <div *ngIf="!showSuccess">
+        <h2 class="text-3xl font-bold text-center mb-2">Регистрация Торговой сети</h2>
+        <p class="text-center text-gray-600 mb-8">Пожалуйста, заполните все поля для создания аккаунта.</p>
+
+        <div class="mb-8">
+          <div class="flex items-center justify-center text-xs sm:text-sm">
+            <div class="step" [class.active]="currentStep >= 1">1. Аккаунт</div>
+            <div class="flex-auto border-t-2"></div>
+            <div class="step" [class.active]="currentStep >= 2">2. Компания</div>
+            <div class="flex-auto border-t-2"></div>
+            <div class="step" [class.active]="currentStep >= 3">3. Адреса</div>
+            <div class="flex-auto border-t-2"></div>
+            <div class="step" [class.active]="currentStep >= 4">4. Документы</div>
+          </div>
+        </div>
+
+        <form>
+          <!-- Step 1: Account -->
+          <div *ngIf="currentStep === 1" class="step-content">
+            <h3 class="text-xl font-semibold text-center mb-6">Данные для входа</h3>
+            <div class="max-w-md mx-auto">
+              <div class="mb-4">
+                <label class="block text-gray-700 font-medium mb-2">Рабочий Email</label>
+                <input type="email" [(ngModel)]="formData.email" name="email" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="yourcompany@email.com">
+              </div>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-gray-700 font-medium mb-2">Пароль</label>
+                  <input type="password" [(ngModel)]="formData.password" name="password" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                  <label class="block text-gray-700 font-medium mb-2">Подтвердите пароль</label>
+                  <input type="password" [(ngModel)]="formData.passwordConfirm" name="passwordConfirm" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Company Info -->
+          <div *ngIf="currentStep === 2" class="step-content">
+            <h3 class="text-xl font-semibold text-center mb-6">Основная информация о компании</h3>
+            <div class="grid md:grid-cols-2 gap-6">
+              <div class="md:col-span-2">
+                <label class="block text-gray-700 font-medium mb-2">Полное юридическое наименование</label>
+                <input type="text" [(ngModel)]="formData.companyName" name="companyName" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Открытое акционерное общество 'Сеть Магазинов'">
+              </div>
+              <div>
+                <label class="block text-gray-700 font-medium mb-2">Форма собственности</label>
+                <select [(ngModel)]="formData.legalForm" name="legalForm" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  <option>ИП</option>
+                  <option>ООО</option>
+                  <option>ОАО</option>
+                  <option>ЧУП</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-gray-700 font-medium mb-2">Дата регистрации компании</label>
+                <input type="date" [(ngModel)]="formData.regDate" name="regDate" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-gray-700 font-medium mb-2">УНП / ИИН</label>
+                <input type="text" [(ngModel)]="formData.taxId" name="taxId" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-gray-700 font-medium mb-2">Юридический адрес</label>
+                <input type="text" [(ngModel)]="formData.legalAddress" name="legalAddress" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-gray-700 font-medium mb-2">Почтовый адрес (если отличается)</label>
+                <input type="text" [(ngModel)]="formData.postalAddress" name="postalAddress" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-gray-700 font-medium mb-2">Контактный телефон</label>
+                <input type="tel" [(ngModel)]="formData.contactPhone" name="contactPhone" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: Address Book -->
+          <div *ngIf="currentStep === 3" class="step-content">
+            <h3 class="text-xl font-semibold text-center mb-6">Адресная книга</h3>
+            <p class="text-center text-sm text-gray-500 mb-6">Добавьте один или несколько адресов, куда будет осуществляться доставка товаров.</p>
+            <div class="space-y-4">
+              <div *ngFor="let addr of deliveryAddresses; let i = index" class="p-4 border rounded-md bg-gray-50 relative">
+                <label class="block text-gray-700 font-medium mb-2">Адрес доставки {{ i + 1 }}{{ i === 0 ? ' (основной)' : '' }}</label>
+                <div class="flex items-center gap-2">
+                  <input type="text" [(ngModel)]="addr.address" [name]="'address_' + addr.id" class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="г. Минск, ул. Торговая, д. 5">
+                  <button *ngIf="deliveryAddresses.length > 1" type="button" (click)="removeDeliveryAddress(addr.id)" class="p-2 text-red-600 hover:bg-red-50 rounded-md">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="mt-4">
+              <button type="button" (click)="addDeliveryAddress()" class="text-indigo-600 hover:text-indigo-800 font-semibold text-sm flex items-center">
+                <svg class="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"></path></svg>
+                Добавить еще адрес
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 4: Documents -->
+          <div *ngIf="currentStep === 4" class="step-content">
+            <h3 class="text-xl font-semibold text-center mb-6">Загрузка документов</h3>
+            <div class="space-y-6 max-w-lg mx-auto">
+              <div>
+                <label class="block text-gray-700 font-medium mb-2">Логотип компании</label>
+                <input type="file" (change)="onFileSelect($event, 'logo')" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+              </div>
+              <div>
+                <label class="block text-gray-700 font-medium mb-2">Скан-копия свидетельства о регистрации</label>
+                <input type="file" (change)="onFileSelect($event, 'registrationCert')" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+              </div>
+              <div>
+                <label class="block text-gray-700 font-medium mb-2">Файл ЭЦП и Образец печати</label>
+                <input type="file" multiple (change)="onFileSelect($event, 'digitalSignature')" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+                <p class="text-xs text-gray-500 mt-1">Для автоматической подстановки в документы. Можно загрузить несколько файлов.</p>
+              </div>
+            </div>
+            <div class="mt-8 text-center">
+              <label class="flex items-center justify-center">
+                <input type="checkbox" [(ngModel)]="formData.termsAccepted" name="termsAccepted" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                <span class="ml-2 text-gray-700">Я согласен с <a href="#" class="text-indigo-600 hover:underline">условиями использования</a>.</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="mt-10 flex justify-between">
+            <button type="button" *ngIf="currentStep > 1" (click)="previousStep()" class="bg-gray-200 text-gray-800 px-6 py-2 rounded-md hover:bg-gray-300">Назад</button>
+            <button type="button" (click)="nextStep()" class="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 ml-auto">
+              {{ currentStep === 4 ? 'Завершить регистрацию' : 'Далее' }}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div *ngIf="showSuccess" class="text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-4 text-green-500">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        <h2 class="text-2xl font-bold mb-3">Заявка успешно отправлена!</h2>
+        <p class="text-gray-600 max-w-md mx-auto">Спасибо за регистрацию. Ваша заявка отправлена на проверку администратору. Мы сообщим вам на указанный Email, как только верификация будет пройдена.</p>
+        <button (click)="returnToHome()" class="mt-6 inline-block bg-indigo-600 text-white px-8 py-3 rounded-md hover:bg-indigo-700">Вернуться на главную</button>
+      </div>
+
+    </div>
+  </main>
+</div>

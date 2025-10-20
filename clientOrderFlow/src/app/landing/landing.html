@@ -1,0 +1,309 @@
+<header class="bg-white shadow-sm sticky top-0 z-50">
+  <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+    <div class="text-2xl font-bold text-gray-800">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block mr-2 text-indigo-600">
+        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+      </svg>
+      OrderFlow
+    </div>
+    <nav class="hidden md:flex space-x-8 items-center">
+      <a href="#features" class="text-gray-600 hover:text-indigo-600">Возможности</a>
+      <a href="#suppliers" class="text-gray-600 hover:text-indigo-600">Поставщикам</a>
+      <a href="#retailers" class="text-gray-600 hover:text-indigo-600">Торговым сетям</a>
+    </nav>
+    <div class="flex items-center space-x-4">
+      <button (click)="openLoginModal()" class="text-gray-600 hover:text-indigo-600">Войти</button>
+      <button (click)="openRegisterModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors">Регистрация</button>
+    </div>
+  </div>
+</header>
+
+<main class="gradient-bg">
+  <div class="container mx-auto px-6 py-24 text-center">
+    <h1 class="text-4xl md:text-6xl font-bold text-gray-800 mb-4">Автоматизируйте обмен заказами</h1>
+    <p class="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+      Единая B2B-платформа для поставщиков и торговых сетей. Ускорьте документооборот, сократите ошибки и управляйте всем циклом поставки в одном месте.
+    </p>
+    <div class="space-x-4">
+      <button (click)="openRegisterModal()" class="bg-indigo-600 text-white px-8 py-3 rounded-md text-lg hover:bg-indigo-700 transition-transform hover:scale-105">Начать работу бесплатно</button>
+    </div>
+  </div>
+</main>
+
+<section id="features" class="py-20 bg-white">
+  <div class="container mx-auto px-6">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl md:text-4xl font-bold text-gray-800">Все, что нужно для эффективной работы</h2>
+      <p class="text-gray-600 mt-2">Наша платформа решает ключевые проблемы взаимодействия в B2B-секторе.</p>
+    </div>
+    <div class="grid md:grid-cols-3 gap-8">
+      <div class="bg-gray-50 p-6 rounded-lg text-center">
+        <div class="flex justify-center items-center mb-4 bg-indigo-100 rounded-full w-16 h-16 mx-auto">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600">
+            <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/>
+            <path d="M9 18h6"/>
+            <path d="M10 22h4"/>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold mb-2">Единый каталог</h3>
+        <p class="text-gray-600">Поставщики управляют товарами и остатками в реальном времени. Торговые сети получают доступ к актуальному ассортименту всех партнеров.</p>
+      </div>
+      <div class="bg-gray-50 p-6 rounded-lg text-center">
+        <div class="flex justify-center items-center mb-4 bg-indigo-100 rounded-full w-16 h-16 mx-auto">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600">
+            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <line x1="10" y1="9" x2="8" y2="9"/>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold mb-2">Автоматизация документов</h3>
+        <p class="text-gray-600">Система автоматически генерирует счета на оплату и УПД. Забудьте о ручном заполнении и ошибках в документах.</p>
+      </div>
+      <div class="bg-gray-50 p-6 rounded-lg text-center">
+        <div class="flex justify-center items-center mb-4 bg-indigo-100 rounded-full w-16 h-16 mx-auto">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600">
+            <line x1="22" y1="12" x2="2" y2="12"/>
+            <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+            <line x1="6" y1="16" x2="6.01" y2="16"/>
+            <line x1="10" y1="16" x2="10.01" y2="16"/>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold mb-2">Прозрачный трекинг</h3>
+        <p class="text-gray-600">Отслеживайте статусы заказов на каждом этапе — от подтверждения и оплаты до отгрузки и приемки товара.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="suppliers" class="py-20 bg-gray-50">
+  <div class="container mx-auto px-6 text-center">
+    <div class="max-w-3xl mx-auto">
+      <h2 class="text-3xl font-bold mb-4">Для Поставщиков</h2>
+      <p class="text-gray-600 mb-6">Получайте все заказы в едином окне, управляйте каталогом без усилий и анализируйте продажи для роста вашего бизнеса.</p>
+      <ul class="space-y-4 text-left inline-block">
+        <li class="flex items-start">
+          <span class="bg-green-500 rounded-full w-5 h-5 text-white flex items-center justify-center mr-3 mt-1 flex-shrink-0">✓</span>
+          <span><strong>Централизация заказов:</strong> Никаких больше писем и звонков. Все заказы от всех сетей в одном месте.</span>
+        </li>
+        <li class="flex items-start">
+          <span class="bg-green-500 rounded-full w-5 h-5 text-white flex items-center justify-center mr-3 mt-1 flex-shrink-0">✓</span>
+          <span><strong>Автоматизация рутины:</strong> Система сама создаст счета и УПД, освободив ваше время для более важных задач.</span>
+        </li>
+        <li class="flex items-start">
+          <span class="bg-green-500 rounded-full w-5 h-5 text-white flex items-center justify-center mr-3 mt-1 flex-shrink-0">✓</span>
+          <span><strong>Аналитика продаж:</strong> Принимайте решения на основе данных с помощью удобных отчетов и дашбордов.</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="retailers" class="py-20 bg-white">
+  <div class="container mx-auto px-6 text-center">
+    <div class="max-w-3xl mx-auto">
+      <h2 class="text-3xl font-bold mb-4">Для Торговых сетей</h2>
+      <p class="text-gray-600 mb-6">Находите нужные товары у всех поставщиков, формируйте заказы в несколько кликов и контролируйте весь процесс закупки.</p>
+      <ul class="space-y-4 text-left inline-block">
+        <li class="flex items-start">
+          <span class="bg-green-500 rounded-full w-5 h-5 text-white flex items-center justify-center mr-3 mt-1 flex-shrink-0">✓</span>
+          <span><strong>Быстрый поиск и заказ:</strong> Удобный поиск и фильтры по общему каталогу для быстрого формирования заказов.</span>
+        </li>
+        <li class="flex items-start">
+          <span class="bg-green-500 rounded-full w-5 h-5 text-white flex items-center justify-center mr-3 mt-1 flex-shrink-0">✓</span>
+          <span><strong>Прозрачность процесса:</strong> Всегда знайте, на каком этапе находится ваш заказ, от подтверждения до доставки.</span>
+        </li>
+        <li class="flex items-start">
+          <span class="bg-green-500 rounded-full w-5 h-5 text-white flex items-center justify-center mr-3 mt-1 flex-shrink-0">✓</span>
+          <span><strong>Порядок в документах:</strong> Все счета и накладные хранятся в одном месте и всегда доступны для скачивания.</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer class="bg-gray-800 text-white">
+  <div class="container mx-auto px-6 py-8 text-center">
+    <p>&copy; 2025 OrderFlow. Все права защищены.</p>
+  </div>
+</footer>
+
+<!-- Login Modal -->
+<div *ngIf="showLoginModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" (click)="closeLoginModal()">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-8" (click)="$event.stopPropagation()">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-gray-800">Вход в систему</h2>
+      <button (click)="closeLoginModal()" class="text-gray-400 hover:text-gray-600">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <form #loginForm="ngForm" (ngSubmit)="onLogin()">
+      <div class="mb-4">
+        <label for="login-email" class="block text-gray-700 font-medium mb-2">Email</label>
+        <input
+          type="email"
+          id="login-email"
+          [(ngModel)]="loginEmail"
+          name="email"
+          required
+          class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="your@email.com">
+      </div>
+
+      <div class="mb-4">
+        <label for="login-password" class="block text-gray-700 font-medium mb-2">Пароль</label>
+        <input
+          type="password"
+          id="login-password"
+          [(ngModel)]="loginPassword"
+          name="password"
+          required
+          class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="••••••••">
+      </div>
+
+      <div class="mb-6">
+        <label class="flex items-center">
+          <input
+            type="checkbox"
+            [(ngModel)]="loginRememberMe"
+            name="rememberMe"
+            class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+          <span class="ml-2 text-gray-700">Запомнить меня</span>
+        </label>
+      </div>
+
+      <button
+        type="submit"
+        class="w-full bg-indigo-600 text-white py-3 rounded-md hover:bg-indigo-700 transition-colors font-semibold mb-4">
+        Войти
+      </button>
+
+      <div class="text-center">
+        <span class="text-gray-600">Ещё нет аккаунта? </span>
+        <button type="button" (click)="switchToRegister()" class="text-indigo-600 font-semibold hover:underline">Зарегистрироваться</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Register Modal -->
+<div *ngIf="showRegisterModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" (click)="closeRegisterModal()">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-8 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-gray-800">Регистрация</h2>
+      <button (click)="closeRegisterModal()" class="text-gray-400 hover:text-gray-600">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <form #registerForm="ngForm" (ngSubmit)="onRegister()">
+      <div class="mb-4">
+        <label class="block text-gray-700 font-medium mb-3">Тип аккаунта</label>
+        <div class="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            (click)="registerUserType = 'supplier'"
+            [class.bg-indigo-600]="registerUserType === 'supplier'"
+            [class.text-white]="registerUserType === 'supplier'"
+            [class.border-indigo-600]="registerUserType === 'supplier'"
+            class="px-4 py-3 border-2 border-gray-300 rounded-md hover:border-indigo-600 transition-colors font-medium">
+            Поставщик
+          </button>
+          <button
+            type="button"
+            (click)="registerUserType = 'retail'"
+            [class.bg-indigo-600]="registerUserType === 'retail'"
+            [class.text-white]="registerUserType === 'retail'"
+            [class.border-indigo-600]="registerUserType === 'retail'"
+            class="px-4 py-3 border-2 border-gray-300 rounded-md hover:border-indigo-600 transition-colors font-medium">
+            Торговая сеть
+          </button>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label for="register-company" class="block text-gray-700 font-medium mb-2">Название компании</label>
+        <input
+          type="text"
+          id="register-company"
+          [(ngModel)]="registerCompanyName"
+          name="companyName"
+          required
+          class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="ООО &quot;Ваша компания&quot;">
+      </div>
+
+      <div class="mb-4">
+        <label for="register-email" class="block text-gray-700 font-medium mb-2">Email</label>
+        <input
+          type="email"
+          id="register-email"
+          [(ngModel)]="registerEmail"
+          name="email"
+          required
+          class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="company@email.com">
+      </div>
+
+      <div class="mb-4">
+        <label for="register-password" class="block text-gray-700 font-medium mb-2">Пароль</label>
+        <input
+          type="password"
+          id="register-password"
+          [(ngModel)]="registerPassword"
+          name="password"
+          required
+          class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="••••••••">
+      </div>
+
+      <div class="mb-4">
+        <label for="register-confirm-password" class="block text-gray-700 font-medium mb-2">Подтвердите пароль</label>
+        <input
+          type="password"
+          id="register-confirm-password"
+          [(ngModel)]="registerConfirmPassword"
+          name="confirmPassword"
+          required
+          class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="••••••••">
+      </div>
+
+      <div class="mb-6">
+        <label class="flex items-start">
+          <input
+            type="checkbox"
+            [(ngModel)]="registerAcceptTerms"
+            name="acceptTerms"
+            required
+            class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded mt-1">
+          <span class="ml-2 text-sm text-gray-700">
+            Я принимаю <a href="#" class="text-indigo-600 hover:underline">условия использования</a> и
+            <a href="#" class="text-indigo-600 hover:underline">политику конфиденциальности</a>
+          </span>
+        </label>
+      </div>
+
+      <button
+        type="submit"
+        class="w-full bg-indigo-600 text-white py-3 rounded-md hover:bg-indigo-700 transition-colors font-semibold mb-4">
+        Зарегистрироваться
+      </button>
+
+      <div class="text-center">
+        <span class="text-gray-600">Уже есть аккаунт? </span>
+        <button type="button" (click)="switchToLogin()" class="text-indigo-600 font-semibold hover:underline">Войти</button>
+      </div>
+    </form>
+  </div>
+</div>

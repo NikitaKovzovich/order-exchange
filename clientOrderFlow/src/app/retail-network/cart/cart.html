@@ -1,0 +1,103 @@
+<div class="max-w-5xl mx-auto space-y-8">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Формирование заказа</h1>
+    <a routerLink="/retail/catalog" class="text-indigo-600 hover:underline flex items-center">
+      <svg class="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"></path>
+      </svg>
+      Вернуться к каталогу
+    </a>
+  </div>
+
+  <div *ngIf="ordersBySupplier.length === 0" class="bg-white rounded-lg shadow-sm p-12 text-center">
+    <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+    </svg>
+    <h3 class="text-lg font-semibold text-gray-800 mb-2">Корзина пуста</h3>
+    <p class="text-gray-600 mb-6">Добавьте товары из каталога для формирования заказа</p>
+    <a routerLink="/retail/catalog" class="inline-block bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700">Перейти в каталог</a>
+  </div>
+
+  <!-- Order for each Supplier -->
+  <div *ngFor="let order of ordersBySupplier" class="bg-white rounded-lg shadow-sm">
+    <div class="p-4 border-b">
+      <h3 class="text-lg font-semibold text-gray-800">
+        Заказ у поставщика: <span class="font-bold">{{ order.supplierName }}</span>
+      </h3>
+      <p class="text-sm text-gray-500">Заказ будет присвоен номер после отправки</p>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left text-gray-500">
+        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+          <tr>
+            <th scope="col" class="px-6 py-3">Товар</th>
+            <th scope="col" class="px-6 py-3 text-center">Количество</th>
+            <th scope="col" class="px-6 py-3 text-right">Цена</th>
+            <th scope="col" class="px-6 py-3 text-right">Сумма</th>
+            <th scope="col" class="px-6 py-3 text-center">Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of order.items" class="bg-white border-b">
+            <td class="px-6 py-4 font-medium text-gray-900">{{ item.name }}</td>
+            <td class="px-6 py-4 text-center">{{ item.quantity }} шт.</td>
+            <td class="px-6 py-4 text-right">{{ item.price.toFixed(2) }} BYN</td>
+            <td class="px-6 py-4 text-right font-semibold">{{ item.total.toFixed(2) }} BYN</td>
+            <td class="px-6 py-4 text-center">
+              <button (click)="removeItem(order.supplierId, item.id)" class="text-red-600 hover:text-red-800">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Delivery details -->
+    <div class="p-6 border-t">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Желаемая дата доставки</label>
+          <input type="date" [(ngModel)]="order.deliveryDate" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Адрес доставки</label>
+          <select [(ngModel)]="order.deliveryAddress" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <option *ngFor="let address of deliveryAddresses" [value]="address">{{ address }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order total and submit -->
+    <div class="p-4 bg-gray-50 flex justify-between items-center">
+      <div class="text-right">
+        <span class="font-semibold text-gray-800">Итого по заказу (с НДС):</span>
+        <span class="text-lg font-bold text-gray-900 ml-2">{{ order.total.toFixed(2) }} BYN</span>
+      </div>
+      <button (click)="submitOrder(order)" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
+        </svg>
+        Отправить заказ
+      </button>
+    </div>
+  </div>
+
+  <!-- Grand Total -->
+  <div *ngIf="ordersBySupplier.length > 0" class="bg-indigo-50 rounded-lg p-6">
+    <div class="flex justify-between items-center">
+      <div>
+        <h3 class="text-lg font-semibold text-gray-800">Общая сумма всех заказов</h3>
+        <p class="text-sm text-gray-600">{{ ordersBySupplier.length }} заказ(ов) от разных поставщиков</p>
+      </div>
+      <div class="text-right">
+        <p class="text-3xl font-bold text-indigo-600">{{ grandTotal.toFixed(2) }} BYN</p>
+      </div>
+    </div>
+  </div>
+</div>
+

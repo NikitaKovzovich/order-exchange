@@ -1,0 +1,33 @@
+.invoice-container {
+  background-color: #f3f4f6;
+  min-height: 100vh;
+  padding: 2rem 0;
+}
+
+.invoice-box {
+  max-width: 800px;
+  margin: auto;
+  padding: 30px;
+  border: 1px solid #eee;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+  font-size: 14px;
+  line-height: 20px;
+  color: #555;
+  background-color: #fff;
+}
+
+@media print {
+  .no-print {
+    display: none;
+  }
+
+  .invoice-container {
+    background-color: white;
+    padding: 0;
+  }
+
+  .invoice-box {
+    box-shadow: none;
+    border: none;
+  }
+}

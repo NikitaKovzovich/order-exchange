@@ -1,0 +1,67 @@
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+  <div class="bg-white p-5 rounded-lg shadow">
+    <h4 class="text-sm text-gray-500 font-medium">Общие расходы (за месяц)</h4>
+    <p class="text-3xl font-bold text-gray-800 mt-1">{{ stats.totalExpenses }} BYN</p>
+  </div>
+  <div class="bg-white p-5 rounded-lg shadow">
+    <h4 class="text-sm text-gray-500 font-medium">Количество заказов</h4>
+    <p class="text-3xl font-bold text-gray-800 mt-1">{{ stats.totalOrders }}</p>
+  </div>
+  <div class="bg-white p-5 rounded-lg shadow">
+    <h4 class="text-sm text-gray-500 font-medium">Активные поставщики</h4>
+    <p class="text-3xl font-bold text-gray-800 mt-1">{{ stats.activeSuppliers }}</p>
+  </div>
+  <div class="bg-white p-5 rounded-lg shadow">
+    <h4 class="text-sm text-gray-500 font-medium">Средний чек заказа</h4>
+    <p class="text-3xl font-bold text-gray-800 mt-1">{{ stats.avgOrderAmount }} BYN</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+  <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow">
+    <h3 class="text-lg font-semibold text-gray-800 mb-4">Последние заказы</h3>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left text-gray-500">
+        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+          <tr>
+            <th scope="col" class="px-6 py-3">Заказ №</th>
+            <th scope="col" class="px-6 py-3">Поставщик</th>
+            <th scope="col" class="px-6 py-3">Сумма</th>
+            <th scope="col" class="px-6 py-3">Статус</th>
+            <th scope="col" class="px-6 py-3">Действие</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let order of recentOrders" class="bg-white border-b hover:bg-gray-50">
+            <td class="px-6 py-4 font-medium text-gray-900">{{ order.id }}</td>
+            <td class="px-6 py-4">{{ order.supplier }}</td>
+            <td class="px-6 py-4">{{ order.amount }} BYN</td>
+            <td class="px-6 py-4">
+              <span [ngClass]="getStatusClass(order.status)" class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full">
+                {{ order.statusLabel }}
+              </span>
+            </td>
+            <td class="px-6 py-4">
+              <a [routerLink]="['/retail/orders', order.id]" class="font-medium text-indigo-600 hover:underline">Просмотр</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="bg-white p-6 rounded-lg shadow">
+    <h3 class="text-lg font-semibold text-gray-800 mb-4">Структура расходов</h3>
+    <div class="h-64">
+      <canvas #expensesChart></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="bg-white p-6 rounded-lg shadow">
+  <h3 class="text-lg font-semibold text-gray-800 mb-4">Динамика расходов (последние 7 дней)</h3>
+  <div class="h-80">
+    <canvas #expensesDynamicsChart></canvas>
+  </div>
+</div>
+

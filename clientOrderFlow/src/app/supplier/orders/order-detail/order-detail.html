@@ -1,0 +1,206 @@
+<div class="flex h-screen bg-gray-100">
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <header class="bg-white shadow-sm h-16 flex justify-between items-center px-6">
+      <h1 class="text-xl font-semibold text-gray-800">Детали заказа</h1>
+      <div class="flex items-center">
+        <div class="relative mr-4">
+          <button class="p-2 bg-gray-100 rounded-full hover:bg-gray-200">
+            <svg class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+          </button>
+          <span class="absolute top-0 right-0 h-3 w-3 bg-red-500 rounded-full border-2 border-white"></span>
+        </div>
+        <div class="flex items-center">
+          <img class="h-10 w-10 rounded-full" src="https://placehold.co/100x100/E2E8F0/4A5568?text=Лого" alt="Logo">
+          <div class="ml-3">
+            <p class="text-sm font-semibold text-gray-800">Продукты Оптом</p>
+            <a routerLink="/supplier/auth/login" class="text-xs text-indigo-600 hover:underline">Выйти</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-6">
+      <div class="mb-4">
+        <a routerLink="/supplier/orders" class="text-sm text-indigo-600 hover:underline flex items-center">
+          <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+          </svg>
+          Назад к заказам
+        </a>
+      </div>
+
+      <div class="bg-white p-6 rounded-lg shadow-sm mb-6">
+        <div class="flex flex-wrap justify-between items-start">
+          <div>
+            <h2 class="text-2xl font-bold text-gray-800">
+              Заказ #{{ order.id }}
+              <span class="text-lg font-normal text-gray-500">от {{ order.date }}</span>
+            </h2>
+            <div class="mt-2">
+              <span [ngClass]="getStatusColor(order.status)" class="text-sm font-semibold inline-block py-1 px-3 uppercase rounded-full">
+                {{ getStatusLabel(order.status) }}
+              </span>
+            </div>
+          </div>
+          <div class="text-right mt-4 sm:mt-0">
+            <p class="text-sm text-gray-500">Сумма заказа</p>
+            <p class="text-3xl font-bold text-gray-800">{{ order.total }} BYN</p>
+          </div>
+        </div>
+        <div class="border-t mt-4 pt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div>
+            <h4 class="font-semibold text-gray-600 mb-1">Поставщик (Вы)</h4>
+            <p class="text-gray-800">{{ order.supplierName }}</p>
+            <p class="text-gray-500">УНП {{ order.supplierInn }}</p>
+          </div>
+          <div>
+            <h4 class="font-semibold text-gray-600 mb-1">Торговая сеть (Клиент)</h4>
+            <p class="text-gray-800">{{ order.customerName }}</p>
+            <p class="text-gray-500">УНП {{ order.customerInn }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2">
+          <div class="bg-white p-6 rounded-lg shadow-sm mb-6">
+            <h3 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Состав заказа</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="border-b">
+                  <tr class="text-left text-gray-600">
+                    <th class="pb-2 font-semibold">Товар</th>
+                    <th class="pb-2 font-semibold">Артикул</th>
+                    <th class="pb-2 font-semibold text-right">Кол-во</th>
+                    <th class="pb-2 font-semibold text-right">Цена</th>
+                    <th class="pb-2 font-semibold text-right">Сумма</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of order.items" class="border-b">
+                    <td class="py-3">{{ item.name }}</td>
+                    <td class="py-3 text-gray-500">{{ item.sku }}</td>
+                    <td class="py-3 text-right">{{ item.quantity }}</td>
+                    <td class="py-3 text-right">{{ item.price }} BYN</td>
+                    <td class="py-3 text-right font-semibold">{{ item.total }} BYN</td>
+                  </tr>
+                </tbody>
+                <tfoot class="border-t-2">
+                  <tr class="font-bold text-gray-800">
+                    <td colspan="4" class="pt-3 text-right">Итого:</td>
+                    <td class="pt-3 text-right text-lg">{{ order.total }} BYN</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <div class="bg-white p-6 rounded-lg shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Адрес доставки</h3>
+            <p class="text-gray-700">{{ order.deliveryAddress }}</p>
+          </div>
+        </div>
+
+        <div class="lg:col-span-1">
+          <div class="bg-white p-6 rounded-lg shadow-sm mb-6">
+            <h3 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Действия</h3>
+            <div class="space-y-3">
+              <button *ngIf="order.status === 'pending'" (click)="confirmOrder()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">
+                Подтвердить заказ
+              </button>
+              <button *ngIf="order.status === 'pending'" (click)="rejectOrder()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">
+                Отклонить заказ
+              </button>
+              <button *ngIf="order.status === 'awaiting-payment'" (click)="generateInvoice()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">
+                Сформировать счет
+              </button>
+              <button *ngIf="order.status === 'verifying-payment'" (click)="verifyPayment()" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg">
+                Подтвердить оплату
+              </button>
+              <button *ngIf="order.status === 'paid' || order.status === 'awaiting-shipping'" (click)="markAsShipped()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">
+                Отметить как отгруженный
+              </button>
+              <button *ngIf="order.status === 'paid' || order.status === 'awaiting-shipping' || order.status === 'in-transit'" (click)="generateUPD()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg">
+                Сформировать УПД
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-white p-6 rounded-lg shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Временная шкала</h3>
+            <div class="space-y-4">
+              <div class="flex items-start">
+                <div class="flex-shrink-0">
+                  <div class="w-8 h-8 rounded-full flex items-center justify-center" [class.bg-green-200]="order.status !== 'pending'" [class.bg-blue-200]="order.status === 'pending'">
+                    <svg class="w-5 h-5" [class.text-green-600]="order.status !== 'pending'" [class.text-blue-600]="order.status === 'pending'" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                  </div>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm font-semibold text-gray-800">Заказ создан</p>
+                  <p class="text-xs text-gray-500">{{ order.date }}</p>
+                </div>
+              </div>
+
+              <div class="flex items-start">
+                <div class="flex-shrink-0">
+                  <div class="w-8 h-8 rounded-full flex items-center justify-center" [class.bg-green-200]="order.status !== 'pending'" [class.bg-gray-200]="order.status === 'pending'">
+                    <svg class="w-5 h-5" [class.text-green-600]="order.status !== 'pending'" [class.text-gray-400]="order.status === 'pending'" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                  </div>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm font-semibold text-gray-800">Подтвержден</p>
+                  <p class="text-xs text-gray-500" *ngIf="order.status !== 'pending'">Ожидает оплаты</p>
+                </div>
+              </div>
+
+              <div class="flex items-start">
+                <div class="flex-shrink-0">
+                  <div class="w-8 h-8 rounded-full flex items-center justify-center" [class.bg-green-200]="order.status === 'paid' || order.status === 'awaiting-shipping' || order.status === 'in-transit' || order.status === 'delivered'" [class.bg-gray-200]="order.status !== 'paid' && order.status !== 'awaiting-shipping' && order.status !== 'in-transit' && order.status !== 'delivered'">
+                    <svg class="w-5 h-5" [class.text-green-600]="order.status === 'paid' || order.status === 'awaiting-shipping' || order.status === 'in-transit' || order.status === 'delivered'" [class.text-gray-400]="order.status !== 'paid' && order.status !== 'awaiting-shipping' && order.status !== 'in-transit' && order.status !== 'delivered'" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                  </div>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm font-semibold text-gray-800">Оплачен</p>
+                </div>
+              </div>
+
+              <div class="flex items-start">
+                <div class="flex-shrink-0">
+                  <div class="w-8 h-8 rounded-full flex items-center justify-center" [class.bg-green-200]="order.status === 'in-transit' || order.status === 'delivered'" [class.bg-gray-200]="order.status !== 'in-transit' && order.status !== 'delivered'">
+                    <svg class="w-5 h-5" [class.text-green-600]="order.status === 'in-transit' || order.status === 'delivered'" [class.text-gray-400]="order.status !== 'in-transit' && order.status !== 'delivered'" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                  </div>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm font-semibold text-gray-800">Отгружен</p>
+                </div>
+              </div>
+
+              <div class="flex items-start">
+                <div class="flex-shrink-0">
+                  <div class="w-8 h-8 rounded-full flex items-center justify-center" [class.bg-green-200]="order.status === 'delivered'" [class.bg-gray-200]="order.status !== 'delivered'">
+                    <svg class="w-5 h-5" [class.text-green-600]="order.status === 'delivered'" [class.text-gray-400]="order.status !== 'delivered'" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                  </div>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm font-semibold text-gray-800">Доставлен</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>

@@ -1,0 +1,114 @@
+<div class="flex h-screen bg-gray-100">
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <header class="bg-white shadow-sm h-16 flex justify-between items-center px-6">
+      <h1 class="text-xl font-semibold text-gray-800">Карточка товара</h1>
+      <div class="flex items-center">
+        <div class="relative mr-4">
+          <button class="p-2 bg-gray-100 rounded-full hover:bg-gray-200">
+            <svg class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+          </button>
+        </div>
+        <div class="flex items-center">
+          <img class="h-10 w-10 rounded-full" src="https://placehold.co/100x100/E2E8F0/4A5568?text=Лого" alt="Logo">
+          <div class="ml-3">
+            <p class="text-sm font-semibold text-gray-800">Продукты Оптом</p>
+            <a routerLink="/supplier/auth/login" class="text-xs text-indigo-600 hover:underline">Выйти</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-6">
+      <div class="mb-4">
+        <a routerLink="/supplier/catalog" class="text-sm text-indigo-600 hover:underline flex items-center">
+          <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+          </svg>
+          Назад к каталогу
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2">
+          <div class="bg-white p-6 rounded-lg shadow-sm relative">
+            <span class="absolute top-4 right-4 text-xs font-semibold py-1 px-2 uppercase rounded-full"
+                  [class.bg-green-200]="product.status === 'published'"
+                  [class.text-green-600]="product.status === 'published'"
+                  [class.bg-yellow-200]="product.status === 'draft'"
+                  [class.text-yellow-600]="product.status === 'draft'">
+              {{ product.status === 'published' ? 'Опубликован' : 'Черновик' }}
+            </span>
+
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 pr-24">{{ product.name }}</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <div class="w-full h-64 rounded-lg overflow-hidden mb-2 bg-gray-200 flex items-center justify-center">
+                  <img [src]="product.photos[selectedPhoto]" alt="Product" class="w-full h-full object-cover">
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                  <div *ngFor="let photo of product.photos; let i = index"
+                       (click)="selectPhoto(i)"
+                       class="w-full h-24 rounded-lg overflow-hidden cursor-pointer bg-gray-200 flex items-center justify-center"
+                       [class.border-2]="i === selectedPhoto"
+                       [class.border-indigo-500]="i === selectedPhoto">
+                    <img [src]="photo" alt="Thumbnail" class="w-full h-full object-cover">
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex flex-col">
+                <div>
+                  <p class="text-3xl font-bold text-gray-800">{{ product.price }} BYN</p>
+                  <p class="text-sm text-gray-500">Цена за {{ product.unit }}</p>
+                </div>
+                <div class="mt-4 flex-grow">
+                  <h3 class="font-semibold text-gray-700">Описание</h3>
+                  <p class="mt-1 text-sm text-gray-600">{{ product.description }}</p>
+                </div>
+                <button (click)="editProduct()" class="mt-4 w-full flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">
+                  <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path>
+                  </svg>
+                  Редактировать всю информацию
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-1 space-y-6">
+          <div class="bg-white p-6 rounded-lg shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Управление остатками</h3>
+            <div class="flex items-center justify-between mb-2">
+              <p class="text-sm text-gray-600">Текущий остаток:</p>
+              <p class="font-bold text-gray-800 text-lg">{{ currentStock }} {{ product.unit }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Новое количество</label>
+              <input type="number" [(ngModel)]="newStock" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+            <button (click)="updateStock()" class="mt-4 w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg">Сохранить остаток</button>
+          </div>
+
+          <div class="bg-white p-6 rounded-lg shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Характеристики</h3>
+            <ul class="text-sm text-gray-700 space-y-2">
+              <li class="flex justify-between"><span>Артикул (SKU):</span> <span class="font-semibold">{{ product.sku }}</span></li>
+              <li class="flex justify-between"><span>Категория:</span> <span class="font-semibold">{{ product.category }}</span></li>
+              <li class="flex justify-between"><span>Ставка НДС:</span> <span class="font-semibold">{{ product.vat }}</span></li>
+              <li class="flex justify-between"><span>Вес:</span> <span class="font-semibold">{{ product.weight }} кг</span></li>
+              <li class="flex justify-between"><span>Габариты:</span> <span class="font-semibold">{{ product.dimensions }}</span></li>
+              <li class="flex justify-between"><span>Дата производства:</span> <span class="font-semibold">{{ product.mfgDate }}</span></li>
+              <li class="flex justify-between"><span>Срок годности:</span> <span class="font-semibold">{{ product.expDate }}</span></li>
+              <li class="flex justify-between"><span>Страна:</span> <span class="font-semibold">{{ product.origin }}</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+

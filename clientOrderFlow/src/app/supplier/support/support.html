@@ -1,0 +1,69 @@
+<div class="max-w-4xl mx-auto">
+  <div class="mb-6">
+    <h2 class="text-2xl font-bold text-gray-800 mb-2">Служба поддержки</h2>
+    <p class="text-gray-600">Создайте обращение или просмотрите историю ваших запросов</p>
+  </div>
+
+  <div class="mb-6">
+    <button (click)="showNewTicketForm = !showNewTicketForm" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg flex items-center">
+      <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"></path>
+      </svg>
+      Создать обращение
+    </button>
+  </div>
+
+  <div *ngIf="showNewTicketForm" class="bg-white p-6 rounded-lg shadow-lg mb-6">
+    <h3 class="text-lg font-semibold text-gray-800 mb-4">Новое обращение</h3>
+    <form (ngSubmit)="submitTicket()">
+      <div class="mb-4">
+        <label for="subject" class="block text-gray-700 font-medium mb-2">Тема обращения</label>
+        <input type="text" id="subject" [(ngModel)]="newTicket.subject" name="subject" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Кратко опишите проблему">
+      </div>
+      <div class="mb-4">
+        <label for="category" class="block text-gray-700 font-medium mb-2">Категория</label>
+        <select id="category" [(ngModel)]="newTicket.category" name="category" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="">Выберите категорию</option>
+          <option value="technical">Технические проблемы</option>
+          <option value="payment">Вопросы по оплате</option>
+          <option value="delivery">Доставка</option>
+          <option value="other">Другое</option>
+        </select>
+      </div>
+      <div class="mb-4">
+        <label for="description" class="block text-gray-700 font-medium mb-2">Описание проблемы</label>
+        <textarea id="description" [(ngModel)]="newTicket.description" name="description" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Подробно опишите вашу проблему"></textarea>
+      </div>
+      <div class="flex justify-end space-x-3">
+        <button type="button" (click)="showNewTicketForm = false" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Отмена</button>
+        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Отправить</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="p-4 border-b bg-gray-50">
+      <h3 class="text-lg font-semibold text-gray-800">Ваши обращения</h3>
+    </div>
+    <div class="divide-y">
+      <div *ngFor="let ticket of tickets" class="p-4 hover:bg-gray-50 cursor-pointer" (click)="selectTicket(ticket)">
+        <div class="flex justify-between items-start">
+          <div class="flex-1">
+            <div class="flex items-center space-x-3 mb-2">
+              <h4 class="font-semibold text-gray-800">{{ ticket.subject }}</h4>
+              <span [ngClass]="getStatusClass(ticket.status)" class="text-xs font-semibold px-2 py-1 rounded-full">
+                {{ getStatusLabel(ticket.status) }}
+              </span>
+            </div>
+            <p class="text-sm text-gray-600 mb-2">{{ ticket.description }}</p>
+            <div class="flex items-center text-xs text-gray-500 space-x-4">
+              <span>Обращение #{{ ticket.id }}</span>
+              <span>{{ ticket.category }}</span>
+              <span>{{ ticket.date }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

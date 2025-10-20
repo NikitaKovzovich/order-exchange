@@ -1,0 +1,118 @@
+<div class="bg-white p-6 rounded-lg shadow mb-6">
+  <div class="flex justify-between items-center">
+    <div>
+      <h2 class="text-2xl font-bold">Уведомления</h2>
+      <p class="text-gray-600 mt-1">
+        <span *ngIf="unreadCount > 0" class="text-red-600 font-semibold">{{ unreadCount }}</span>
+        <span *ngIf="unreadCount > 0"> непрочитанных</span>
+        <span *ngIf="unreadCount === 0">Все уведомления прочитаны</span>
+      </p>
+    </div>
+    <button
+      *ngIf="unreadCount > 0"
+      (click)="markAllAsRead()"
+      class="px-4 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+      Отметить все как прочитанные
+    </button>
+  </div>
+</div>
+
+<!-- Фильтры -->
+<div class="bg-white p-4 rounded-lg shadow mb-6">
+  <div class="flex flex-wrap gap-2">
+    <button
+      (click)="applyFilter('all')"
+      [ngClass]="filter === 'all' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+      class="px-4 py-2 rounded-md text-sm font-medium transition-colors">
+      Все
+    </button>
+    <button
+      (click)="applyFilter('unread')"
+      [ngClass]="filter === 'unread' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+      class="px-4 py-2 rounded-md text-sm font-medium transition-colors">
+      Непрочитанные
+    </button>
+    <button
+      (click)="applyFilter('order')"
+      [ngClass]="filter === 'order' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+      class="px-4 py-2 rounded-md text-sm font-medium transition-colors">
+      Заказы
+    </button>
+    <button
+      (click)="applyFilter('payment')"
+      [ngClass]="filter === 'payment' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+      class="px-4 py-2 rounded-md text-sm font-medium transition-colors">
+      Платежи
+    </button>
+    <button
+      (click)="applyFilter('supplier')"
+      [ngClass]="filter === 'supplier' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+      class="px-4 py-2 rounded-md text-sm font-medium transition-colors">
+      Поставщики
+    </button>
+    <button
+      (click)="applyFilter('message')"
+      [ngClass]="filter === 'message' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+      class="px-4 py-2 rounded-md text-sm font-medium transition-colors">
+      Сообщения
+    </button>
+  </div>
+</div>
+
+<!-- Список уведомлений -->
+<div class="space-y-3">
+  <div
+    *ngFor="let notification of filteredNotifications"
+    [ngClass]="notification.read ? 'bg-white' : 'bg-blue-50'"
+    class="rounded-lg shadow hover:shadow-md transition-shadow">
+    <a
+      [href]="notification.link"
+      (click)="markAsRead(notification.id)"
+      class="block p-6">
+      <div class="flex items-start">
+        <!-- Иконка -->
+        <div [ngClass]="getTypeColor(notification.type)" class="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center mr-4">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="getIconPath(notification.icon)"/>
+          </svg>
+        </div>
+
+        <!-- Контент -->
+        <div class="flex-1 min-w-0">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <p class="text-lg font-semibold text-gray-900" [ngClass]="!notification.read ? 'font-bold' : ''">
+                {{ notification.title }}
+              </p>
+              <p class="text-sm text-gray-600 mt-1">{{ notification.message }}</p>
+              <p class="text-xs text-gray-400 mt-2">{{ notification.time }}</p>
+            </div>
+
+            <!-- Индикатор непрочитанного -->
+            <div *ngIf="!notification.read" class="ml-4 flex-shrink-0">
+              <div class="w-3 h-3 bg-blue-600 rounded-full"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Кнопка удаления -->
+        <button
+          (click)="deleteNotification(notification.id); $event.preventDefault(); $event.stopPropagation()"
+          class="ml-4 flex-shrink-0 text-gray-400 hover:text-red-600 transition-colors">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+        </button>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- Пустое состояние -->
+<div *ngIf="filteredNotifications.length === 0" class="bg-white p-12 rounded-lg shadow text-center">
+  <svg class="mx-auto h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+  </svg>
+  <h3 class="mt-4 text-lg font-medium text-gray-900">Уведомлений нет</h3>
+  <p class="mt-2 text-sm text-gray-500">У вас пока нет уведомлений в этой категории</p>
+</div>

@@ -1,0 +1,132 @@
+<div class="bg-white p-6 rounded-lg shadow mb-6">
+  <div class="flex justify-between items-center">
+    <div>
+      <a routerLink="/retail/suppliers" class="text-indigo-600 hover:text-indigo-800 text-sm mb-2 inline-block">
+        ← Вернуться к поставщикам
+      </a>
+      <h2 class="text-2xl font-bold">Каталог: {{ supplierName }}</h2>
+      <p class="text-gray-600 mt-2">Выберите товары для заказа</p>
+    </div>
+    <div *ngIf="getTotalItems() > 0" class="text-right">
+      <p class="text-sm text-gray-600">Товаров в корзине: <span class="font-semibold">{{ getTotalItems() }}</span></p>
+      <p class="text-lg font-bold text-indigo-600">{{ getTotalAmount() }} BYN</p>
+      <a routerLink="/retail/cart" class="mt-2 inline-block px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+        Перейти к оформлению
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Поиск и фильтры -->
+<div class="bg-white p-6 rounded-lg shadow mb-6">
+  <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+    <div class="md:col-span-2">
+      <label class="block text-sm font-medium text-gray-700 mb-2">Поиск товара</label>
+      <input
+        type="text"
+        [(ngModel)]="searchQuery"
+        (input)="applyFilters()"
+        placeholder="Введите название товара..."
+        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-2">Категория</label>
+      <select
+        [(ngModel)]="selectedCategory"
+        (change)="applyFilters()"
+        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+        <option *ngFor="let category of categories" [value]="category">{{ category }}</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-2">Цена от (BYN)</label>
+      <input
+        type="number"
+        [(ngModel)]="minPrice"
+        (input)="applyFilters()"
+        placeholder="0"
+        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-2">Цена до (BYN)</label>
+      <input
+        type="number"
+        [(ngModel)]="maxPrice"
+        (input)="applyFilters()"
+        placeholder="1000"
+        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+    </div>
+  </div>
+
+  <div class="mt-4">
+    <button
+      (click)="resetFilters()"
+      class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+      Сбросить фильтры
+    </button>
+    <span class="ml-4 text-sm text-gray-600">Найдено товаров: {{ filteredProducts.length }}</span>
+  </div>
+</div>
+
+<!-- Список товаров -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+  <div *ngFor="let product of filteredProducts" class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
+    <div class="h-48 bg-gray-200 rounded-t-lg flex items-center justify-center">
+      <svg class="h-20 w-20 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+      </svg>
+    </div>
+
+    <div class="p-4">
+      <h3 class="text-lg font-semibold text-gray-800 mb-1">{{ product.name }}</h3>
+      <p class="text-sm text-gray-500 mb-2">{{ product.category }}</p>
+
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <p class="text-2xl font-bold text-indigo-600">{{ product.price }} BYN</p>
+          <p class="text-xs text-gray-500">за {{ product.unit }}</p>
+        </div>
+        <div class="text-right">
+          <p class="text-sm text-gray-600">В наличии:</p>
+          <p class="text-lg font-semibold" [ngClass]="product.stock < 20 ? 'text-red-600' : 'text-green-600'">
+            {{ product.stock }} {{ product.unit }}
+          </p>
+        </div>
+      </div>
+
+      <div *ngIf="getCartQuantity(product.id) === 0" class="mt-3">
+        <button
+          (click)="addToCart(product.id)"
+          class="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition-colors">
+          Добавить в корзину
+        </button>
+      </div>
+
+      <div *ngIf="getCartQuantity(product.id) > 0" class="flex items-center justify-between mt-3">
+        <button
+          (click)="removeFromCart(product.id)"
+          class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors">
+          -
+        </button>
+        <span class="text-lg font-semibold">{{ getCartQuantity(product.id) }} {{ product.unit }}</span>
+        <button
+          (click)="addToCart(product.id)"
+          class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors">
+          +
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="filteredProducts.length === 0" class="bg-white p-12 rounded-lg shadow text-center">
+  <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+  </svg>
+  <h3 class="mt-4 text-lg font-medium text-gray-900">Товары не найдены</h3>
+  <p class="mt-2 text-sm text-gray-500">Попробуйте изменить параметры поиска</p>
+</div>
+

@@ -1,0 +1,93 @@
+<div class="flex-1 flex flex-col">
+  <admin-header [title]="'Главная панель'"></admin-header>
+
+  <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div *ngFor="let stat of stats" class="bg-white p-5 rounded-lg shadow flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-500">{{ stat.title }}</p>
+          <p class="text-3xl font-bold text-gray-800">{{ stat.value }}</p>
+          <p [ngClass]="stat.trend === 'up' ? 'text-green-500' : 'text-red-500'" class="text-xs flex items-center mt-1">
+            <svg *ngIf="stat.trend === 'up'" class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd"></path>
+            </svg>
+            <svg *ngIf="stat.trend === 'down'" class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.707-10.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414l-3-3z" clip-rule="evenodd"></path>
+            </svg>
+            {{ stat.change }}
+          </p>
+        </div>
+        <div [ngClass]="stat.colorClass" class="p-3 rounded-full">
+          <svg *ngIf="stat.icon === 'users'" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+          </svg>
+          <svg *ngIf="stat.icon === 'orders'" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+          </svg>
+          <svg *ngIf="stat.icon === 'revenue'" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Заявки и обращения -->
+    <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <!-- Новые заявки на регистрацию -->
+      <div class="bg-white p-6 rounded-lg shadow">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Новые заявки на регистрацию</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left text-gray-500">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+              <tr>
+                <th scope="col" class="px-6 py-3">Компания</th>
+                <th scope="col" class="px-6 py-3">Роль</th>
+                <th scope="col" class="px-6 py-3">Дата заявки</th>
+                <th scope="col" class="px-6 py-3">Действие</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let request of registrationRequests" class="bg-white border-b hover:bg-gray-50">
+                <td class="px-6 py-4 font-medium text-gray-900">{{ request.company }}</td>
+                <td class="px-6 py-4">
+                  <span [ngClass]="request.roleClass" class="text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">
+                    {{ request.role }}
+                  </span>
+                </td>
+                <td class="px-6 py-4">{{ request.date }}</td>
+                <td class="px-6 py-4">
+                  <a [routerLink]="['/admin/verification', request.id]" class="font-medium text-indigo-600 hover:underline">Проверить</a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Последние обращения в поддержку -->
+      <div class="bg-white p-6 rounded-lg shadow">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Последние обращения в поддержку</h3>
+        <ul class="space-y-3">
+          <li *ngFor="let ticket of supportTickets" class="flex justify-between items-center p-3 bg-gray-50 rounded-md">
+            <div>
+              <p class="text-sm font-medium text-gray-900">#{{ ticket.id }}: {{ ticket.title }}</p>
+              <p class="text-xs text-gray-500">от {{ ticket.company }}</p>
+            </div>
+            <span [ngClass]="ticket.statusClass" class="text-xs font-semibold px-2 py-1 rounded-full">
+              {{ ticket.status }}
+            </span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- График динамики регистраций -->
+    <div class="mt-8 bg-white p-6 rounded-lg shadow">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4">Динамика регистраций (за месяц)</h3>
+      <div style="height: 300px;">
+        <canvas #usersChart></canvas>
+      </div>
+    </div>
+  </main>
+</div>

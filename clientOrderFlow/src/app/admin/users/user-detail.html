@@ -1,0 +1,77 @@
+<div class="flex-1 flex flex-col">
+  <admin-header [title]="'Информация о пользователе'"></admin-header>
+
+  <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
+    <div class="mb-4">
+      <a routerLink="/admin/users" class="text-indigo-600 hover:text-indigo-800 flex items-center">
+        <svg class="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Назад к списку
+      </a>
+    </div>
+
+    <div *ngIf="user" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Main Info -->
+      <div class="lg:col-span-2 bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Основная информация</h3>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-600">Название организации</label>
+            <p class="mt-1 text-sm text-gray-900">{{ user.name }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600">Email</label>
+            <p class="mt-1 text-sm text-gray-900">{{ user.email }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600">Телефон</label>
+            <p class="mt-1 text-sm text-gray-900">{{ user.phone }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600">УНП</label>
+            <p class="mt-1 text-sm text-gray-900">{{ user.inn }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600">Адрес</label>
+            <p class="mt-1 text-sm text-gray-900">{{ user.address }}</p>
+          </div>
+        </div>
+
+        <div class="mt-6 pt-6 border-t flex space-x-3">
+          <button (click)="blockUser()" class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">
+            Заблокировать
+          </button>
+          <button (click)="deleteUser()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+            Удалить
+          </button>
+        </div>
+      </div>
+
+      <!-- Side Info -->
+      <div class="space-y-6">
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Статус</h3>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-600">Роль</label>
+              <span class="mt-1 px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                Торговая сеть
+              </span>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-600">Статус аккаунта</label>
+              <span class="mt-1 px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                Активен
+              </span>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-600">Дата регистрации</label>
+              <p class="mt-1 text-sm text-gray-900">{{ user.registeredAt }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+

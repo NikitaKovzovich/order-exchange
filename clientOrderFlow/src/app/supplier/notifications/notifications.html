@@ -1,0 +1,38 @@
+<div class="max-w-4xl mx-auto">
+  <div class="flex justify-between items-center mb-4">
+    <h2 class="text-lg font-semibold text-gray-700">Последние уведомления</h2>
+    <button (click)="markAllAsRead()" class="text-sm text-indigo-600 hover:underline">Отметить все как прочитанные</button>
+  </div>
+
+  <div class="bg-white rounded-lg shadow-sm">
+    <ul class="divide-y divide-gray-200">
+      <li *ngFor="let notification of notifications" class="p-4 hover:bg-gray-50 flex items-start space-x-4">
+        <div class="relative flex-shrink-0">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center" [ngClass]="getIconColor(notification.type)">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path [attr.d]="getIcon(notification.type)"></path>
+            </svg>
+          </div>
+          <span *ngIf="!notification.read" class="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-blue-500 ring-2 ring-white"></span>
+        </div>
+        <div class="flex-1">
+          <p *ngIf="notification.title" class="text-sm text-gray-800 font-medium">{{ notification.title }}</p>
+          <p class="text-sm" [class.text-gray-800]="!notification.read" [class.text-gray-600]="notification.read">{{ notification.message }}</p>
+          <p class="text-xs text-gray-500 mt-1">{{ notification.time }}</p>
+          <button *ngIf="notification.orderId"
+                  (click)="goToOrder(notification.orderId)"
+                  class="mt-2 inline-block px-3 py-1 text-xs font-semibold rounded-md"
+                  [class.bg-indigo-600]="!notification.read"
+                  [class.text-white]="!notification.read"
+                  [class.bg-gray-200]="notification.read"
+                  [class.text-gray-700]="notification.read"
+                  [class.hover:bg-indigo-700]="!notification.read"
+                  [class.hover:bg-gray-300]="notification.read">
+            {{ notification.actionLabel || 'Перейти к заказу' }}
+          </button>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div>
+

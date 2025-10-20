@@ -1,0 +1,173 @@
+<div class="flex-1 flex flex-col">
+  <admin-header [title]="'Проверка заявки #' + requestId"></admin-header>
+
+  <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
+    <div *ngIf="request">
+      <!-- Back Link -->
+      <div class="mb-6">
+        <a routerLink="/admin/verification" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+          ← Вернуться к списку заявок
+        </a>
+      </div>
+
+      <!-- Header Info -->
+      <div class="bg-white p-6 rounded-lg shadow-sm mb-6">
+        <div class="flex justify-between items-start">
+          <div>
+            <h2 class="text-2xl font-bold text-gray-900">{{ request.companyName }}</h2>
+            <p class="text-gray-600 mt-1">Заявка от {{ request.submittedAt }}</p>
+          </div>
+          <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
+            {{ request.role }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="bg-white p-6 rounded-lg shadow-sm mb-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Решение по заявке</h3>
+        <div class="flex space-x-4">
+          <button
+            (click)="approve()"
+            class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+            </svg>
+            Одобрить
+          </button>
+          <button
+            (click)="openRejectModal()"
+            class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+            </svg>
+            Отклонить
+          </button>
+        </div>
+      </div>
+
+      <!-- Details Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Main Info -->
+          <div class="bg-white p-6 rounded-lg shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-800 mb-6 border-b pb-4">Основная информация</h3>
+            <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 text-sm">
+              <div class="col-span-2">
+                <dt class="font-medium text-gray-500">Полное юридическое наименование</dt>
+                <dd class="mt-1 text-gray-900 font-semibold">{{ request.companyName }}</dd>
+              </div>
+              <div>
+                <dt class="font-medium text-gray-500">Форма собственности</dt>
+                <dd class="mt-1 text-gray-900">{{ request.legalForm }}</dd>
+              </div>
+              <div>
+                <dt class="font-medium text-gray-500">УНП</dt>
+                <dd class="mt-1 text-gray-900">{{ request.taxId }}</dd>
+              </div>
+              <div>
+                <dt class="font-medium text-gray-500">Дата регистрации</dt>
+                <dd class="mt-1 text-gray-900">{{ request.regDate }}</dd>
+              </div>
+              <div>
+                <dt class="font-medium text-gray-500">Контактный Email</dt>
+                <dd class="mt-1 text-gray-900">{{ request.email }}</dd>
+              </div>
+              <div class="col-span-2">
+                <dt class="font-medium text-gray-500">Юридический адрес</dt>
+                <dd class="mt-1 text-gray-900">{{ request.legalAddress }}</dd>
+              </div>
+              <div class="col-span-2">
+                <dt class="font-medium text-gray-500">Почтовый адрес</dt>
+                <dd class="mt-1 text-gray-900">{{ request.postalAddress }}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <!-- Financials -->
+          <div class="bg-white p-6 rounded-lg shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-800 mb-6 border-b pb-4">Ответственные лица и реквизиты</h3>
+            <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 text-sm">
+              <div>
+                <dt class="font-medium text-gray-500">ФИО Руководителя</dt>
+                <dd class="mt-1 text-gray-900">{{ request.directorName }}</dd>
+              </div>
+              <div>
+                <dt class="font-medium text-gray-500">ФИО Главного бухгалтера</dt>
+                <dd class="mt-1 text-gray-900">{{ request.accountantName }}</dd>
+              </div>
+              <div class="col-span-2">
+                <dt class="font-medium text-gray-500">Название банка</dt>
+                <dd class="mt-1 text-gray-900">{{ request.bankName }}</dd>
+              </div>
+              <div>
+                <dt class="font-medium text-gray-500">БИК</dt>
+                <dd class="mt-1 text-gray-900">{{ request.bankBic }}</dd>
+              </div>
+              <div>
+                <dt class="font-medium text-gray-500">Расчетный счет</dt>
+                <dd class="mt-1 text-gray-900">{{ request.bankAccount }}</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+
+        <!-- Documents -->
+        <div class="bg-white p-6 rounded-lg shadow-sm">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Приложенные документы</h3>
+          <ul class="space-y-3">
+            <li *ngFor="let doc of request.documents" class="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+              <div class="flex items-center">
+                <svg class="w-6 h-6 mr-3 flex-shrink-0" [ngClass]="doc.type === 'pdf' ? 'text-red-500' : doc.type === 'image' ? 'text-blue-500' : 'text-gray-500'" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" [attr.d]="getDocumentIcon(doc.type)" clip-rule="evenodd"></path>
+                </svg>
+                <span class="text-sm font-medium text-gray-700">{{ doc.name }}</span>
+              </div>
+              <button
+                (click)="downloadDocument(doc.name)"
+                class="text-indigo-600 hover:text-indigo-800 font-semibold text-sm">
+                {{ doc.type === 'image' ? 'Просмотр' : 'Скачать' }}
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Rejection Modal -->
+<div *ngIf="showRejectModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" (click)="closeRejectModal()">
+  <div class="bg-white rounded-lg shadow-xl w-full max-w-md m-4" (click)="$event.stopPropagation()">
+    <div class="p-6">
+      <div class="flex justify-between items-center">
+        <h3 class="text-lg font-bold text-gray-800">Отклонение заявки</h3>
+        <button (click)="closeRejectModal()" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+          </svg>
+        </button>
+      </div>
+      <p class="text-sm text-gray-600 mt-2">Пожалуйста, укажите причину отклонения. Компания получит уведомление с этим текстом.</p>
+      <div class="mt-4">
+        <textarea
+          [(ngModel)]="rejectionReason"
+          rows="4"
+          class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="Например: Некорректно указан УНП."></textarea>
+      </div>
+    </div>
+    <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+      <button
+        (click)="closeRejectModal()"
+        class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">
+        Отмена
+      </button>
+      <button
+        (click)="confirmRejection()"
+        class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
+        Подтвердить отклонение
+      </button>
+    </div>
+  </div>
+</div>

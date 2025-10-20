@@ -1,0 +1,154 @@
+<div class="flex-1 flex flex-col">
+  <admin-header [title]="'Системные справочники'"></admin-header>
+
+  <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
+    <!-- Tabs -->
+    <div class="border-b border-gray-200 mb-6">
+      <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+        <a
+          (click)="setActiveTab('units')"
+          [ngClass]="activeTab === 'units' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+          class="whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm cursor-pointer">
+          Единицы измерения
+        </a>
+        <a
+          (click)="setActiveTab('vat')"
+          [ngClass]="activeTab === 'vat' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+          class="whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm cursor-pointer">
+          Ставки НДС
+        </a>
+      </nav>
+    </div>
+
+    <!-- Units Tab -->
+    <div *ngIf="activeTab === 'units'">
+      <div class="flex justify-end mb-6">
+        <button
+          (click)="openEditModal()"
+          class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700 flex items-center">
+          <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+          </svg>
+          Добавить единицу
+        </button>
+      </div>
+      <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left text-gray-500">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+              <tr>
+                <th scope="col" class="px-6 py-3">Значение</th>
+                <th scope="col" class="px-6 py-3 text-right">Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let unit of units" class="bg-white border-b hover:bg-gray-50">
+                <td class="px-6 py-4 font-medium text-gray-900">{{ unit.value }}</td>
+                <td class="px-6 py-4 text-right space-x-4">
+                  <button
+                    (click)="openEditModal(unit)"
+                    class="font-medium text-indigo-600 hover:underline">
+                    Редактировать
+                  </button>
+                  <button
+                    (click)="openDeleteModal(unit)"
+                    class="font-medium text-red-600 hover:underline">
+                    Удалить
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- VAT Tab -->
+    <div *ngIf="activeTab === 'vat'">
+      <div class="flex justify-end mb-6">
+        <button
+          (click)="openEditModal()"
+          class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700 flex items-center">
+          <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+          </svg>
+          Добавить ставку
+        </button>
+      </div>
+      <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left text-gray-500">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+              <tr>
+                <th scope="col" class="px-6 py-3">Значение</th>
+                <th scope="col" class="px-6 py-3 text-right">Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let vat of vatRates" class="bg-white border-b hover:bg-gray-50">
+                <td class="px-6 py-4 font-medium text-gray-900">{{ vat.value }}</td>
+                <td class="px-6 py-4 text-right space-x-4">
+                  <button
+                    (click)="openEditModal(vat)"
+                    class="font-medium text-indigo-600 hover:underline">
+                    Редактировать
+                  </button>
+                  <button
+                    (click)="openDeleteModal(vat)"
+                    class="font-medium text-red-600 hover:underline">
+                    Удалить
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Edit/Add Modal -->
+  <div *ngIf="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" (click)="closeEditModal()">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md m-4" (click)="$event.stopPropagation()">
+      <div class="p-6">
+        <h3 class="text-lg font-bold text-gray-800">
+          {{ editingItem ? 'Редактировать' : 'Добавить' }} {{ activeTab === 'units' ? 'единицу' : 'ставку' }}
+        </h3>
+        <div class="mt-4">
+          <label for="value_name" class="block text-sm font-medium text-gray-700">Значение</label>
+          <input
+            id="value_name"
+            type="text"
+            [(ngModel)]="editValue"
+            class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            [placeholder]="activeTab === 'units' ? 'Например: шт' : 'Например: 20%'">
+        </div>
+      </div>
+      <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+        <button (click)="closeEditModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Отмена</button>
+        <button (click)="saveItem()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Modal -->
+  <div *ngIf="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" (click)="closeDeleteModal()">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md m-4" (click)="$event.stopPropagation()">
+      <div class="p-6">
+        <div class="flex items-center">
+          <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+            <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </div>
+          <h3 class="ml-4 text-lg font-bold text-gray-800">Удалить элемент?</h3>
+        </div>
+        <p class="text-sm text-gray-600 mt-4">Вы уверены, что хотите удалить это значение? Это действие нельзя отменить.</p>
+      </div>
+      <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+        <button (click)="closeDeleteModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Отмена</button>
+        <button (click)="confirmDelete()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold">Удалить</button>
+      </div>
+    </div>
+  </div>
+</div>
