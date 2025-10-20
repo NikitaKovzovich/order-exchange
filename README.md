@@ -146,9 +146,13 @@
 
 ### Примеры экранов UI
 
-#### **Главная страница**
+#### **Общие страницы**
 
+- главная страница
 <img width="3868" height="4016" alt="главная" src="https://github.com/user-attachments/assets/e00fbbf8-4e35-463b-8581-bd3f5cae128a" />
+
+- авторизация
+<img width="3212" height="2000" alt="авторизация" src="https://github.com/user-attachments/assets/85136ae9-4119-4ba0-95c2-ed9d95a31407" />
 
 #### **Примеры экранов UI для роли "Поставщик"**
 
@@ -170,6 +174,20 @@
 - отказ в регистрации
   <img width="3212" height="2000" alt="отказ в регистрации" src="https://github.com/user-attachments/assets/df9c25f5-99e4-45c1-b4c5-db0eb436f3a9" />
 
+- главная панель
+<img width="3212" height="2000" alt="главная панель" src="https://github.com/user-attachments/assets/99f2cfea-701f-44a7-af30-5abe73ae2dbf" />
+
+- создание кааталога
+<img width="3212" height="2000" alt="создание кааталога" src="https://github.com/user-attachments/assets/9b342ee1-3dcd-439a-8f8e-bad4c4f83521" />
+
+- добавление товара шаг 1
+<img width="3212" height="2000" alt="добавление товара шаг 1" src="https://github.com/user-attachments/assets/6ad0f887-7b89-4ff0-b20b-f2fa24b7e71e" />
+
+- добавление товара шаг 2
+<img width="3212" height="2000" alt="добавление товара шаг 2" src="https://github.com/user-attachments/assets/452fcf55-68ef-41f1-9452-e8dfe6ea2439" />
+
+- добавление товара шаг 3
+<img width="3212" height="2000" alt="добавление товара шаг 3" src="https://github.com/user-attachments/assets/97d5041a-ff4e-47b5-b75e-ca15374d1daa" />
 
 #### **Примеры экранов UI для роли "Торговая сеть"**
 
