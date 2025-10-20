@@ -1,4 +1,4 @@
-# **Программное средство автоматизации обмена заказами между торговыми сетями и поставщиками**
+<img width="3212" height="1116" alt="уведомления" src="https://github.com/user-attachments/assets/556ca450-992a-4313-8516-0b92abcbeb99" /># **Программное средство автоматизации обмена заказами между торговыми сетями и поставщиками**
 
 ---
 
@@ -323,9 +323,46 @@
 - журнал приемки
 <img width="3212" height="1892" alt="журнал приемки" src="https://github.com/user-attachments/assets/3a0fd7cc-25e4-4e25-aff1-0ee4f8be27a0" />
 
-
-
 #### **Примеры экранов UI для роли "Администратор"**
+
+- главная панель
+<img width="3212" height="2312" alt="главная панель" src="https://github.com/user-attachments/assets/e384647b-6ac4-4abb-a0e8-a7bcb522f0bc" />
+
+- заявки на верификацию
+<img width="3212" height="1216" alt="заявки на верификацию" src="https://github.com/user-attachments/assets/9ac4fac9-5d84-4fd9-a3ff-af11648c17a0" />
+
+- заявка на верификацию
+<img width="3212" height="2392" alt="заявка на верификацию" src="https://github.com/user-attachments/assets/54d2c675-3f11-44ac-aa61-0e1fe9aa5c38" />
+
+- управление пользователями
+<img width="3212" height="1220" alt="управление пользователями" src="https://github.com/user-attachments/assets/025d8135-8f7f-4d37-a1b1-177b8110338a" />
+
+- управление пользователем
+<img width="3212" height="1236" alt="управление пользователем" src="https://github.com/user-attachments/assets/08d5efb2-db29-450e-a966-51cee2323970" />
+
+- управление товарами
+<img width="3212" height="1236" alt="управление товарами" src="https://github.com/user-attachments/assets/222f7d3d-f43a-4bd3-9d27-936e4b7a4ab6" />
+
+- управление категориями
+<img width="3212" height="1236" alt="управление категориями" src="https://github.com/user-attachments/assets/36a523da-167e-42c9-8702-31c7cc5121d1" />
+
+- управление ед. измерения
+<img width="3212" height="1236" alt="управление ед  измерения" src="https://github.com/user-attachments/assets/8b10ecdf-abee-45f9-b5f7-d71e192a03a7" />
+
+- управление ставками НДС
+<img width="3212" height="1236" alt="управление ставками НДС" src="https://github.com/user-attachments/assets/d69d815c-3a83-4e1e-ad97-6afbdd0ff3b5" />
+
+- аналитика
+<img width="3212" height="2744" alt="аналитика" src="https://github.com/user-attachments/assets/2edf614a-7fb6-4221-9828-709a4d845735" />
+
+- служба поддержки
+<img width="3212" height="1116" alt="служба поддержки" src="https://github.com/user-attachments/assets/b4001e99-0a52-4de7-aa69-72a94e6c026c" />
+
+- обращение в службу поддержки
+<img width="3212" height="1116" alt="обращение в службу поддержки" src="https://github.com/user-attachments/assets/5937f3bd-d6db-4e38-a1df-1a5b39597e6d" />
+
+- уведомления
+<img width="3212" height="1116" alt="уведомления" src="https://github.com/user-attachments/assets/0e8c144a-2f6a-4fe6-8a4a-4829a9861063" />
 
 ---
 
