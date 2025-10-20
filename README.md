@@ -242,6 +242,43 @@
 
 #### **Примеры экранов UI для роли "Торговая сеть"**
 
+- регистрация шаг 1
+<img width="3212" height="2216" alt="регистрация шаг 1" src="https://github.com/user-attachments/assets/e23d67e2-e339-4d80-b293-6c71313c58b2" />
+
+-регистрация шаг 2
+<img width="3212" height="2216" alt="регистрация шаг 2" src="https://github.com/user-attachments/assets/8eb92203-84d9-4cb8-a1c5-bce4601a575a" />
+
+- регистрация шаг 3
+<img width="3212" height="2216" alt="регистрация шаг 3" src="https://github.com/user-attachments/assets/221f9089-0335-41c5-997d-f27ee522eea8" />
+
+- регистрация шаг 4
+<img width="3212" height="2216" alt="регистрация шаг 4" src="https://github.com/user-attachments/assets/982e8432-e4e9-4818-ab98-ada3b14c982e" />
+
+- регистрация шаг 5
+<img width="3212" height="2216" alt="регистрация шаг 5" src="https://github.com/user-attachments/assets/89c1185d-5b70-41c2-af32-ade4a9c8bf5c" />
+
+- отказ в регистрации
+<img width="3212" height="2000" alt="отказ в регистрации" src="https://github.com/user-attachments/assets/5e3ad0fb-ba5c-4bc7-a3e0-e3b0e95c842b" />
+
+- главная панель
+<img width="1919" height="940" alt="главная панель" src="https://github.com/user-attachments/assets/b4e0c1d2-a6ad-46e1-9b34-8228aabb5228" />
+
+- каталог товаров
+<img width="3212" height="1692" alt="каталог товаров" src="https://github.com/user-attachments/assets/243a4197-f308-4e49-be07-f36ea5e045fe" />
+
+- база поставщиков
+<img width="3212" height="1692" alt="база поставщиков" src="https://github.com/user-attachments/assets/51d0e98f-4fbc-4019-ad9d-f5c9aa5e67e2" />
+
+- каталог поставщика
+<img width="3212" height="1692" alt="каталог поставщика" src="https://github.com/user-attachments/assets/173bd374-e147-4d76-a8a3-e3f21940ca93" />
+
+- формирование заказа
+<img width="3212" height="2164" alt="формирование заказа" src="https://github.com/user-attachments/assets/fbe39bca-7454-4015-8a3e-afb9791742b1" />
+
+- заказы
+<img width="3212" height="2164" alt="заказы" src="https://github.com/user-attachments/assets/6cdc070c-2a05-425a-9d1a-8feadfe38bac" />
+
+
 #### **Примеры экранов UI для роли "Администратор"**
 
 ---
