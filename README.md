@@ -1,4 +1,4 @@
-# **Программное средство автоматизации обмена заказами между торговыми сетями и поставщиками**
+<img width="874" height="732" alt="user_db" src="https://github.com/user-attachments/assets/d3977b31-d8bb-43d3-ab80-56bbe3751c85" /># **Программное средство автоматизации обмена заказами между торговыми сетями и поставщиками**
 
 ---
 
@@ -120,12 +120,16 @@
 ### Схема данных
 
 #### **user_db**
+<img width="874" height="732" alt="user_db" src="https://github.com/user-attachments/assets/0090c272-ca78-4280-b63a-9378239912e0" />
 
 #### **catalog_db**
+<img width="734" height="673" alt="catalog_db" src="https://github.com/user-attachments/assets/8baad1c2-7542-4a20-8fb7-78660c3ae508" />
 
 #### **order_db**
+<img width="649" height="527" alt="order_db" src="https://github.com/user-attachments/assets/b4325af1-443c-4a0d-ba05-f8e3aba43e1c" />
 
 #### **chat_db**
+<img width="413" height="420" alt="chat_db" src="https://github.com/user-attachments/assets/a3a517fa-4093-4758-a101-349d5c77f56c" />
 
 ---
 
