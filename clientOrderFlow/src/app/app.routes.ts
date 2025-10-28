@@ -1,11 +1,16 @@
 import { Routes } from '@angular/router';
 import { Landing } from './landing/landing';
+import { Login } from './auth/login/login';
 import { adminRoutes } from './admin/admin-routing-module';
 
 export const routes: Routes = [
   {
     path: '',
     component: Landing
+  },
+  {
+    path: 'login',
+    component: Login
   },
   {
     path: 'admin',

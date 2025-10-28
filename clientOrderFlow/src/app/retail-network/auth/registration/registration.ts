@@ -17,6 +17,7 @@ interface DeliveryAddress {
 export class Registration {
   currentStep: number = 1;
   showSuccess: boolean = false;
+  userType: 'supplier' | 'retail' | '' = '';
 
   formData = {
     email: '',
@@ -31,8 +32,6 @@ export class Registration {
     contactPhone: '',
     logo: null as File | null,
     registrationCert: null as File | null,
-    digitalSignature: null as File | null,
-    stamp: null as File | null,
     termsAccepted: false
   };
 
@@ -40,10 +39,36 @@ export class Registration {
     { id: 1, address: '' }
   ];
 
-  constructor(private router: Router) {}
+  constructor(private router: Router) {
+    // Проверяем, нужно ли начать со 2-го шага
+    const navigation = this.router.getCurrentNavigation();
+    if (navigation?.extras?.state?.['startFromStep2']) {
+      this.currentStep = 2;
+      this.userType = 'retail';
+    }
+  }
+
+  selectUserType(type: 'supplier' | 'retail') {
+    this.userType = type;
+  }
 
   nextStep() {
-    if (this.currentStep < 4) {
+    // На первом шаге перенаправляем на соответствующую форму регистрации
+    if (this.currentStep === 1) {
+      if (!this.userType) {
+        alert('Пожалуйста, выберите тип регистрации');
+        return;
+      }
+
+      if (this.userType === 'supplier') {
+        // Перенаправляем на форму поставщика, начиная со 2-го шага
+        this.router.navigate(['/supplier/auth/registration'], { state: { startFromStep2: true } });
+        return;
+      }
+      // Если выбрана торговая сеть, просто переходим на следующий шаг
+    }
+
+    if (this.currentStep < 5) {
       this.currentStep++;
     } else {
       this.onSubmit();

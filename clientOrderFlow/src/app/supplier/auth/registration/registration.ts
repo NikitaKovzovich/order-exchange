@@ -12,6 +12,7 @@ import { CommonModule } from '@angular/common';
 export class Registration {
   currentStep: number = 1;
   showSuccess: boolean = false;
+  userType: 'supplier' | 'retail' | '' = '';
 
   formData = {
     email: '',
@@ -30,19 +31,42 @@ export class Registration {
     bankName: '',
     bankBic: '',
     bankAccount: '',
-    corrAccount: '',
     paymentTerms: 'prepaid',
     logo: null as File | null,
     registrationCert: null as File | null,
-    digitalSignature: null as File | null,
-    stamp: null as File | null,
     termsAccepted: false
   };
 
-  constructor(private router: Router) {}
+  constructor(private router: Router) {
+    // Проверяем, нужно ли начать со 2-го шага
+    const navigation = this.router.getCurrentNavigation();
+    if (navigation?.extras?.state?.['startFromStep2']) {
+      this.currentStep = 2;
+      this.userType = 'supplier';
+    }
+  }
+
+  selectUserType(type: 'supplier' | 'retail') {
+    this.userType = type;
+  }
 
   nextStep() {
-    if (this.currentStep < 4) {
+    // На первом шаге перенаправляем на соответствующую форму регистрации
+    if (this.currentStep === 1) {
+      if (!this.userType) {
+        alert('Пожалуйста, выберите тип регистрации');
+        return;
+      }
+
+      if (this.userType === 'retail') {
+        // Перенаправляем на форму торговой сети, начиная со 2-го шага
+        this.router.navigate(['/retail/auth/registration'], { state: { startFromStep2: true } });
+        return;
+      }
+      // Если выбран поставщик, просто переходим на следующий шаг
+    }
+
+    if (this.currentStep < 5) {
       this.currentStep++;
     } else {
       this.onSubmit();

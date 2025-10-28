@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { Login } from './auth/login/login';
 import { Registration } from './auth/registration/registration';
 import { Rejection } from './auth/rejection/rejection';
 import { Layout } from './shared/layout/layout';
@@ -23,10 +22,9 @@ const routes: Routes = [
   {
     path: 'auth',
     children: [
-      { path: 'login', component: Login },
       { path: 'registration', component: Registration },
       { path: 'rejection', component: Rejection },
-      { path: '', redirectTo: 'login', pathMatch: 'full' }
+      { path: '', redirectTo: 'registration', pathMatch: 'full' }
     ]
   },
   {

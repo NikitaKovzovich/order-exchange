@@ -1,0 +1,123 @@
+<div class="gradient-bg flex flex-col min-h-screen">
+  <!-- Header -->
+  <header class="bg-white shadow-sm">
+    <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+      <a routerLink="/" class="text-2xl font-bold text-gray-800">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block mr-2 text-indigo-600">
+          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+        OrderFlow
+      </a>
+      <div>
+        <span class="text-gray-600">Уже есть аккаунт?</span>
+        <a routerLink="/" class="ml-2 text-indigo-600 font-semibold hover:underline">Войти</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Registration Type Selection -->
+  <main class="flex-grow container mx-auto px-6 py-12 flex items-center justify-center">
+    <div class="bg-white p-8 md:p-12 rounded-xl shadow-2xl w-full max-w-4xl">
+      <h2 class="text-3xl font-bold text-center mb-2">Регистрация в OrderFlow</h2>
+      <p class="text-center text-gray-600 mb-12">Выберите тип вашей организации для продолжения регистрации</p>
+
+      <div class="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+        <!-- Supplier Card -->
+        <div class="border-2 border-gray-200 rounded-xl p-8 hover:border-indigo-500 hover:shadow-lg transition-all cursor-pointer group" (click)="selectUserType('supplier')">
+          <div class="text-center">
+            <div class="bg-indigo-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-indigo-200 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600">
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                <line x1="3" x2="21" y1="6" y2="6"></line>
+                <path d="M16 10a4 4 0 0 1-8 0"></path>
+              </svg>
+            </div>
+            <h3 class="text-2xl font-bold mb-3 text-gray-800">Поставщик</h3>
+            <p class="text-gray-600 mb-6">Я производитель или дистрибьютор продукции и хочу поставлять товары торговым сетям</p>
+            <ul class="text-left text-sm text-gray-600 space-y-2 mb-6">
+              <li class="flex items-start">
+                <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Управление каталогом продукции</span>
+              </li>
+              <li class="flex items-start">
+                <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Обработка заказов от сетей</span>
+              </li>
+              <li class="flex items-start">
+                <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Автоматическая генерация УПД</span>
+              </li>
+              <li class="flex items-start">
+                <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Аналитика продаж</span>
+              </li>
+            </ul>
+            <button class="w-full bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-700 font-semibold transition-colors">
+              Зарегистрироваться как Поставщик
+            </button>
+          </div>
+        </div>
+
+        <!-- Retail Network Card -->
+        <div class="border-2 border-gray-200 rounded-xl p-8 hover:border-indigo-500 hover:shadow-lg transition-all cursor-pointer group" (click)="selectUserType('retail')">
+          <div class="text-center">
+            <div class="bg-indigo-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-indigo-200 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600">
+                <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"></path>
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"></path>
+                <path d="M2 7h20"></path>
+                <path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12v0a2 2 0 0 1-2-2V7"></path>
+              </svg>
+            </div>
+            <h3 class="text-2xl font-bold mb-3 text-gray-800">Торговая сеть</h3>
+            <p class="text-gray-600 mb-6">Я представляю розничную сеть и хочу заказывать товары у поставщиков</p>
+            <ul class="text-left text-sm text-gray-600 space-y-2 mb-6">
+              <li class="flex items-start">
+                <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Доступ к каталогу поставщиков</span>
+              </li>
+              <li class="flex items-start">
+                <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Быстрое оформление заказов</span>
+              </li>
+              <li class="flex items-start">
+                <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Управление точками доставки</span>
+              </li>
+              <li class="flex items-start">
+                <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Контроль закупок и остатков</span>
+              </li>
+            </ul>
+            <button class="w-full bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-700 font-semibold transition-colors">
+              Зарегистрироваться как Торговая сеть
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-12 text-center text-sm text-gray-600">
+        <p>Регистрируясь, вы соглашаетесь с <a href="#" class="text-indigo-600 hover:underline">условиями использования</a> и <a href="#" class="text-indigo-600 hover:underline">политикой конфиденциальности</a></p>
+      </div>
+    </div>
+  </main>
+</div>
+

@@ -28,8 +28,7 @@ export class Landing {
   constructor(private router: Router) {}
 
   openLoginModal() {
-    this.showLoginModal = true;
-    this.showRegisterModal = false;
+    this.router.navigate(['/login']);
   }
 
   closeLoginModal() {
@@ -37,8 +36,8 @@ export class Landing {
   }
 
   openRegisterModal() {
-    this.showRegisterModal = true;
-    this.showLoginModal = false;
+    // Перенаправляем на страницу регистрации поставщика, где первый шаг - выбор типа
+    this.router.navigate(['/supplier/auth/registration']);
   }
 
   closeRegisterModal() {

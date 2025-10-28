@@ -3,6 +3,7 @@
 }
 
 .step {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -12,7 +13,6 @@
   padding: 0.5rem 1rem;
   border-radius: 9999px;
   transition: all 0.3s;
-  flex-shrink: 0;
 }
 
 .step.active {
