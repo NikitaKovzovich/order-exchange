@@ -17,7 +17,7 @@ export class Sidebar {
   }
 
   logout() {
-    this.router.navigate(['/admin/auth/login']);
+    this.router.navigate(['/']);
   }
 }
 

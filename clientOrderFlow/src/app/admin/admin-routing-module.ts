@@ -2,16 +2,6 @@ import { Routes } from '@angular/router';
 
 export const adminRoutes: Routes = [
   {
-    path: 'auth',
-    children: [
-      {
-        path: 'login',
-        loadComponent: () => import('./auth/login/login').then(m => m.Login)
-      },
-      { path: '', redirectTo: 'login', pathMatch: 'full' }
-    ]
-  },
-  {
     path: '',
     loadComponent: () => import('./shared/layout/layout').then(m => m.Layout),
     children: [

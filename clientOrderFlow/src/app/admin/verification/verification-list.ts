@@ -28,11 +28,17 @@ export class VerificationList implements OnInit {
   selectedStatus: string = '';
 
   requests: VerificationRequest[] = [
+    // Ожидают проверки
     { id: 1, companyName: 'Молочный Мир', taxId: '190123456', role: 'Поставщик', roleClass: 'bg-green-100 text-green-800', date: '16.10.2025', status: 'Ожидает проверки', statusClass: 'bg-yellow-100 text-yellow-800' },
     { id: 2, companyName: 'Супермаркет "Угол"', taxId: '199876543', role: 'Торговая сеть', roleClass: 'bg-blue-100 text-blue-800', date: '16.10.2025', status: 'Ожидает проверки', statusClass: 'bg-yellow-100 text-yellow-800' },
+    { id: 5, companyName: 'ФруктТорг', taxId: '192345678', role: 'Поставщик', roleClass: 'bg-green-100 text-green-800', date: '15.10.2025', status: 'Ожидает проверки', statusClass: 'bg-yellow-100 text-yellow-800' },
+    // Одобренные
     { id: 3, companyName: 'Продукты Оптом', taxId: '191234567', role: 'Поставщик', roleClass: 'bg-green-100 text-green-800', date: '15.10.2025', status: 'Одобрена', statusClass: 'bg-green-100 text-green-800' },
+    { id: 6, companyName: 'Мясной Двор', taxId: '193456789', role: 'Поставщик', roleClass: 'bg-green-100 text-green-800', date: '14.10.2025', status: 'Одобрена', statusClass: 'bg-green-100 text-green-800' },
+    { id: 7, companyName: 'Сеть Продуктов', taxId: '195678901', role: 'Торговая сеть', roleClass: 'bg-blue-100 text-blue-800', date: '14.10.2025', status: 'Одобрена', statusClass: 'bg-green-100 text-green-800' },
+    // Отклоненные
     { id: 4, companyName: 'Быстрый Магазинчик', taxId: '194567890', role: 'Торговая сеть', roleClass: 'bg-blue-100 text-blue-800', date: '15.10.2025', status: 'Отклонена', statusClass: 'bg-red-100 text-red-800' },
-    { id: 5, companyName: 'ФруктТорг', taxId: '192345678', role: 'Поставщик', roleClass: 'bg-green-100 text-green-800', date: '14.10.2025', status: 'Ожидает проверки', statusClass: 'bg-yellow-100 text-yellow-800' }
+    { id: 8, companyName: 'ТоварыОпт', taxId: '196789012', role: 'Поставщик', roleClass: 'bg-green-100 text-green-800', date: '13.10.2025', status: 'Отклонена', statusClass: 'bg-red-100 text-red-800' }
   ];
 
   filteredRequests: VerificationRequest[] = [...this.requests];

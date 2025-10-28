@@ -14,16 +14,18 @@ export class Login {
   email: string = '';
   password: string = '';
   rememberMe: boolean = false;
+  selectedRole: 'admin' | 'supplier' | 'retail' = 'supplier';
 
   constructor(private router: Router) {}
 
   onSubmit() {
-    console.log('Login attempt:', { email: this.email, password: this.password });
+    console.log('Login attempt:', { email: this.email, password: this.password, role: this.selectedRole });
 
     if (this.email && this.password) {
-      if (this.email.includes('admin')) {
+      // Перенаправление на основе выбранной роли
+      if (this.selectedRole === 'admin') {
         this.router.navigate(['/admin/dashboard']);
-      } else if (this.email.includes('supplier') || this.email.includes('поставщик')) {
+      } else if (this.selectedRole === 'supplier') {
         this.router.navigate(['/supplier/dashboard']);
       } else {
         this.router.navigate(['/retail/dashboard']);
