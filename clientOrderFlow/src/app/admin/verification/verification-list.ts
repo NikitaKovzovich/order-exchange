@@ -3,16 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Header } from '../shared/header/header';
+import { AdminService, VerificationRequest } from '../../services/admin.service';
 
-interface VerificationRequest {
-  id: number;
-  companyName: string;
-  taxId: string;
-  role: string;
+interface RequestDisplay extends VerificationRequest {
   roleClass: string;
-  date: string;
-  status: string;
   statusClass: string;
+  displayDate: string;
 }
 
 @Component({
@@ -27,23 +23,67 @@ export class VerificationList implements OnInit {
   selectedRole: string = '';
   selectedStatus: string = '';
 
-  requests: VerificationRequest[] = [
-    // Ожидают проверки
-    { id: 1, companyName: 'Молочный Мир', taxId: '190123456', role: 'Поставщик', roleClass: 'bg-green-100 text-green-800', date: '16.10.2025', status: 'Ожидает проверки', statusClass: 'bg-yellow-100 text-yellow-800' },
-    { id: 2, companyName: 'Супермаркет "Угол"', taxId: '199876543', role: 'Торговая сеть', roleClass: 'bg-blue-100 text-blue-800', date: '16.10.2025', status: 'Ожидает проверки', statusClass: 'bg-yellow-100 text-yellow-800' },
-    { id: 5, companyName: 'ФруктТорг', taxId: '192345678', role: 'Поставщик', roleClass: 'bg-green-100 text-green-800', date: '15.10.2025', status: 'Ожидает проверки', statusClass: 'bg-yellow-100 text-yellow-800' },
-    // Одобренные
-    { id: 3, companyName: 'Продукты Оптом', taxId: '191234567', role: 'Поставщик', roleClass: 'bg-green-100 text-green-800', date: '15.10.2025', status: 'Одобрена', statusClass: 'bg-green-100 text-green-800' },
-    { id: 6, companyName: 'Мясной Двор', taxId: '193456789', role: 'Поставщик', roleClass: 'bg-green-100 text-green-800', date: '14.10.2025', status: 'Одобрена', statusClass: 'bg-green-100 text-green-800' },
-    { id: 7, companyName: 'Сеть Продуктов', taxId: '195678901', role: 'Торговая сеть', roleClass: 'bg-blue-100 text-blue-800', date: '14.10.2025', status: 'Одобрена', statusClass: 'bg-green-100 text-green-800' },
-    // Отклоненные
-    { id: 4, companyName: 'Быстрый Магазинчик', taxId: '194567890', role: 'Торговая сеть', roleClass: 'bg-blue-100 text-blue-800', date: '15.10.2025', status: 'Отклонена', statusClass: 'bg-red-100 text-red-800' },
-    { id: 8, companyName: 'ТоварыОпт', taxId: '196789012', role: 'Поставщик', roleClass: 'bg-green-100 text-green-800', date: '13.10.2025', status: 'Отклонена', statusClass: 'bg-red-100 text-red-800' }
-  ];
+  requests: RequestDisplay[] = [];
+  filteredRequests: RequestDisplay[] = [];
+  isLoading: boolean = false;
+  errorMessage: string = '';
 
-  filteredRequests: VerificationRequest[] = [...this.requests];
+  constructor(private adminService: AdminService) {}
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.loadRequests();
+  }
+
+  loadRequests() {
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    this.adminService.getVerificationRequests().subscribe({
+      next: (data) => {
+        this.requests = data.map(req => this.mapToDisplay(req));
+        this.filteredRequests = [...this.requests];
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading verification requests:', error);
+        this.isLoading = false;
+        this.errorMessage = error.error?.message || 'Ошибка при загрузке списка заявок';
+      }
+    });
+  }
+
+  private mapToDisplay(req: VerificationRequest): RequestDisplay {
+    const roleClass = this.getRoleClass(req.companyName);
+    const statusClass = this.getStatusClass(req.status);
+    const displayDate = this.formatDate(req.submittedAt);
+
+    return {
+      ...req,
+      roleClass,
+      statusClass,
+      displayDate
+    };
+  }
+
+  private getRoleClass(companyName: string): string {
+    // Определяем тип по названию компании (временно, пока API не возвращает role)
+    // В будущем это должно приходить из API
+    return 'bg-green-100 text-green-800'; // По умолчанию поставщик
+  }
+
+  private getStatusClass(status: string): string {
+    const statusMap: { [key: string]: string } = {
+      'PENDING': 'bg-yellow-100 text-yellow-800',
+      'APPROVED': 'bg-green-100 text-green-800',
+      'REJECTED': 'bg-red-100 text-red-800'
+    };
+    return statusMap[status] || 'bg-gray-100 text-gray-800';
+  }
+
+  private formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ru-RU');
+  }
 
   applyFilters() {
     this.filteredRequests = this.requests.filter(request => {
@@ -56,15 +96,25 @@ export class VerificationList implements OnInit {
         );
       }
 
-      if (this.selectedRole) {
-        match = match && request.role === this.selectedRole;
-      }
-
       if (this.selectedStatus) {
-        match = match && request.status === this.selectedStatus;
+        const statusMap: { [key: string]: string } = {
+          'Ожидает проверки': 'PENDING',
+          'Одобрена': 'APPROVED',
+          'Отклонена': 'REJECTED'
+        };
+        match = match && request.status === statusMap[this.selectedStatus];
       }
 
       return match;
     });
+  }
+
+  getStatusDisplayName(status: string): string {
+    const statusMap: { [key: string]: string } = {
+      'PENDING': 'Ожидает проверки',
+      'APPROVED': 'Одобрена',
+      'REJECTED': 'Отклонена'
+    };
+    return statusMap[status] || status;
   }
 }

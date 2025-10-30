@@ -17,6 +17,7 @@ import { Notifications } from './notifications/notifications';
 import { ProductCard } from './catalog/product-card/product-card';
 import { AddProduct } from './catalog/add-product/add-product';
 import { EmptyCatalog } from './catalog/empty-catalog/empty-catalog';
+import { authGuard } from '../guards/auth.guard';
 
 const routes: Routes = [
   {
@@ -30,6 +31,8 @@ const routes: Routes = [
   {
     path: '',
     component: Layout,
+    canActivate: [authGuard],
+    data: { roles: ['SUPPLIER'] },
     children: [
       { path: 'dashboard', component: Dashboard },
       { path: 'catalog', component: Catalog },

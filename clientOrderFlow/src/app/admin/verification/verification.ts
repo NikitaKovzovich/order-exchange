@@ -3,26 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Header } from '../shared/header/header';
-
-interface VerificationDetails {
-  id: number;
-  companyName: string;
-  legalForm: string;
-  taxId: string;
-  regDate: string;
-  email: string;
-  legalAddress: string;
-  postalAddress: string;
-  directorName: string;
-  accountantName: string;
-  bankName: string;
-  bankBic: string;
-  bankAccount: string;
-  role: string;
-  documents: { name: string; type: string }[];
-  submittedAt: string;
-  status: string;
-}
+import { AdminService, VerificationDetails } from '../../services/admin.service';
 
 @Component({
   selector: 'admin-verification',
@@ -36,10 +17,13 @@ export class Verification implements OnInit {
   request: VerificationDetails | null = null;
   showRejectModal: boolean = false;
   rejectionReason: string = '';
+  isLoading: boolean = false;
+  errorMessage: string = '';
 
   constructor(
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private adminService: AdminService
   ) {}
 
   ngOnInit() {
@@ -49,196 +33,49 @@ export class Verification implements OnInit {
 
   loadRequest() {
     const id = parseInt(this.requestId);
+    if (!id) {
+      this.errorMessage = 'Некорректный ID заявки';
+      return;
+    }
 
-    // Данные для разных заявок с разными статусами
-    const requestsData: { [key: number]: VerificationDetails } = {
-      1: { // Ожидает проверки - Молочный Мир
-        id: 1,
-        companyName: 'ОАО "Молочный Мир"',
-        legalForm: 'ОАО',
-        taxId: '190123456',
-        regDate: '10.03.2010',
-        email: 'contact@molmir.by',
-        legalAddress: '220050, г. Минск, ул. Молочная, д. 5, к. 1',
-        postalAddress: '220050, г. Минск, ул. Молочная, д. 5, к. 1',
-        directorName: 'Иванов Иван Иванович',
-        accountantName: 'Петрова Мария Ивановна',
-        bankName: 'ОАО "Технобанк"',
-        bankBic: 'TECNBY22',
-        bankAccount: 'BY29TECN00000000000123456789',
-        role: 'Поставщик',
-        documents: [
-          { name: 'Свидетельство.pdf', type: 'pdf' },
-          { name: 'Логотип.png', type: 'image' }
-        ],
-        submittedAt: '16.10.2025',
-        status: 'pending'
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    this.adminService.getVerificationById(id).subscribe({
+      next: (data) => {
+        this.request = data;
+        this.isLoading = false;
       },
-      2: { // Ожидает проверки - Супермаркет "Угол"
-        id: 2,
-        companyName: 'ООО "Супермаркет Угол"',
-        legalForm: 'ООО',
-        taxId: '199876543',
-        regDate: '15.05.2018',
-        email: 'info@ugol.by',
-        legalAddress: '220012, г. Минск, пр. Независимости, д. 120',
-        postalAddress: '220012, г. Минск, пр. Независимости, д. 120',
-        directorName: 'Сидоров Петр Петрович',
-        accountantName: 'Иванова Ольга Сергеевна',
-        bankName: 'ЗАО "БелБизнесБанк"',
-        bankBic: 'BBBSBY22',
-        bankAccount: 'BY45BBBS00000000000987654321',
-        role: 'Торговая сеть',
-        documents: [
-          { name: 'Свидетельство_регистрации.pdf', type: 'pdf' },
-          { name: 'Логотип_компании.png', type: 'image' }
-        ],
-        submittedAt: '16.10.2025',
-        status: 'pending'
-      },
-      3: { // Одобрена - Продукты Оптом
-        id: 3,
-        companyName: 'ИП "Продукты Оптом"',
-        legalForm: 'ИП',
-        taxId: '191234567',
-        regDate: '22.01.2015',
-        email: 'sales@produkty-opt.by',
-        legalAddress: '220030, г. Минск, ул. Торговая, д. 10',
-        postalAddress: '220030, г. Минск, ул. Торговая, д. 10',
-        directorName: 'Кузнецов Алексей Владимирович',
-        accountantName: 'Смирнова Анна Ивановна',
-        bankName: 'ОАО "Приорбанк"',
-        bankBic: 'PJCBBY2X',
-        bankAccount: 'BY12PJCB00000000000111222333',
-        role: 'Поставщик',
-        documents: [
-          { name: 'Свидетельство.pdf', type: 'pdf' },
-          { name: 'Логотип.jpg', type: 'image' }
-        ],
-        submittedAt: '15.10.2025',
-        status: 'approved'
-      },
-      4: { // Отклонена - Быстрый Магазинчик
-        id: 4,
-        companyName: 'ООО "Быстрый Магазинчик"',
-        legalForm: 'ООО',
-        taxId: '194567890',
-        regDate: '05.08.2020',
-        email: 'contact@fast-shop.by',
-        legalAddress: '220020, г. Минск, ул. Короткая, д. 3',
-        postalAddress: '220020, г. Минск, ул. Короткая, д. 3',
-        directorName: 'Новиков Сергей Михайлович',
-        accountantName: 'Федорова Елена Петровна',
-        bankName: 'ОАО "БПС-Сбербанк"',
-        bankBic: 'BPSBBY2X',
-        bankAccount: 'BY88BPSB00000000000555666777',
-        role: 'Торговая сеть',
-        documents: [
-          { name: 'Свидетельство.pdf', type: 'pdf' },
-          { name: 'Лого.png', type: 'image' }
-        ],
-        submittedAt: '15.10.2025',
-        status: 'rejected'
-      },
-      5: { // Ожидает проверки - ФруктТорг
-        id: 5,
-        companyName: 'ЧУП "ФруктТорг"',
-        legalForm: 'ЧУП',
-        taxId: '192345678',
-        regDate: '18.03.2017',
-        email: 'info@frukt-torg.by',
-        legalAddress: '220040, г. Минск, ул. Фруктовая, д. 25',
-        postalAddress: '220040, г. Минск, ул. Фруктовая, д. 25',
-        directorName: 'Орлов Дмитрий Николаевич',
-        accountantName: 'Волкова Ирина Андреевна',
-        bankName: 'ОАО "Белагропромбанк"',
-        bankBic: 'BAPBBY2X',
-        bankAccount: 'BY33BAPB00000000000444555666',
-        role: 'Поставщик',
-        documents: [
-          { name: 'Регистрация.pdf', type: 'pdf' },
-          { name: 'Лого.png', type: 'image' }
-        ],
-        submittedAt: '15.10.2025',
-        status: 'pending'
-      },
-      6: { // Одобрена - Мясной Двор
-        id: 6,
-        companyName: 'ООО "Мясной Двор"',
-        legalForm: 'ООО',
-        taxId: '193456789',
-        regDate: '12.06.2016',
-        email: 'sales@myaso-dvor.by',
-        legalAddress: '220050, г. Минск, ул. Мясная, д. 8',
-        postalAddress: '220050, г. Минск, ул. Мясная, д. 8',
-        directorName: 'Морозов Игорь Сергеевич',
-        accountantName: 'Лебедева Светлана Викторовна',
-        bankName: 'ОАО "БелВЭБ"',
-        bankBic: 'BVEBBY22',
-        bankAccount: 'BY77BVEB00000000000222333444',
-        role: 'Поставщик',
-        documents: [
-          { name: 'Свидетельство_ООО.pdf', type: 'pdf' },
-          { name: 'Логотип_МясДвор.png', type: 'image' }
-        ],
-        submittedAt: '14.10.2025',
-        status: 'approved'
-      },
-      7: { // Одобрена - Сеть Продуктов
-        id: 7,
-        companyName: 'ОАО "Сеть Продуктов"',
-        legalForm: 'ОАО',
-        taxId: '195678901',
-        regDate: '09.09.2014',
-        email: 'contact@setprod.by',
-        legalAddress: '220090, г. Минск, пр. Победителей, д. 50',
-        postalAddress: '220090, г. Минск, пр. Победителей, д. 50',
-        directorName: 'Павлов Андрей Валерьевич',
-        accountantName: 'Николаева Татьяна Дмитриевна',
-        bankName: 'ОАО "Беларусбанк"',
-        bankBic: 'BBSBY22',
-        bankAccount: 'BY99BBBY00000000000888999000',
-        role: 'Торговая сеть',
-        documents: [
-          { name: 'Свидетельство_ОАО.pdf', type: 'pdf' },
-          { name: 'Логотип_СетьПродуктов.jpg', type: 'image' }
-        ],
-        submittedAt: '14.10.2025',
-        status: 'approved'
-      },
-      8: { // Отклонена - ТоварыОпт
-        id: 8,
-        companyName: 'ИП "ТоварыОпт"',
-        legalForm: 'ИП',
-        taxId: '196789012',
-        regDate: '25.11.2019',
-        email: 'info@tovary-opt.by',
-        legalAddress: '220060, г. Минск, ул. Складская, д. 15',
-        postalAddress: '220060, г. Минск, ул. Складская, д. 15',
-        directorName: 'Егоров Максим Александрович',
-        accountantName: 'Соколова Марина Олеговна',
-        bankName: 'ОАО "БНБ-Банк"',
-        bankBic: 'BNBSBY22',
-        bankAccount: 'BY11BNBB00000000000123987456',
-        role: 'Поставщик',
-        documents: [
-          { name: 'Регистрация_ИП.pdf', type: 'pdf' },
-          { name: 'Лого_ТоварыОпт.png', type: 'image' }
-        ],
-        submittedAt: '13.10.2025',
-        status: 'rejected'
+      error: (error) => {
+        console.error('Error loading verification request:', error);
+        this.isLoading = false;
+        this.errorMessage = error.error?.message || 'Ошибка при загрузке заявки';
       }
-    };
-
-    this.request = requestsData[id] || requestsData[1];
+    });
   }
 
   approve() {
-    if (confirm('Вы уверены, что хотите одобрить заявку?')) {
-      console.log('Заявка одобрена:', this.requestId);
-      alert('Заявка успешно одобрена');
-      this.router.navigate(['/admin/verification']);
+    if (!confirm('Вы уверены, что хотите одобрить заявку?')) {
+      return;
     }
+
+    const id = parseInt(this.requestId);
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    this.adminService.approveVerification(id).subscribe({
+      next: (response) => {
+        console.log('Verification approved:', response);
+        alert(response.message || 'Заявка успешно одобрена');
+        this.router.navigate(['/admin/verification']);
+      },
+      error: (error) => {
+        console.error('Error approving verification:', error);
+        this.isLoading = false;
+        this.errorMessage = error.error?.message || 'Ошибка при одобрении заявки';
+        alert(this.errorMessage);
+      }
+    });
   }
 
   openRejectModal() {
@@ -256,9 +93,23 @@ export class Verification implements OnInit {
       return;
     }
 
-    console.log('Заявка отклонена:', this.requestId, 'Причина:', this.rejectionReason);
-    alert('Заявка отклонена. Компания получит уведомление.');
-    this.router.navigate(['/admin/verification']);
+    const id = parseInt(this.requestId);
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    this.adminService.rejectVerification(id, this.rejectionReason).subscribe({
+      next: (response) => {
+        console.log('Verification rejected:', response);
+        alert(response.message || 'Заявка отклонена. Компания получит уведомление.');
+        this.router.navigate(['/admin/verification']);
+      },
+      error: (error) => {
+        console.error('Error rejecting verification:', error);
+        this.isLoading = false;
+        this.errorMessage = error.error?.message || 'Ошибка при отклонении заявки';
+        alert(this.errorMessage);
+      }
+    });
   }
 
   downloadDocument(docName: string) {

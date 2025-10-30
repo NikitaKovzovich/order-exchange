@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { Landing } from './landing/landing';
 import { Login } from './auth/login/login';
 import { adminRoutes } from './admin/admin-routing-module';
+import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -14,6 +15,8 @@ export const routes: Routes = [
   },
   {
     path: 'admin',
+    canActivate: [authGuard],
+    data: { roles: ['ADMIN'] },
     children: adminRoutes
   },
   {

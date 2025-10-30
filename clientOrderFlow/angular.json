@@ -59,7 +59,8 @@
               "buildTarget": "orderflow:build:production"
             },
             "development": {
-              "buildTarget": "orderflow:build:development"
+              "buildTarget": "orderflow:build:development",
+              "proxyConfig": "proxy.conf.json"
             }
           },
           "defaultConfiguration": "development"

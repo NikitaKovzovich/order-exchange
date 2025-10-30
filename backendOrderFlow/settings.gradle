@@ -1,0 +1,5 @@
+rootProject.name = 'backendOrderFlow'
+
+includeBuild 'eureka-server'
+includeBuild 'api-gateway'
+includeBuild 'auth-service'

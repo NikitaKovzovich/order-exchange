@@ -16,6 +16,7 @@ import { CreateTicket } from './support/create-ticket/create-ticket';
 import { Notifications } from './notifications/notifications';
 import { Cart } from './cart/cart';
 import { Reception } from './reception/reception';
+import { authGuard } from '../guards/auth.guard';
 
 const routes: Routes = [
   {
@@ -29,6 +30,8 @@ const routes: Routes = [
   {
     path: '',
     component: Layout,
+    canActivate: [authGuard],
+    data: { roles: ['RETAIL_CHAIN'] },
     children: [
       { path: 'dashboard', component: Dashboard },
       { path: 'catalog', component: Catalog },

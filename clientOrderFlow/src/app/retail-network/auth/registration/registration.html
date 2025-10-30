@@ -22,6 +22,14 @@
         <h2 class="text-3xl font-bold text-center mb-2">Регистрация в OrderFlow</h2>
         <p class="text-center text-gray-600 mb-8">Пожалуйста, заполните все поля для создания аккаунта.</p>
 
+        <!-- Error Alert -->
+        <div *ngIf="errors['submit']" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
+          <svg class="w-5 h-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+          </svg>
+          <span class="text-red-800 text-sm">{{ errors['submit'] }}</span>
+        </div>
+
         <div class="mb-8">
           <div class="flex items-center justify-center text-xs sm:text-sm">
             <div class="step" [class.active]="currentStep >= 1">1. Тип</div>
@@ -40,6 +48,7 @@
           <!-- Step 1: User Type Selection -->
           <div *ngIf="currentStep === 1" class="step-content">
             <h3 class="text-xl font-semibold text-center mb-6">Выберите тип регистрации</h3>
+            <div *ngIf="errors['userType']" class="mb-4 text-center text-red-600 text-sm">{{ errors['userType'] }}</div>
             <div class="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
               <!-- Supplier Option -->
               <label class="relative border-2 rounded-xl p-6 cursor-pointer transition-all"
@@ -100,16 +109,26 @@
             <div class="max-w-md mx-auto">
               <div class="mb-4">
                 <label class="block text-gray-700 font-medium mb-2">Рабочий Email</label>
-                <input type="email" [(ngModel)]="formData.email" name="email" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="yourcompany@email.com">
+                <input type="email" [(ngModel)]="formData.email" name="email"
+                       [class.border-red-500]="errors['email']"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                       placeholder="yourcompany@email.com">
+                <p *ngIf="errors['email']" class="mt-1 text-sm text-red-600">{{ errors['email'] }}</p>
               </div>
               <div class="grid md:grid-cols-2 gap-4">
                 <div>
                   <label class="block text-gray-700 font-medium mb-2">Пароль</label>
-                  <input type="password" [(ngModel)]="formData.password" name="password" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  <input type="password" [(ngModel)]="formData.password" name="password"
+                         [class.border-red-500]="errors['password']"
+                         class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  <p *ngIf="errors['password']" class="mt-1 text-sm text-red-600">{{ errors['password'] }}</p>
                 </div>
                 <div>
                   <label class="block text-gray-700 font-medium mb-2">Подтвердите пароль</label>
-                  <input type="password" [(ngModel)]="formData.passwordConfirm" name="passwordConfirm" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  <input type="password" [(ngModel)]="formData.passwordConfirm" name="passwordConfirm"
+                         [class.border-red-500]="errors['passwordConfirm']"
+                         class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  <p *ngIf="errors['passwordConfirm']" class="mt-1 text-sm text-red-600">{{ errors['passwordConfirm'] }}</p>
                 </div>
               </div>
             </div>
@@ -121,15 +140,19 @@
             <div class="grid md:grid-cols-2 gap-6">
               <div class="md:col-span-2">
                 <label class="block text-gray-700 font-medium mb-2">Полное юридическое наименование</label>
-                <input type="text" [(ngModel)]="formData.companyName" name="companyName" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Открытое акционерное общество 'Сеть Магазинов'">
+                <input type="text" [(ngModel)]="formData.companyName" name="companyName"
+                       [class.border-red-500]="errors['companyName']"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                       placeholder="Открытое акционерное общество 'Сеть Магазинов'">
+                <p *ngIf="errors['companyName']" class="mt-1 text-sm text-red-600">{{ errors['companyName'] }}</p>
               </div>
               <div>
                 <label class="block text-gray-700 font-medium mb-2">Форма собственности</label>
                 <select [(ngModel)]="formData.legalForm" name="legalForm" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                  <option>ИП</option>
-                  <option>ООО</option>
-                  <option>ОАО</option>
-                  <option>ЧУП</option>
+                  <option value="ИП">ИП</option>
+                  <option value="ООО">ООО</option>
+                  <option value="ОАО">ОАО</option>
+                  <option value="ЧУП">ЧУП</option>
                 </select>
               </div>
               <div>
@@ -137,20 +160,36 @@
                 <input type="date" [(ngModel)]="formData.regDate" name="regDate" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
               </div>
               <div class="md:col-span-2">
-                <label class="block text-gray-700 font-medium mb-2">УНП</label>
-                <input type="text" [(ngModel)]="formData.taxId" name="taxId" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <label class="block text-gray-700 font-medium mb-2">УНП (9 цифр)</label>
+                <input type="text" [(ngModel)]="formData.taxId" name="taxId"
+                       [class.border-red-500]="errors['taxId']"
+                       maxlength="9"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                       placeholder="123456789">
+                <p *ngIf="errors['taxId']" class="mt-1 text-sm text-red-600">{{ errors['taxId'] }}</p>
               </div>
               <div class="md:col-span-2">
                 <label class="block text-gray-700 font-medium mb-2">Юридический адрес</label>
-                <input type="text" [(ngModel)]="formData.legalAddress" name="legalAddress" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <input type="text" [(ngModel)]="formData.legalAddress" name="legalAddress"
+                       [class.border-red-500]="errors['legalAddress']"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <p *ngIf="errors['legalAddress']" class="mt-1 text-sm text-red-600">{{ errors['legalAddress'] }}</p>
               </div>
               <div class="md:col-span-2">
                 <label class="block text-gray-700 font-medium mb-2">Почтовый адрес (если отличается)</label>
                 <input type="text" [(ngModel)]="formData.postalAddress" name="postalAddress" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
               </div>
               <div class="md:col-span-2">
+                <label class="block text-gray-700 font-medium mb-2">Адрес отгрузки</label>
+                <input type="text" [(ngModel)]="formData.shippingAddress" name="shippingAddress" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="г. Минск, ул. Складская, д. 10">
+              </div>
+              <div class="md:col-span-2">
                 <label class="block text-gray-700 font-medium mb-2">Контактный телефон</label>
-                <input type="tel" [(ngModel)]="formData.contactPhone" name="contactPhone" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <input type="tel" [(ngModel)]="formData.contactPhone" name="contactPhone"
+                       [class.border-red-500]="errors['contactPhone']"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                       placeholder="+375 (XX) XXX-XX-XX">
+                <p *ngIf="errors['contactPhone']" class="mt-1 text-sm text-red-600">{{ errors['contactPhone'] }}</p>
               </div>
             </div>
           </div>
@@ -159,6 +198,7 @@
           <div *ngIf="currentStep === 4" class="step-content">
             <h3 class="text-xl font-semibold text-center mb-6">Адресная книга</h3>
             <p class="text-center text-sm text-gray-500 mb-6">Добавьте один или несколько адресов, куда будет осуществляться доставка товаров.</p>
+            <div *ngIf="errors['deliveryAddresses']" class="mb-4 text-center text-red-600 text-sm">{{ errors['deliveryAddresses'] }}</div>
             <div class="space-y-4">
               <div *ngFor="let addr of deliveryAddresses; let i = index" class="p-4 border rounded-md bg-gray-50 relative">
                 <label class="block text-gray-700 font-medium mb-2">Адрес доставки {{ i + 1 }}{{ i === 0 ? ' (основной)' : '' }}</label>
@@ -184,25 +224,46 @@
             <div class="space-y-6 max-w-lg mx-auto">
               <div>
                 <label class="block text-gray-700 font-medium mb-2">Логотип компании</label>
-                <input type="file" (change)="onFileSelect($event, 'logo')" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+                <input type="file" accept="image/png,image/jpeg,image/jpg" (change)="onFileSelect($event, 'logo')" name="logo" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+                <p *ngIf="fileNames.logo" class="mt-1 text-xs text-green-600">✓ Выбран: {{ fileNames.logo }}</p>
               </div>
               <div>
                 <label class="block text-gray-700 font-medium mb-2">Скан-копия свидетельства о регистрации</label>
-                <input type="file" (change)="onFileSelect($event, 'registrationCert')" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+                <input type="file" accept="application/pdf,image/jpeg,image/jpg" (change)="onFileSelect($event, 'registrationCert')" name="registrationCert" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+                <p *ngIf="fileNames.registrationCert" class="mt-1 text-xs text-green-600">✓ Выбран: {{ fileNames.registrationCert }}</p>
               </div>
             </div>
             <div class="mt-8 text-center">
               <label class="flex items-center justify-center">
-                <input type="checkbox" [(ngModel)]="formData.termsAccepted" name="termsAccepted" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                <input type="checkbox" [(ngModel)]="formData.termsAccepted" name="termsAccepted"
+                       [class.border-red-500]="errors['termsAccepted']"
+                       class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
                 <span class="ml-2 text-gray-700">Я согласен с <a href="#" class="text-indigo-600 hover:underline">условиями использования</a>.</span>
               </label>
+              <p *ngIf="errors['termsAccepted']" class="mt-1 text-sm text-red-600">{{ errors['termsAccepted'] }}</p>
             </div>
           </div>
 
           <div class="mt-10 flex justify-between">
-            <button type="button" *ngIf="currentStep > 1" (click)="previousStep()" class="bg-gray-200 text-gray-800 px-6 py-2 rounded-md hover:bg-gray-300">Назад</button>
-            <button type="button" (click)="nextStep()" class="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 ml-auto">
-              {{ currentStep === 5 ? 'Завершить регистрацию' : 'Далее' }}
+            <button type="button" *ngIf="currentStep > 1" (click)="previousStep()"
+                    [disabled]="isSubmitting"
+                    class="bg-gray-200 text-gray-800 px-6 py-2 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+              Назад
+            </button>
+            <button type="button" (click)="nextStep()"
+                    [disabled]="isSubmitting"
+                    class="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 ml-auto flex items-center disabled:opacity-50 disabled:cursor-not-allowed">
+              <span *ngIf="!isSubmitting">{{ currentStep === 5 ? 'Завершить регистрацию' : 'Далее' }}</span>
+              <span *ngIf="isSubmitting" class="flex items-center">
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Отправка...
+              </span>
+              <svg *ngIf="currentStep < 5 && !isSubmitting" class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
             </button>
           </div>
         </form>

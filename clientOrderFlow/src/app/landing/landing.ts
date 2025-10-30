@@ -36,7 +36,7 @@ export class Landing {
   }
 
   openRegisterModal() {
-    // Перенаправляем на страницу регистрации поставщика, где первый шаг - выбор типа
+    // Перенаправляем на страницу регистрации поставщика (там есть выбор типа)
     this.router.navigate(['/supplier/auth/registration']);
   }
 

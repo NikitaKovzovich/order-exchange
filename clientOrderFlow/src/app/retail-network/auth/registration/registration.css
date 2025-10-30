@@ -11,23 +11,26 @@
   color: #6b7280;
   padding: 0.5rem 1rem;
   border-radius: 9999px;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
   flex-shrink: 0;
+  background-color: #f3f4f6;
 }
 
 .step.active {
   background-color: #4f46e5;
   color: white;
+  box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3);
+  transform: scale(1.05);
 }
 
 .step-content {
-  animation: fadeIn 0.5s;
+  animation: fadeInSlide 0.5s ease-out;
 }
 
-@keyframes fadeIn {
+@keyframes fadeInSlide {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -35,3 +38,42 @@
   }
 }
 
+/* Input focus improvements */
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #4f46e5 !important;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1) !important;
+}
+
+/* Error state */
+input.border-red-500,
+select.border-red-500 {
+  border-color: #ef4444 !important;
+  animation: shake 0.3s;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Button hover effects */
+button {
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
