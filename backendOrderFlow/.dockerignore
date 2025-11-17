@@ -1,0 +1,29 @@
+# Игнорировать файлы сборки Gradle
+.env.local
+.env
+# Игнорировать конфигурацию окружения
+
+*~
+*.bak
+*.swp
+*.tmp
+# Игнорировать временные файлы
+
+logs/
+*.log
+# Игнорировать логи
+
+.vscode/
+out/
+*.ipr
+*.iws
+*.iml
+.idea/
+# Игнорировать файлы IDE
+
+!**/src/test/**/build/
+!**/src/main/**/build/
+!gradle/wrapper/gradle-wrapper.jar
+build/
+.gradle/
+

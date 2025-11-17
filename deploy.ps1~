@@ -1,0 +1,307 @@
+﻿param(
+    [Parameter(Mandatory=$false)]
+    [ValidateSet('all', 'build', 'deploy', 'clean', 'status')]
+    [string]$Action = 'all',
+
+    [Parameter(Mandatory=$false)]
+    [switch]$SkipBuild = $false,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$Force = $false
+)
+
+$ErrorActionPreference = "Stop"
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+
+function Write-ColorOutput($ForegroundColor) {
+    $fc = $host.UI.RawUI.ForegroundColor
+    $host.UI.RawUI.ForegroundColor = $ForegroundColor
+    if ($args) {
+        Write-Output $args
+    }
+    $host.UI.RawUI.ForegroundColor = $fc
+}
+
+function Write-Step {
+    param([string]$Message)
+    Write-ColorOutput Cyan "`n==> $Message"
+}
+
+function Write-Success {
+    param([string]$Message)
+    Write-ColorOutput Green "[OK] $Message"
+}
+
+function Write-Error {
+    param([string]$Message)
+    Write-ColorOutput Red "[ERROR] $Message"
+}
+
+function Write-Warning {
+    param([string]$Message)
+    Write-ColorOutput Yellow "[WARNING] $Message"
+}
+
+# РџСЂРѕРІРµСЂРєР° РЅР°Р»РёС‡РёСЏ РЅРµРѕР±С…РѕРґРёРјС‹С… РёРЅСЃС‚СЂСѓРјРµРЅС‚РѕРІ
+function Test-Prerequisites {
+    Write-Step "РџСЂРѕРІРµСЂРєР° РЅРµРѕР±С…РѕРґРёРјС‹С… РёРЅСЃС‚СЂСѓРјРµРЅС‚РѕРІ..."
+
+    $tools = @{
+        "docker" = "Docker Desktop"
+        "kubectl" = "Kubernetes CLI"
+    }
+
+    $missing = @()
+    foreach ($tool in $tools.Keys) {
+        if (!(Get-Command $tool -ErrorAction SilentlyContinue)) {
+            Write-Error "$($tools[$tool]) РЅРµ СѓСЃС‚Р°РЅРѕРІР»РµРЅ"
+            $missing += $tools[$tool]
+        } else {
+            Write-Success "$($tools[$tool]) СѓСЃС‚Р°РЅРѕРІР»РµРЅ"
+        }
+    }
+
+    if ($missing.Count -gt 0) {
+        throw "РћС‚СЃСѓС‚СЃС‚РІСѓСЋС‚ РЅРµРѕР±С…РѕРґРёРјС‹Рµ РёРЅСЃС‚СЂСѓРјРµРЅС‚С‹: $($missing -join ', ')"
+    }
+
+    # РџСЂРѕРІРµСЂРєР° Р·Р°РїСѓСЃРєР° Docker
+    try {
+        docker ps | Out-Null
+        Write-Success "Docker Р·Р°РїСѓС‰РµРЅ"
+    } catch {
+        throw "Docker РЅРµ Р·Р°РїСѓС‰РµРЅ. Р—Р°РїСѓСЃС‚РёС‚Рµ Docker Desktop Рё РїРѕРІС‚РѕСЂРёС‚Рµ РїРѕРїС‹С‚РєСѓ."
+    }
+
+    # РџСЂРѕРІРµСЂРєР° Kubernetes
+    try {
+        kubectl cluster-info | Out-Null
+        Write-Success "Kubernetes РєР»Р°СЃС‚РµСЂ РґРѕСЃС‚СѓРїРµРЅ"
+    } catch {
+        throw "Kubernetes РєР»Р°СЃС‚РµСЂ РЅРµРґРѕСЃС‚СѓРїРµРЅ. Р’РєР»СЋС‡РёС‚Рµ Kubernetes РІ Docker Desktop."
+    }
+}
+
+function Build-DockerImages {
+    Write-Step "РЎР±РѕСЂРєР° Docker РѕР±СЂР°Р·РѕРІ..."
+
+    # Backend СЃРµСЂРІРёСЃС‹
+    $services = @(
+        "eureka-server",
+        "api-gateway",
+        "auth-service",
+        "catalog-service",
+        "order-service",
+        "chat-service",
+        "document-service"
+    )
+
+    foreach ($service in $services) {
+        Write-Step "РЎР±РѕСЂРєР° $service..."
+        Push-Location "$ScriptDir\backendOrderFlow\$service"
+        try {
+            docker build -t "order-exchange/${service}:latest" .
+            Write-Success "$service СЃРѕР±СЂР°РЅ СѓСЃРїРµС€РЅРѕ"
+        } catch {
+            Write-Error "РћС€РёР±РєР° РїСЂРё СЃР±РѕСЂРєРµ $service"
+            throw
+        } finally {
+            Pop-Location
+        }
+    }
+
+    # Frontend
+    Write-Step "РЎР±РѕСЂРєР° frontend..."
+    Push-Location "$ScriptDir\clientOrderFlow"
+    try {
+        docker build -t "order-exchange/frontend:latest" .
+        Write-Success "Frontend СЃРѕР±СЂР°РЅ СѓСЃРїРµС€РЅРѕ"
+    } catch {
+        Write-Error "РћС€РёР±РєР° РїСЂРё СЃР±РѕСЂРєРµ frontend"
+        throw
+    } finally {
+        Pop-Location
+    }
+
+    Write-Success "Р’СЃРµ РѕР±СЂР°Р·С‹ СЃРѕР±СЂР°РЅС‹ СѓСЃРїРµС€РЅРѕ"
+}
+
+function Label-Nodes {
+    Write-Step "РќР°СЃС‚СЂРѕР№РєР° РјРµС‚РѕРє СѓР·Р»РѕРІ..."
+
+    # РџРѕР»СѓС‡Р°РµРј СЃРїРёСЃРѕРє СѓР·Р»РѕРІ
+    $nodes = kubectl get nodes -o jsonpath='{.items[*].metadata.name}' | Out-String
+    $nodeList = $nodes.Trim().Split(' ')
+
+    if ($nodeList.Count -lt 4) {
+        Write-Warning "РћР±РЅР°СЂСѓР¶РµРЅРѕ РјРµРЅСЊС€Рµ 4 СѓР·Р»РѕРІ. Р‘СѓРґСѓС‚ РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊСЃСЏ РґРѕСЃС‚СѓРїРЅС‹Рµ СѓР·Р»С‹."
+    }
+
+    # РќР°Р·РЅР°С‡Р°РµРј СЂРѕР»Рё СѓР·Р»Р°Рј
+    $nodeIndex = 0
+    $roles = @("frontend", "backend", "database", "services")
+
+    foreach ($role in $roles) {
+        if ($nodeIndex -lt $nodeList.Count) {
+            $node = $nodeList[$nodeIndex]
+            kubectl label nodes $node "node-role=$role" --overwrite | Out-Null
+            Write-Success "РЈР·РµР» $node -> СЂРѕР»СЊ: $role"
+            $nodeIndex++
+        } else {
+            # Р•СЃР»Рё СѓР·Р»РѕРІ РјРµРЅСЊС€Рµ 4, РёСЃРїРѕР»СЊР·СѓРµРј РїРµСЂРІС‹Р№ СѓР·РµР» РґР»СЏ РІСЃРµС… СЂРѕР»РµР№
+            $node = $nodeList[0]
+            kubectl label nodes $node "node-role=$role" --overwrite | Out-Null
+            Write-Success "РЈР·РµР» $node -> СЂРѕР»СЊ: $role (СЃРѕРІРјРµС‰РµРЅРЅР°СЏ)"
+        }
+    }
+}
+
+function Deploy-ToKubernetes {
+    Write-Step "Р Р°Р·РІРµСЂС‚С‹РІР°РЅРёРµ РІ Kubernetes..."
+
+    $manifests = @(
+        "00-namespace.yaml",
+        "01-configmaps-secrets.yaml",
+        "02-database.yaml",
+        "03-services-layer.yaml",
+        "04-backend-services.yaml",
+        "05-frontend.yaml"
+    )
+
+    foreach ($manifest in $manifests) {
+        $manifestPath = "$ScriptDir\k8s\$manifest"
+        if (Test-Path $manifestPath) {
+            Write-Step "РџСЂРёРјРµРЅРµРЅРёРµ $manifest..."
+            kubectl apply -f $manifestPath
+            Write-Success "$manifest РїСЂРёРјРµРЅРµРЅ"
+            Start-Sleep -Seconds 2
+        } else {
+            Write-Error "РњР°РЅРёС„РµСЃС‚ $manifest РЅРµ РЅР°Р№РґРµРЅ"
+        }
+    }
+
+    Write-Success "Р Р°Р·РІРµСЂС‚С‹РІР°РЅРёРµ Р·Р°РІРµСЂС€РµРЅРѕ"
+}
+
+# РћР¶РёРґР°РЅРёРµ РіРѕС‚РѕРІРЅРѕСЃС‚Рё РїРѕРґРѕРІ
+function Wait-ForPods {
+    Write-Step "РћР¶РёРґР°РЅРёРµ РіРѕС‚РѕРІРЅРѕСЃС‚Рё РїРѕРґРѕРІ..."
+
+    $timeout = 300  # 5 РјРёРЅСѓС‚
+    $elapsed = 0
+    $interval = 10
+
+    while ($elapsed -lt $timeout) {
+        $notReady = kubectl get pods -n order-exchange --field-selector=status.phase!=Running -o json | ConvertFrom-Json
+
+        if ($notReady.items.Count -eq 0) {
+            Write-Success "All pods are ready!"
+            return $true
+        }
+
+        $waitMsg = "Waiting... (" + $elapsed + "/" + $timeout + " sec). Not ready: " + $notReady.items.Count + " pods"
+        Write-Host $waitMsg
+        Start-Sleep -Seconds $interval
+        $elapsed += $interval
+    }
+
+    Write-Warning "Timeout exceeded. Some pods may not be ready."
+    return $false
+}
+
+# РџРѕРєР°Р·Р°С‚СЊ СЃС‚Р°С‚СѓСЃ
+function Show-Status {
+    Write-Step "РЎС‚Р°С‚СѓСЃ СЂР°Р·РІРµСЂС‚С‹РІР°РЅРёСЏ:"
+
+    Write-Host "`nРџРѕРґС‹:"
+    kubectl get pods -n order-exchange -o wide
+
+    Write-Host "`nРЎРµСЂРІРёСЃС‹:"
+    kubectl get services -n order-exchange
+
+    Write-Host "`nIngress:"
+    kubectl get ingress -n order-exchange
+
+    Write-Host "`n"
+    Write-ColorOutput Cyan "==> РўРѕС‡РєРё РґРѕСЃС‚СѓРїР°:"
+    Write-Host "Frontend:      http://localhost:30080"
+    Write-Host "Prometheus:    http://localhost:30090"
+    Write-Host "Grafana:       http://localhost:30300 (admin/admin)"
+    Write-Host "RabbitMQ UI:   Р§РµСЂРµР· port-forward: kubectl port-forward -n order-exchange svc/rabbitmq-service 15672:15672"
+    Write-Host "               Р—Р°С‚РµРј: http://localhost:15672 (admin/admin123)"
+}
+
+# РћС‡РёСЃС‚РєР°
+function Remove-Deployment {
+    Write-Step "РЈРґР°Р»РµРЅРёРµ СЂР°Р·РІРµСЂС‚С‹РІР°РЅРёСЏ..."
+
+    if (!$Force) {
+        $confirmation = Read-Host "Р’С‹ СѓРІРµСЂРµРЅС‹, С‡С‚Рѕ С…РѕС‚РёС‚Рµ СѓРґР°Р»РёС‚СЊ РІСЃРµ СЂРµСЃСѓСЂСЃС‹? (yes/no)"
+        if ($confirmation -ne "yes") {
+            Write-Warning "РћС‚РјРµРЅР° РѕРїРµСЂР°С†РёРё"
+            return
+        }
+    }
+
+    kubectl delete namespace order-exchange
+    Write-Success "Namespace order-exchange СѓРґР°Р»РµРЅ"
+
+    # РЈРґР°Р»РµРЅРёРµ РѕР±СЂР°Р·РѕРІ (РѕРїС†РёРѕРЅР°Р»СЊРЅРѕ)
+    $deleteImages = Read-Host "РЈРґР°Р»РёС‚СЊ Docker РѕР±СЂР°Р·С‹? (yes/no)"
+    if ($deleteImages -eq "yes") {
+        docker images "order-exchange/*" -q | ForEach-Object { docker rmi $_ -f }
+        Write-Success "Docker РѕР±СЂР°Р·С‹ СѓРґР°Р»РµРЅС‹"
+    }
+}
+
+# Р“Р»Р°РІРЅР°СЏ Р»РѕРіРёРєР°
+try {
+    Write-ColorOutput Cyan @"
+в•”в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•—
+в•‘                  Order Exchange                           в•‘
+в•‘            РЎРєСЂРёРїС‚ СЂР°Р·РІРµСЂС‚С‹РІР°РЅРёСЏ v1.0                      в•‘
+в•љв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ќ
+"@
+
+    switch ($Action) {
+        'all' {
+            Test-Prerequisites
+
+            if (!$SkipBuild) {
+                Build-DockerImages
+            } else {
+                Write-Warning "РџСЂРѕРїСѓСЃРє СЃР±РѕСЂРєРё РѕР±СЂР°Р·РѕРІ"
+            }
+
+            Label-Nodes
+            Deploy-ToKubernetes
+            Wait-ForPods
+            Show-Status
+        }
+        'build' {
+            Test-Prerequisites
+            Build-DockerImages
+        }
+        'deploy' {
+            Test-Prerequisites
+            Label-Nodes
+            Deploy-ToKubernetes
+            Wait-ForPods
+            Show-Status
+        }
+        'status' {
+            Show-Status
+        }
+        'clean' {
+            Remove-Deployment
+        }
+    }
+
+    Write-ColorOutput Green "`n[SUCCESS] РћРїРµСЂР°С†РёСЏ '$Action' Р·Р°РІРµСЂС€РµРЅР° СѓСЃРїРµС€РЅРѕ!`n"
+
+} catch {
+    Write-ColorOutput Red "`n[ERROR] РћС€РёР±РєР°: $_`n"
+    exit 1
+}
+
+

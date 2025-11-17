@@ -45,21 +45,25 @@
 2. [Функциональные возможности](#Функциональные_возможности)
     1. [Диаграмма вариантов использования](#Диаграмма_вариантов_использования)
     2. [User-flow диаграммы](#User-flow_диаграммы)
-4. [Пользовательский интерфейс](#Пользовательский_интерфейс)
+3. [Пользовательский интерфейс](#Пользовательский_интерфейс)
     1. [Примеры экранов UI](#Примеры_экранов_UI)
-6. [Детали реализации](#Детали_реализации)
+4. [Детали реализации](#Детали_реализации)
     1. [UML-диаграммы](#UML-диаграммы)
     2. [Спецификация API](#Спецификация_API)
     3. [Безопасность](#Безопасность)
     4. [Оценка качества кода](#Оценка_качества_кода)
-7. [Тестирование](#Тестирование)
+5. [Тестирование](#Тестирование)
     1. [Unit-тесты](#Unit-тесты)
     2. [Интеграционные тесты](#Интеграционные_тесты)
-8. [Установка и  запуск](#installation)
-    1. [Манифесты для сборки docker образов](#Манифесты_для_сборки_docker_образов)
-    2. [Манифесты для развертывания k8s кластера](#Манифесты_для_развертывания_k8s_кластера)
-9. [Лицензия](#Лицензия)
-10. [Контакты](#Контакты)
+6. [Установка и запуск](#Установка-и-запуск)
+    1. [Требования к окружению](#Требования-к-окружению)
+    2. [Вариант 1: Развертывание через Docker Compose](#Вариант-1-Развертывание-через-Docker-Compose)
+    3. [Вариант 2: Развертывание в Kubernetes](#Вариант-2-Развертывание-в-Kubernetes)
+    4. [Манифесты для сборки Docker образов](#Манифесты-для-сборки-Docker-образов)
+    5. [Docker Compose манифест](#Docker-Compose-манифест)
+    6. [Манифесты для развертывания Kubernetes кластера](#Манифесты-для-развертывания-Kubernetes-кластера)
+7. [Лицензия](#Лицензия)
+8. [Контакты](#Контакты)
 
 ---
 ## **Архитектура**
@@ -784,15 +788,531 @@ public CorsConfigurationSource corsConfigurationSource() {
 
 ---
 
-## **Установка и  запуск**
+## **Установка и запуск**
 
-### Манифесты для сборки docker образов
+### Требования к окружению
 
-Представить весь код манифестов или ссылки на файлы с ними (при необходимости снабдить комментариями)
+**Минимальные требования:**
+- **ОС**: Windows 10/11, Linux, macOS
+- **RAM**: 8 GB (рекомендуется 16 GB)
+- **Дисковое пространство**: 20 GB
 
-### Манифесты для развертывания k8s кластера
+**Необходимое ПО:**
+- **Docker Desktop** 4.x или выше ([скачать](https://www.docker.com/products/docker-desktop))
+- **Docker Compose** v2.x (включен в Docker Compose)
+- **kubectl** (для Kubernetes, включен в Docker Desktop)
+- **PowerShell** 5.1+ (для Windows)
 
-Представить весь код манифестов или ссылки на файлы с ними (при необходимости снабдить комментариями)
+---
+
+### Вариант 1: Развертывание через Docker Compose
+
+**Рекомендуется для разработки и тестирования**
+
+#### Быстрый старт
+
+```powershell
+# 1. Запустите Docker Desktop
+
+# 2. Перейдите в директорию проекта
+cd C:\учеба\OrderFlow
+
+# 3. Запустите автоматизированный скрипт
+.\deploy-docker.ps1 -Action up
+
+# 4. Дождитесь завершения (3-5 минут)
+```
+
+#### Команды управления
+
+```powershell
+# Просмотр статуса сервисов
+.\deploy-docker.ps1 -Action status
+
+# Просмотр логов в реальном времени
+.\deploy-docker.ps1 -Action logs
+
+# Остановка всех сервисов
+.\deploy-docker.ps1 -Action down
+
+# Перезапуск сервисов
+.\deploy-docker.ps1 -Action restart
+
+# Пересборка Docker образов
+.\deploy-docker.ps1 -Action build
+
+# Полная очистка (удаление контейнеров, volumes, образов)
+.\deploy-docker.ps1 -Action clean
+```
+
+#### Скрипт deploy-docker.ps1
+
+**Расположение:** `deploy-docker.ps1` (корень проекта)
+
+**Основные функции:**
+
+```powershell
+# Проверка наличия Docker
+function Test-Docker {
+    docker --version
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Docker не найден или не запущен"
+        exit 1
+    }
+}
+
+# Запуск всех сервисов
+function Start-Services {
+    Create-PrometheusConfig
+    docker-compose -f "$ProjectRoot\docker-compose.yaml" up -d --build
+    Show-AccessInfo
+}
+
+# Остановка сервисов
+function Stop-Services {
+    docker-compose -f "$ProjectRoot\docker-compose.yaml" down
+}
+```
+
+**Полный код скрипта:** [deploy-docker.ps1](./deploy-docker.ps1)
+
+---
+
+### Вариант 2: Развертывание в Kubernetes
+
+**Рекомендуется для production**
+
+#### Быстрый старт
+
+```powershell
+# 1. Включите Kubernetes в Docker Desktop
+# Settings → Kubernetes → Enable Kubernetes → Apply & Restart
+
+# 2. Проверьте доступность кластера
+kubectl cluster-info
+kubectl get nodes
+
+# 3. Запустите автоматизированный скрипт
+.\deploy-k8s-cluster.ps1 -Action all
+
+# 4. Дождитесь завершения (5-10 минут)
+```
+
+**Доступ к RabbitMQ Management:**
+```cmd
+kubectl port-forward -n order-exchange svc/rabbitmq-service 15672:15672
+```
+Затем откройте: http://localhost:15672
+
+#### Команды управления
+
+```powershell
+# Полное развертывание (проверка + сборка + деплой)
+.\deploy-k8s-cluster.ps1 -Action all
+
+# Только настройка нод кластера
+.\deploy-k8s-cluster.ps1 -Action setup
+
+# Только сборка Docker образов
+.\deploy-k8s-cluster.ps1 -Action build
+
+# Только развертывание (без сборки образов)
+.\deploy-k8s-cluster.ps1 -Action deploy -SkipBuild
+
+# Просмотр статуса
+.\deploy-k8s-cluster.ps1 -Action status
+
+# Полная очистка
+.\deploy-k8s-cluster.ps1 -Action clean
+```
+
+#### Скрипт deploy-k8s-cluster.ps1
+
+**Расположение:** `deploy-k8s-cluster.ps1` (корень проекта)
+
+**Основные функции:**
+
+```powershell
+# Проверка предварительных требований
+function Test-Prerequisites {
+    docker --version
+    kubectl version
+    kubectl cluster-info
+}
+
+# Сборка Docker образов
+function Build-DockerImages {
+    $services = @(
+        "eureka-server", "api-gateway", "auth-service",
+        "catalog-service", "order-service", "chat-service",
+        "document-service", "frontend"
+    )
+    foreach ($service in $services) {
+        docker build -t "order-exchange/$service:latest" $contextPath
+    }
+}
+
+# Развертывание в Kubernetes
+function Deploy-ToKubernetes {
+    kubectl apply -f k8s\00-namespace.yaml
+    kubectl apply -f k8s\01-configmaps-secrets.yaml
+    kubectl apply -f k8s\02-database.yaml
+    kubectl apply -f k8s\03-services-layer.yaml
+    kubectl apply -f k8s\04-backend-services.yaml
+    kubectl apply -f k8s\05-frontend.yaml
+}
+```
+
+**Полный код скрипта:** [deploy-k8s-cluster.ps1](./deploy-k8s-cluster.ps1)
+
+#### Альтернативный метод (ручное развертывание)
+
+```cmd
+# Применение манифестов по порядку
+kubectl apply -f k8s\00-namespace.yaml
+kubectl apply -f k8s\01-configmaps-secrets.yaml
+kubectl apply -f k8s\02-database.yaml
+kubectl apply -f k8s\03-services-layer.yaml
+kubectl apply -f k8s\04-backend-services.yaml
+kubectl apply -f k8s\05-frontend.yaml
+
+# Проверка статуса
+kubectl get pods -n order-exchange
+kubectl get services -n order-exchange
+```
+
+---
+
+### Манифесты для сборки Docker образов
+
+#### Backend микросервисы (Spring Boot)
+
+**Расположение:** `backendOrderFlow/{service-name}/Dockerfile`
+
+**Применяется для:** eureka-server, api-gateway, auth-service, catalog-service, order-service, chat-service, document-service
+
+```dockerfile
+# Этап сборки
+FROM gradle:8.5-jdk21-alpine AS build
+WORKDIR /app
+COPY build.gradle settings.gradle ./
+COPY gradle gradle
+COPY src src
+RUN gradle build --no-daemon -x test
+
+# Этап runtime
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+COPY --from=build /app/build/libs/*.jar app.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]
+```
+
+**Файлы:**
+- [eureka-server/Dockerfile](./backendOrderFlow/eureka-server/Dockerfile)
+- [api-gateway/Dockerfile](./backendOrderFlow/api-gateway/Dockerfile)
+- [auth-service/Dockerfile](./backendOrderFlow/auth-service/Dockerfile)
+- [catalog-service/Dockerfile](./backendOrderFlow/catalog-service/Dockerfile)
+- [order-service/Dockerfile](./backendOrderFlow/order-service/Dockerfile)
+- [chat-service/Dockerfile](./backendOrderFlow/chat-service/Dockerfile)
+- [document-service/Dockerfile](./backendOrderFlow/document-service/Dockerfile)
+
+#### Frontend (Angular)
+
+**Расположение:** `clientOrderFlow/Dockerfile`
+
+```dockerfile
+# Этап сборки
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# Этап production
+FROM nginx:alpine
+COPY --from=build /app/dist/client-order-flow/browser /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+**Файл:** [clientOrderFlow/Dockerfile](./clientOrderFlow/Dockerfile)
+
+---
+
+### Docker Compose манифест
+
+**Расположение:** `docker-compose.yaml`
+
+**Структура:**
+- 4 базы данных MySQL (user-db, catalog-db, order-db, chat-db)
+- RabbitMQ с management плагином
+- Eureka Server (Service Discovery)
+- API Gateway
+- 6 микросервисов backend
+- Frontend (Angular + Nginx)
+- Prometheus + Grafana для мониторинга
+
+**Ключевые особенности:**
+- Единая сеть `order-exchange-network`
+- Persistent volumes для данных
+- Health checks для всех сервисов
+- Зависимости между сервисами (depends_on)
+
+**Пример конфигурации сервиса:**
+
+```yaml
+auth-service:
+  build:
+    context: ./backendOrderFlow/auth-service
+    dockerfile: Dockerfile
+  ports:
+    - "8081:8081"
+  environment:
+    - SPRING_PROFILES_ACTIVE=docker
+    - SPRING_DATASOURCE_URL=jdbc:mysql://user-db:3306/user_db
+    - SPRING_RABBITMQ_HOST=rabbitmq
+    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+  depends_on:
+    - eureka-server
+    - user-db
+    - rabbitmq
+  networks:
+    - order-exchange-network
+```
+
+**Полный файл:** [docker-compose.yaml](./docker-compose.yaml)
+
+---
+
+### Манифесты для развертывания Kubernetes кластера
+
+**Расположение:** `k8s/` (директория в корне проекта)
+
+#### Структура манифестов
+
+```
+k8s/
+├── 00-namespace.yaml              # Namespace для проекта
+├── 01-configmaps-secrets.yaml     # Конфигурация и секреты
+├── 02-database.yaml               # MySQL StatefulSets
+├── 03-services-layer.yaml         # RabbitMQ, Prometheus, Grafana
+├── 04-backend-services.yaml       # Микросервисы backend
+└── 05-frontend.yaml               # Frontend + NodePort Services
+```
+
+#### 1. Namespace (00-namespace.yaml)
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: order-exchange
+  labels:
+    name: order-exchange
+```
+
+**Файл:** [k8s/00-namespace.yaml](./k8s/00-namespace.yaml)
+
+#### 2. ConfigMaps и Secrets (01-configmaps-secrets.yaml)
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-config
+  namespace: order-exchange
+data:
+  MYSQL_ROOT_PASSWORD: "root"
+  MYSQL_USER: "app_user"
+  MYSQL_PASSWORD: "app_password"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rabbitmq-secret
+  namespace: order-exchange
+type: Opaque
+stringData:
+  username: "admin"
+  password: "admin123"
+```
+
+**Файл:** [k8s/01-configmaps-secrets.yaml](./k8s/01-configmaps-secrets.yaml)
+
+#### 3. Базы данных (02-database.yaml)
+
+**Содержит:**
+- 4 StatefulSets для MySQL (user-db, catalog-db, order-db, chat-db)
+- PersistentVolumeClaims для каждой БД
+- Services (ClusterIP) для доступа
+
+**Пример StatefulSet:**
+
+```yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: user-db
+  namespace: order-exchange
+spec:
+  serviceName: user-db-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+      db: user-db
+  template:
+    metadata:
+      labels:
+        app: mysql
+        db: user-db
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8.0
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "root"
+        - name: MYSQL_DATABASE
+          value: "user_db"
+        ports:
+        - containerPort: 3306
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+  volumeClaimTemplates:
+  - metadata:
+      name: mysql-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 5Gi
+```
+
+**Файл:** [k8s/02-database.yaml](./k8s/02-database.yaml)
+
+#### 4. Сервисный слой (03-services-layer.yaml)
+
+**Содержит:**
+- RabbitMQ Deployment + Service
+- Prometheus Deployment + Service (NodePort 30090)
+- Grafana Deployment + Service (NodePort 30300)
+
+**Файл:** [k8s/03-services-layer.yaml](./k8s/03-services-layer.yaml)
+
+#### 5. Backend сервисы (04-backend-services.yaml)
+
+**Содержит:**
+- Eureka Server Deployment + Service (NodePort 30761)
+- API Gateway Deployment + Service (NodePort 30800)
+- Auth Service Deployment + Service
+- Catalog Service Deployment + Service
+- Order Service Deployment + Service
+- Chat Service Deployment + Service
+- Document Service Deployment + Service
+
+**Пример Deployment:**
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: order-exchange
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+      - name: api-gateway
+        image: order-exchange/api-gateway:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "k8s"
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: "http://eureka-server:8761/eureka/"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: order-exchange
+spec:
+  selector:
+    app: api-gateway
+  ports:
+  - port: 8080
+    targetPort: 8080
+    nodePort: 30800
+  type: NodePort
+```
+
+**Файл:** [k8s/04-backend-services.yaml](./k8s/04-backend-services.yaml)
+
+#### 6. Frontend (05-frontend.yaml)
+
+**Содержит:**
+- Frontend Deployment (Angular + Nginx)
+- Frontend Service (NodePort 30080)
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: order-exchange
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: order-exchange/frontend:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: order-exchange
+spec:
+  selector:
+    app: frontend
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 30080
+  type: NodePort
+```
+
+**Файл:** [k8s/05-frontend.yaml](./k8s/05-frontend.yaml)
+
+---
+
+### Полная документация по развертыванию
+
+Подробная инструкция с troubleshooting и дополнительными деталями: **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)**
 
 ---
 
