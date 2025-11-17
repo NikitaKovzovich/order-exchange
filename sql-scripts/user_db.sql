@@ -1,4 +1,5 @@
 CREATE DATABASE IF NOT EXISTS user_db;
+
 USE user_db;
 
 CREATE TABLE company (
