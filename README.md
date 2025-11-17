@@ -132,6 +132,10 @@
 #### **chat_db**
 <img width="413" height="420" alt="chat_db" src="https://github.com/user-attachments/assets/a3a517fa-4093-4758-a101-349d5c77f56c" />
 
+### UML-диаграммы
+
+
+
 ---
 
 ## **Функциональные возможности**
