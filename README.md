@@ -132,6 +132,26 @@
 #### **chat_db**
 <img width="413" height="420" alt="chat_db" src="https://github.com/user-attachments/assets/a3a517fa-4093-4758-a101-349d5c77f56c" />
 
+### UML-диаграммы
+
+#### **Диаграмма развертывания**
+<img width="1408" height="1411" alt="Диаграмма развертывания" src="https://github.com/user-attachments/assets/e5eb436a-e848-4366-85a9-64565019f55f" />
+
+#### **Диаграмма пакетов "order-service"**
+<img width="741" height="601" alt="Диаграмма пакетов" src="https://github.com/user-attachments/assets/fc9a8252-468c-440d-a713-824fe0ff3954" />
+
+#### **Диаграмма вариантов использования**
+<img width="1070" height="911" alt="Диаграмма_вариантов_использования" src="https://github.com/user-attachments/assets/a52fdf10-c1c1-4bae-adca-aecc41b491e2" />
+
+#### **Диаграмма состояний "Заказ"**
+<img width="593" height="1124" alt="Диаграмма состояний" src="https://github.com/user-attachments/assets/10f7aa80-7cb9-4da1-8747-963dd19ce457" />
+
+#### **Диаграмма последовательности "Создание заказа"**
+<img width="1242" height="861" alt="Диаграмма_последовательности" src="https://github.com/user-attachments/assets/e2ea1e39-521e-4c65-863a-0b7fc5edb500" />
+
+#### **Диаграмма деятельности "Приемка товара"**
+<img width="574" height="681" alt="Диаграмма_деятельностиактивности" src="https://github.com/user-attachments/assets/4e8463c3-a74c-4b5e-8629-341a86bcd4b8" />
+
 ---
 
 ## **Функциональные возможности**
@@ -389,7 +409,362 @@
 
 ### Безопасность
 
-Описать подходы, использованные для обеспечения безопасности, включая описание процессов аутентификации и авторизации с примерами кода из репозитория сервера
+#### Архитектура безопасности
+
+##### 1. API Gateway - первая линия защиты
+API Gateway выступает единой точкой входа и выполняет первичную валидацию JWT-токенов перед маршрутизацией запросов к микросервисам.
+
+##### 2. Auth Service - управление пользователями
+Микросервис аутентификации отвечает за регистрацию, вход пользователей и генерацию JWT-токенов.
+
+#### Аутентификация
+
+##### JWT (JSON Web Tokens)
+
+Система использует JWT для stateless-аутентификации. Токены подписываются с использованием алгоритма **HS256** и секретного ключа длиной 256 бит.
+
+###### Структура токена
+
+```java
+// Генерация JWT-токена
+public String generateToken(String email, String role) {
+    Map<String, Object> claims = new HashMap<>();
+    claims.put("role", role);
+    return createToken(claims, email);
+}
+
+private String createToken(Map<String, Object> claims, String subject) {
+    Date now = new Date();
+    Date expiryDate = new Date(now.getTime() + expirationTime);
+    
+    SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes());
+    
+    return Jwts.builder()
+            .claims(claims)
+            .subject(subject)
+            .issuedAt(now)
+            .expiration(expiryDate)
+            .signWith(key, SignatureAlgorithm.HS256)
+            .compact();
+}
+```
+
+**Параметры JWT:**
+- **Алгоритм**: HS256 (HMAC with SHA-256)
+- **Срок действия**: 3600000 мс (1 час)
+- **Payload**: email (subject), role (claims)
+
+###### Валидация токена
+
+```java
+public boolean validateToken(String token) {
+    try {
+        SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes());
+        Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token);
+        return true;
+    } catch (JwtException | IllegalArgumentException e) {
+        return false;
+    }
+}
+```
+
+##### Процесс аутентификации
+
+###### 1. Регистрация (`POST /api/auth/register`)
+
+Регистрация - это критически важный процесс, который включает несколько этапов безопасности:
+
+**Этапы регистрации:**
+1. Валидация входных данных (email, пароль, данные компании)
+2. Проверка уникальности email в системе
+3. Хеширование пароля с использованием BCrypt
+4. Создание пользователя и связанной компании
+5. Автоматическая генерация JWT-токена
+6. Публикация событий для аудита
+
+**Пример кода регистрации:**
+
+```java
+@Transactional
+public String register(RegisterRequest request) {
+    // Проверка уникальности email
+    if (userRepository.existsByEmail(request.getEmail())) {
+        throw new IllegalArgumentException("User with this email already exists");
+    }
+
+    // Определение роли пользователя
+    User.Role userRole = User.Role.valueOf(request.getType().toUpperCase());
+
+    // Создание пользователя с хешированным паролем
+    User user = User.builder()
+            .email(request.getEmail())
+            .passwordHash(passwordEncoder.encode(request.getPassword()))
+            .role(userRole)
+            .isActive(userRole == User.Role.ADMIN)  // Админы активны сразу
+            .createdAt(LocalDateTime.now())
+            .build();
+
+    // Создание компании
+    Company company = Company.builder()
+            .name(request.getName())
+            .legalForm(Company.LegalForm.valueOf(request.getLegalForm()))
+            .taxId(request.getTaxId())
+            .contactPhone(request.getContactPhone())
+            .status(Company.CompanyStatus.PENDING_VERIFICATION)
+            .build();
+    
+    company = companyRepository.save(company);
+    user.setCompany(company);
+    user = userRepository.save(user);
+
+    // Публикация событий для аудита
+    eventPublisher.publish("User", user.getId().toString(), "UserRegistered",
+        Map.of(
+            "userId", user.getId(),
+            "email", user.getEmail(),
+            "role", user.getRole().name(),
+            "companyId", company.getId()
+        ));
+
+    // Генерация JWT-токена
+    return jwtProvider.generateToken(user.getEmail(), user.getRole().name());
+}
+```
+
+**Особенности безопасности при регистрации:**
+- Пароль никогда не хранится в открытом виде
+- Email проверяется на уникальность до создания пользователя
+- Новые пользователи (кроме ADMIN) требуют верификации компании
+- Транзакционность гарантирует целостность данных
+- События регистрации логируются для аудита
+
+###### 2. Вход в систему (`POST /api/auth/login`)
+
+Процесс входа включает проверку учетных данных и выдачу JWT-токена:
+
+**Этапы входа:**
+1. Получение email и пароля
+2. Поиск пользователя в базе данных
+3. Проверка хеша пароля с использованием BCrypt
+4. Проверка активности аккаунта
+5. Генерация JWT-токена при успешной аутентификации
+6. Возврат токена клиенту
+
+```java
+public String login(LoginRequest request) {
+    // Поиск пользователя по email
+    User user = userRepository.findByEmail(request.getEmail())
+            .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
+
+    // Проверка пароля
+    if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+        throw new IllegalArgumentException("Invalid credentials");
+    }
+
+    // Проверка активности аккаунта
+    if (!user.getIsActive()) {
+        throw new IllegalArgumentException("Account is not activated");
+    }
+
+    // Генерация и возврат JWT-токена
+    return jwtProvider.generateToken(user.getEmail(), user.getRole().name());
+}
+```
+
+**Меры безопасности при входе:**
+- Одинаковое сообщение об ошибке для несуществующего email и неверного пароля (защита от перебора email)
+- Проверка активности аккаунта перед выдачей токена
+- BCrypt автоматически сравнивает хеши с учетом соли
+- Рекомендуется добавить rate limiting для защиты от brute force атак
+
+#### Авторизация
+
+##### Роли пользователей
+
+Система поддерживает три основные роли:
+- **ADMIN** - администратор системы
+- **SUPPLIER** - поставщик
+- **RETAIL_CHAIN** - розничная сеть
+
+##### Контроль доступа на уровне API Gateway
+
+API Gateway проверяет JWT-токен для всех защищённых маршрутов:
+
+```java
+@Override
+public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+    String path = exchange.getRequest().getPath().value();
+    
+    // Публичные пути без аутентификации
+    if (isPublicPath(path)) {
+        return chain.filter(exchange);
+    }
+    
+    String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization");
+    
+    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+        return exchange.getResponse().setComplete();
+    }
+    
+    String token = authHeader.substring(7);
+    
+    if (!jwtProvider.validateToken(token)) {
+        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+        return exchange.getResponse().setComplete();
+    }
+    
+    // Извлечение данных пользователя и добавление в заголовки
+    String email = jwtProvider.getEmailFromToken(token);
+    String role = jwtProvider.getRoleFromToken(token);
+    
+    ServerWebExchange mutatedExchange = exchange.mutate()
+            .request(exchange.getRequest().mutate()
+                    .header("X-User-Email", email)
+                    .header("X-User-Role", role)
+                    .build())
+            .build();
+    
+    return chain.filter(mutatedExchange);
+}
+```
+
+**Публичные эндпоинты** (без аутентификации):
+- `/api/auth/login`
+- `/api/auth/register`
+- `/api/auth/validate`
+- `/api/auth/company/**`
+- `/api/addresses/company/**`
+
+##### Контроль доступа на уровне микросервисов
+
+Auth Service дополнительно использует Spring Security для защиты эндпоинтов:
+
+```java
+@Bean
+public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    http
+        .csrf(csrf -> csrf.disable())
+        .sessionManagement(session -> 
+            session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .authorizeHttpRequests(authz -> authz
+            .requestMatchers("/api/auth/**").permitAll()
+            .requestMatchers("GET", "/api/addresses/**").permitAll()
+            .requestMatchers("/api/addresses/**").authenticated()
+            .requestMatchers("/api/admin/**").authenticated()
+            .requestMatchers("/api/verification/**").authenticated()
+            .anyRequest().permitAll()
+        )
+        .addFilterBefore(jwtAuthenticationFilter(), 
+            UsernamePasswordAuthenticationFilter.class);
+    
+    return http.build();
+}
+```
+
+##### JWT Authentication Filter
+
+Фильтр извлекает и валидирует JWT-токен, устанавливая контекст безопасности Spring Security:
+
+```java
+@Override
+protected void doFilterInternal(HttpServletRequest request, 
+                                HttpServletResponse response, 
+                                FilterChain filterChain) 
+        throws ServletException, IOException {
+    
+    String authHeader = request.getHeader("Authorization");
+    
+    if (authHeader != null && authHeader.startsWith("Bearer ")) {
+        String token = authHeader.substring(7);
+        
+        if (jwtProvider.validateToken(token)) {
+            String email = jwtProvider.getEmailFromToken(token);
+            String role = jwtProvider.getRoleFromToken(token);
+            
+            UsernamePasswordAuthenticationToken auth = 
+                new UsernamePasswordAuthenticationToken(
+                    email,
+                    null,
+                    Collections.singleton(new SimpleGrantedAuthority("ROLE_" + role))
+                );
+            
+            SecurityContextHolder.getContext().setAuthentication(auth);
+        }
+    }
+    
+    filterChain.doFilter(request, response);
+}
+```
+
+#### Защита данных
+
+##### Хеширование паролей
+
+Пароли хешируются с использованием **BCrypt** - адаптивной криптографической функции с поддержкой соли:
+
+```java
+@Configuration
+public class SecurityConfig {
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}
+
+// Использование при регистрации
+User user = User.builder()
+        .email(request.getEmail())
+        .passwordHash(passwordEncoder.encode(request.getPassword()))
+        .role(userRole)
+        .build();
+```
+
+**Преимущества BCrypt:**
+- Автоматическая генерация соли
+- Защита от rainbow table атак
+- Адаптивная стоимость вычислений
+
+##### База данных
+
+- **MySQL 8.0** с диалектом Hibernate
+- Безопасное хранение учетных данных БД в `application.properties`
+- Рекомендуется использовать переменные окружения для production
+
+```properties
+spring.datasource.url=jdbc:mysql://localhost:3306/user_db
+spring.datasource.username=app_user
+spring.datasource.password=app_password
+```
+
+#### CORS (Cross-Origin Resource Sharing)
+
+Настроена политика CORS для безопасного взаимодействия с фронтенд-приложениями:
+
+```java
+@Bean
+public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration configuration = new CorsConfiguration();
+    configuration.setAllowedOrigins(Arrays.asList(
+        "http://localhost:4200", 
+        "http://localhost:3000", 
+        "http://localhost:4201"
+    ));
+    configuration.setAllowedMethods(Arrays.asList(
+        "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
+    ));
+    configuration.setAllowedHeaders(Arrays.asList("*"));
+    configuration.setAllowCredentials(true);
+    configuration.setMaxAge(3600L);
+    
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", configuration);
+    return source;
+}
+```
 
 ### Оценка качества кода
 
