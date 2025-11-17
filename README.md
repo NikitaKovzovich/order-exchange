@@ -144,7 +144,7 @@
 <img width="1070" height="911" alt="Диаграмма_вариантов_использования" src="https://github.com/user-attachments/assets/a52fdf10-c1c1-4bae-adca-aecc41b491e2" />
 
 #### **Диаграмма состояний "Заказ"**
-<img width="1408" height="1411" alt="Диаграмма развертывания" src="https://github.com/user-attachments/assets/ad6058dd-13c5-44ee-9d4e-5cc979fd1552" />
+<img width="593" height="1124" alt="Диаграмма состояний" src="https://github.com/user-attachments/assets/10f7aa80-7cb9-4da1-8747-963dd19ce457" />
 
 #### **Диаграмма последовательности "Создание заказа"**
 <img width="1242" height="861" alt="Диаграмма_последовательности" src="https://github.com/user-attachments/assets/e2ea1e39-521e-4c65-863a-0b7fc5edb500" />
