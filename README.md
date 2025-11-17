@@ -134,7 +134,23 @@
 
 ### UML-диаграммы
 
+#### **Диаграмма развертывания**
+<img width="1408" height="1411" alt="Диаграмма развертывания" src="https://github.com/user-attachments/assets/e5eb436a-e848-4366-85a9-64565019f55f" />
 
+#### **Диаграмма пакетов "order-service"**
+<img width="741" height="601" alt="Диаграмма пакетов" src="https://github.com/user-attachments/assets/fc9a8252-468c-440d-a713-824fe0ff3954" />
+
+#### **Диаграмма вариантов использования**
+<img width="1070" height="911" alt="Диаграмма_вариантов_использования" src="https://github.com/user-attachments/assets/a52fdf10-c1c1-4bae-adca-aecc41b491e2" />
+
+#### **Диаграмма состояний "Заказ"**
+<img width="1408" height="1411" alt="Диаграмма развертывания" src="https://github.com/user-attachments/assets/ad6058dd-13c5-44ee-9d4e-5cc979fd1552" />
+
+#### **Диаграмма последовательности "Создание заказа"**
+<img width="1242" height="861" alt="Диаграмма_последовательности" src="https://github.com/user-attachments/assets/e2ea1e39-521e-4c65-863a-0b7fc5edb500" />
+
+#### **Диаграмма деятельности "Приемка товара"**
+<img width="574" height="681" alt="Диаграмма_деятельностиактивности" src="https://github.com/user-attachments/assets/4e8463c3-a74c-4b5e-8629-341a86bcd4b8" />
 
 ---
 
