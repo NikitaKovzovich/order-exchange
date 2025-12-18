@@ -27,12 +27,11 @@ public class EventPublisher {
 			Integer currentVersion = eventRepository.findMaxVersionByAggregateId(aggregateId);
 			int nextVersion = (currentVersion != null ? currentVersion : 0) + 1;
 
-			if (payload == null) {
-				payload = new HashMap<>();
-			}
-			payload.put("timestamp", LocalDateTime.now().toString());
+			// Create mutable copy of payload to avoid UnsupportedOperationException with immutable maps
+			Map<String, Object> mutablePayload = payload != null ? new HashMap<>(payload) : new HashMap<>();
+			mutablePayload.put("timestamp", LocalDateTime.now().toString());
 
-			String payloadJson = objectMapper.writeValueAsString(payload);
+			String payloadJson = objectMapper.writeValueAsString(mutablePayload);
 
 			Event event = Event.builder()
 					.aggregateId(aggregateId)

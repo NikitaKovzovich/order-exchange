@@ -29,7 +29,8 @@ public class Event {
 	@Column(name = "event_type", nullable = false, length = 100)
 	private String eventType;
 
-	@Column(name = "payload", nullable = false, columnDefinition = "JSON")
+	@Lob
+	@Column(name = "payload", nullable = false)
 	private String payload;
 
 	@Column(name = "created_at", nullable = false)

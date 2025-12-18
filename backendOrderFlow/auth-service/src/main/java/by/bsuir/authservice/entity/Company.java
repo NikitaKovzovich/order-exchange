@@ -58,6 +58,7 @@ public class Company {
 		return switch (this.legalForm) {
 			case IE -> "ИП";
 			case LLC -> "ООО";
+			case JSC -> "АО";
 			case OJSC -> "ОАО";
 			case CJSC -> "ЗАО";
 			case PJSC -> "ПАО";
@@ -85,7 +86,7 @@ public class Company {
 	}
 
 	public enum LegalForm {
-		IE, LLC, OJSC, CJSC, PJSC, PUE
+		IE, LLC, JSC, OJSC, CJSC, PJSC, PUE
 	}
 
 	public enum CompanyStatus {

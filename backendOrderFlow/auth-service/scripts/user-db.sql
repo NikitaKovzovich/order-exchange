@@ -5,7 +5,7 @@ CREATE TABLE company (
     id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     legal_name VARCHAR(255) NOT NULL,
     name VARCHAR(255),
-    legal_form ENUM('IE', 'LLC', 'OJSC', 'CJSC', 'PJSC', 'PUE') NOT NULL,
+    legal_form ENUM('IE', 'LLC', 'JSC', 'OJSC', 'CJSC', 'PJSC', 'PUE') NOT NULL,
     tax_id VARCHAR(20) NOT NULL UNIQUE,
     inn VARCHAR(20),
     registration_date DATE NOT NULL,
@@ -108,3 +108,68 @@ CREATE TABLE events (
     INDEX idx_aggregate_id (aggregate_id),
     UNIQUE INDEX idx_aggregate_version (aggregate_id, version)
 );
+
+-- =====================================================
+-- INSERT ADMIN USER
+-- Password: password123 (BCrypt hash)
+-- =====================================================
+INSERT INTO users (email, password_hash, role, is_active, status, created_at)
+VALUES (
+    'admin@test.com',
+    '$2a$10$N9qo8uLOickgx2ZMRZoMy.MqrqVq1xZz3H8Q4q6v.f8vAuXYLQXAe',
+    'ADMIN',
+    TRUE,
+    'ACTIVE',
+    CURRENT_TIMESTAMP
+);
+
+-- Optional: Test supplier user (password: password123)
+INSERT INTO company (legal_name, name, legal_form, tax_id, registration_date, status, contact_phone, verified, created_at)
+VALUES (
+    'ООО Тестовый Поставщик',
+    'Тестовый Поставщик',
+    'LLC',
+    '123456789',
+    '2020-01-15',
+    'ACTIVE',
+    '+375291234567',
+    TRUE,
+    CURRENT_TIMESTAMP
+);
+
+INSERT INTO users (email, password_hash, company_id, role, is_active, status, created_at)
+VALUES (
+    'supplier@test.com',
+    '$2a$10$N9qo8uLOickgx2ZMRZoMy.MqrqVq1xZz3H8Q4q6v.f8vAuXYLQXAe',
+    LAST_INSERT_ID(),
+    'SUPPLIER',
+    TRUE,
+    'ACTIVE',
+    CURRENT_TIMESTAMP
+);
+
+-- Optional: Test retail chain user (password: password123)
+INSERT INTO company (legal_name, name, legal_form, tax_id, registration_date, status, contact_phone, verified, created_at)
+VALUES (
+    'ОАО Торговая Сеть',
+    'Торговая Сеть',
+    'JSC',
+    '987654321',
+    '2018-05-20',
+    'ACTIVE',
+    '+375297654321',
+    TRUE,
+    CURRENT_TIMESTAMP
+);
+
+INSERT INTO users (email, password_hash, company_id, role, is_active, status, created_at)
+VALUES (
+    'retailchain@test.com',
+    '$2a$10$N9qo8uLOickgx2ZMRZoMy.MqrqVq1xZz3H8Q4q6v.f8vAuXYLQXAe',
+    LAST_INSERT_ID(),
+    'RETAIL_CHAIN',
+    TRUE,
+    'ACTIVE',
+    CURRENT_TIMESTAMP
+);
+

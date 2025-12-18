@@ -23,7 +23,8 @@ public class Address {
 	@Column(name = "address_type", nullable = false)
 	private AddressType addressType;
 
-	@Column(name = "full_address", nullable = false, columnDefinition = "TEXT")
+	@Lob
+	@Column(name = "full_address", nullable = false)
 	private String fullAddress;
 
 	@Builder.Default
