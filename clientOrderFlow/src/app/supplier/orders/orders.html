@@ -78,21 +78,21 @@
       </thead>
       <tbody>
         <tr *ngFor="let order of filteredOrders"
-            [class.bg-red-50]="order.status === 'payment-issue'"
-            [class.border-red-200]="order.status === 'payment-issue'"
+            [class.bg-red-50]="order.statusCode === 'PAYMENT_PROBLEM'"
+            [class.border-red-200]="order.statusCode === 'PAYMENT_PROBLEM'"
             class="bg-white border-b hover:bg-gray-50">
-          <td class="px-6 py-4 font-medium text-gray-900">{{ order.id }}</td>
-          <td class="px-6 py-4">{{ order.date }}</td>
-          <td class="px-6 py-4">{{ order.client }}</td>
-          <td class="px-6 py-4">{{ order.amount }} BYN</td>
+          <td class="px-6 py-4 font-medium text-gray-900">{{ order.orderNumber }}</td>
+          <td class="px-6 py-4">{{ formatDate(order.createdAt) }}</td>
+          <td class="px-6 py-4">{{ order.customerName || 'Клиент #' + order.customerId }}</td>
+          <td class="px-6 py-4">{{ formatAmount(order.totalAmount) }} BYN</td>
           <td class="px-6 py-4">
-            <span [ngClass]="getStatusClass(order.status)" class="status-badge text-xs font-semibold inline-block py-1 px-3 uppercase rounded-full min-w-[180px] text-center">
-              {{ getStatusLabel(order.status) }}
+            <span [ngClass]="getStatusClass(order.statusCode)" class="status-badge text-xs font-semibold inline-block py-1 px-3 uppercase rounded-full min-w-[180px] text-center">
+              {{ getStatusLabel(order.statusCode) }}
             </span>
           </td>
           <td class="px-6 py-4 text-right">
             <a [routerLink]="['/supplier/orders', order.id]"
-               [class.text-red-600]="order.status === 'payment-issue'"
+               [class.text-red-600]="order.statusCode === 'PAYMENT_PROBLEM'"
                class="font-medium text-indigo-600 hover:underline">Просмотр</a>
           </td>
         </tr>

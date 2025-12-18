@@ -18,50 +18,49 @@ import java.util.Map;
 @Slf4j
 public class EventPublisher {
 
-    private final EventRepository eventRepository;
-    private final ObjectMapper objectMapper;
+	private final EventRepository eventRepository;
+	private final ObjectMapper objectMapper;
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void publish(String aggregateType, String aggregateId, String eventType, Map<String, Object> payload) {
-        try {
-            Integer currentVersion = eventRepository.findMaxVersionByAggregateId(aggregateId);
-            int nextVersion = (currentVersion != null ? currentVersion : 0) + 1;
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public void publish(String aggregateType, String aggregateId, String eventType, Map<String, Object> payload) {
+		try {
+			Integer currentVersion = eventRepository.findMaxVersionByAggregateId(aggregateId);
+			int nextVersion = (currentVersion != null ? currentVersion : 0) + 1;
 
-            if (payload == null) {
-                payload = new HashMap<>();
-            }
-            payload.put("timestamp", LocalDateTime.now().toString());
+			if (payload == null) {
+				payload = new HashMap<>();
+			}
+			payload.put("timestamp", LocalDateTime.now().toString());
 
-            String payloadJson = objectMapper.writeValueAsString(payload);
+			String payloadJson = objectMapper.writeValueAsString(payload);
 
-            Event event = Event.builder()
-                    .aggregateId(aggregateId)
-                    .aggregateType(aggregateType)
-                    .version(nextVersion)
-                    .eventType(eventType)
-                    .payload(payloadJson)
-                    .createdAt(LocalDateTime.now())
-                    .build();
+			Event event = Event.builder()
+					.aggregateId(aggregateId)
+					.aggregateType(aggregateType)
+					.version(nextVersion)
+					.eventType(eventType)
+					.payload(payloadJson)
+					.createdAt(LocalDateTime.now())
+					.build();
 
-            eventRepository.save(event);
+			eventRepository.save(event);
 
-            log.info("✓ Event published: {} - {} v{} ({})",
-                    aggregateType, aggregateId, nextVersion, eventType);
+			log.info("✓ Event published: {} - {} v{} ({})",
+					aggregateType, aggregateId, nextVersion, eventType);
 
-        } catch (Exception e) {
-            log.error("✗ Failed to publish event: {} - {} ({})",
-                    aggregateType, aggregateId, eventType, e);
-        }
-    }
+		} catch (Exception e) {
+			log.error("✗ Failed to publish event: {} - {} ({})",
+					aggregateType, aggregateId, eventType, e);
+		}
+	}
 
-    public void publishSimple(String aggregateType, String aggregateId, String eventType, String message) {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("message", message);
-        publish(aggregateType, aggregateId, eventType, payload);
-    }
+	public void publishSimple(String aggregateType, String aggregateId, String eventType, String message) {
+		Map<String, Object> payload = new HashMap<>();
+		payload.put("message", message);
+		publish(aggregateType, aggregateId, eventType, payload);
+	}
 
-    public void publishEmpty(String aggregateType, String aggregateId, String eventType) {
-        publish(aggregateType, aggregateId, eventType, new HashMap<>());
-    }
+	public void publishEmpty(String aggregateType, String aggregateId, String eventType) {
+		publish(aggregateType, aggregateId, eventType, new HashMap<>());
+	}
 }
-

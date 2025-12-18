@@ -9,7 +9,6 @@ import java.util.Optional;
 
 @Repository
 public interface CompanyDocumentRepository extends JpaRepository<CompanyDocument, Long> {
-    List<CompanyDocument> findByCompanyId(Long companyId);
-    Optional<CompanyDocument> findByCompanyIdAndDocumentType(Long companyId, CompanyDocument.DocumentType documentType);
+	List<CompanyDocument> findByCompanyId(Long companyId);
+	Optional<CompanyDocument> findByCompanyIdAndDocumentType(Long companyId, CompanyDocument.DocumentType documentType);
 }
-

@@ -1,89 +1,139 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { OrderService } from '../../services/order.service';
+import { DocumentService } from '../../services/document.service';
+import { Order, OrderStatus } from '../../models/api.models';
 
 @Component({
   selector: 'app-order-detail',
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule],
   templateUrl: './order-detail.html',
   styleUrl: './order-detail.css'
 })
 export class OrderDetail implements OnInit {
-  orderId: string = '';
+  orderId: number = 0;
+  order: Order | null = null;
+  isLoading: boolean = false;
+  showDiscrepancyModal: boolean = false;
 
-  order = {
-    id: '12345',
-    supplier: 'Продукты Оптом',
-    date: '30.09.2025',
-    deliveryDate: '05.10.2025',
-    amount: '8 240,00',
-    status: 'in-transit',
-    statusLabel: 'В пути',
-    trackingNumber: 'TRK-2025-09-30-001',
-    items: [
-      { id: 1, name: 'Молоко "Деревенское" 3.2% 1л', quantity: 100, price: '2.50', total: '250.00' },
-      { id: 2, name: 'Сыр "Российский" весовой', quantity: 20, price: '18.00', total: '360.00' },
-      { id: 3, name: 'Творог "Домашний" 9%', quantity: 50, price: '4.80', total: '240.00' }
-    ],
-    timeline: [
-      { date: '30.09.2025 10:00', status: 'Заказ создан', description: 'Заказ оформлен и отправлен поставщику' },
-      { date: '30.09.2025 14:30', status: 'Заказ подтвержден', description: 'Поставщик подтвердил наличие товаров' },
-      { date: '01.10.2025 09:00', status: 'Заказ оплачен', description: 'Оплата подтверждена' },
-      { date: '02.10.2025 15:00', status: 'Заказ отгружен', description: 'Товар передан в доставку' },
-      { date: '03.10.2025 08:00', status: 'В пути', description: 'Заказ находится в пути', active: true }
-    ],
-    contact: {
-      name: 'Иван Петров',
-      phone: '+375 29 123-45-67',
-      email: 'i.petrov@produkty-optom.by'
-    },
-    documents: [
-      { name: 'Счет на оплату', type: 'invoice', date: '30.09.2025' },
-      { name: 'УПД', type: 'upd', date: '02.10.2025' }
-    ]
-  };
-
-  constructor(private route: ActivatedRoute) {}
+  constructor(
+    private route: ActivatedRoute,
+    private orderService: OrderService,
+    private documentService: DocumentService
+  ) {}
 
   ngOnInit() {
     this.route.params.subscribe(params => {
-      this.orderId = params['id'];
+      this.orderId = parseInt(params['id']);
+      this.loadOrder();
     });
   }
 
-  getStatusClass(status: string): string {
+  loadOrder() {
+    this.isLoading = true;
+    this.orderService.getOrderById(this.orderId).subscribe({
+      next: (order) => {
+        this.order = order;
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading order:', error);
+        this.isLoading = false;
+      }
+    });
+  }
+
+  getStatusClass(status: OrderStatus): string {
     const classes: { [key: string]: string } = {
-      'pending': 'bg-yellow-100 text-yellow-800',
-      'awaiting-payment': 'bg-orange-100 text-orange-800',
-      'paid': 'bg-blue-100 text-blue-800',
-      'in-transit': 'bg-indigo-100 text-indigo-800',
-      'delivered': 'bg-green-100 text-green-800',
-      'closed': 'bg-gray-100 text-gray-800',
-      'rejected': 'bg-red-100 text-red-800',
-      'payment-issue': 'bg-red-100 text-red-800'
+      'PENDING_CONFIRMATION': 'bg-yellow-100 text-yellow-800',
+      'CONFIRMED': 'bg-teal-100 text-teal-800',
+      'REJECTED': 'bg-red-100 text-red-800',
+      'AWAITING_PAYMENT': 'bg-orange-100 text-orange-800',
+      'PENDING_PAYMENT_VERIFICATION': 'bg-purple-100 text-purple-800',
+      'PAID': 'bg-blue-100 text-blue-800',
+      'PAYMENT_PROBLEM': 'bg-red-100 text-red-800',
+      'AWAITING_SHIPMENT': 'bg-blue-100 text-blue-800',
+      'SHIPPED': 'bg-indigo-100 text-indigo-800',
+      'DELIVERED': 'bg-green-100 text-green-800',
+      'AWAITING_CORRECTION': 'bg-orange-100 text-orange-800',
+      'CLOSED': 'bg-gray-100 text-gray-800',
+      'CANCELLED': 'bg-gray-100 text-gray-800'
     };
     return classes[status] || 'bg-gray-100 text-gray-800';
   }
 
+  getStatusLabel(status: OrderStatus): string {
+    const labels: { [key: string]: string } = {
+      'PENDING_CONFIRMATION': 'Ожидает подтверждения',
+      'CONFIRMED': 'Подтвержден',
+      'REJECTED': 'Отклонен',
+      'AWAITING_PAYMENT': 'Ожидает оплаты',
+      'PENDING_PAYMENT_VERIFICATION': 'Проверка оплаты',
+      'PAID': 'Оплачен',
+      'PAYMENT_PROBLEM': 'Проблема с оплатой',
+      'AWAITING_SHIPMENT': 'Ожидает отгрузки',
+      'SHIPPED': 'В пути',
+      'DELIVERED': 'Доставлен',
+      'AWAITING_CORRECTION': 'Ожидает корректировки',
+      'CLOSED': 'Закрыт',
+      'CANCELLED': 'Отменен'
+    };
+    return labels[status] || status;
+  }
+
   confirmDelivery() {
-    console.log('Подтверждение доставки заказа:', this.orderId);
+    if (!this.order) return;
+    this.orderService.confirmDelivery(this.orderId).subscribe({
+      next: (order) => {
+        this.order = order;
+      },
+      error: (error) => console.error('Error confirming delivery:', error)
+    });
   }
 
   reportIssue() {
-    console.log('Сообщение о проблеме с заказом:', this.orderId);
+    this.showDiscrepancyModal = true;
   }
 
   downloadDocument(docType: string) {
-    console.log('Скачивание документа:', docType);
+    this.documentService.getEntityDocuments('ORDER', this.orderId).subscribe({
+      next: (docs) => {
+        const doc = docs.find(d => d.documentType === docType);
+        if (doc) {
+          this.documentService.downloadDocument(doc.id).subscribe({
+            next: (blob) => {
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = doc.fileName;
+              a.click();
+              window.URL.revokeObjectURL(url);
+            }
+          });
+        }
+      },
+      error: (error) => console.error('Error downloading document:', error)
+    });
   }
 
   cancelOrder() {
-    if (confirm('Вы уверены, что хотите отменить заказ?')) {
-      console.log('Отмена заказа:', this.orderId);
-    }
+    if (!confirm('Вы уверены, что хотите отменить заказ?')) return;
+
+    this.orderService.cancelOrder(this.orderId).subscribe({
+      next: (order) => {
+        this.order = order;
+      },
+      error: (error) => console.error('Error cancelling order:', error)
+    });
   }
 
-  contactSupplier() {
-    console.log('Связаться с поставщиком');
+  formatDate(dateStr: string): string {
+    return new Date(dateStr).toLocaleDateString('ru-RU');
+  }
+
+  formatAmount(amount: number): string {
+    return amount.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 }

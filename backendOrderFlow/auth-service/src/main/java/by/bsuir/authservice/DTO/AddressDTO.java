@@ -10,8 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class AddressDTO {
-    private String addressType;
-    private String fullAddress;
-    private Boolean isDefault;
+	private String addressType;
+	private String fullAddress;
+	private Boolean isDefault;
 }
-

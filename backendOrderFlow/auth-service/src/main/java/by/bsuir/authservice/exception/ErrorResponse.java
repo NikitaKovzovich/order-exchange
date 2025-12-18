@@ -8,8 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ErrorResponse {
-    private String message;
-    private int statusCode;
-    private long timestamp;
+	private String message;
+	private int statusCode;
+	private long timestamp;
 }
-

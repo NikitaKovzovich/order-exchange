@@ -16,35 +16,34 @@ import java.util.Collections;
 
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-    private final JwtProvider jwtProvider;
+	private final JwtProvider jwtProvider;
 
-    @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
+	@Override
+	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+			throws ServletException, IOException {
 
-        try {
-            String authHeader = request.getHeader("Authorization");
+		try {
+			String authHeader = request.getHeader("Authorization");
 
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                String token = authHeader.substring(7);
+			if (authHeader != null && authHeader.startsWith("Bearer ")) {
+				String token = authHeader.substring(7);
 
-                if (jwtProvider.validateToken(token)) {
-                    String email = jwtProvider.getEmailFromToken(token);
-                    String role = jwtProvider.getRoleFromToken(token);
+				if (jwtProvider.validateToken(token)) {
+					String email = jwtProvider.getEmailFromToken(token);
+					String role = jwtProvider.getRoleFromToken(token);
 
-                    UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                            email,
-                            null,
-                            Collections.singleton(new SimpleGrantedAuthority("ROLE_" + role))
-                    );
+					UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+							email,
+							null,
+							Collections.singleton(new SimpleGrantedAuthority("ROLE_" + role))
+					);
 
-                    SecurityContextHolder.getContext().setAuthentication(auth);
-                }
-            }
-        } catch (Exception e) {
-        }
+					SecurityContextHolder.getContext().setAuthentication(auth);
+				}
+			}
+		} catch (Exception e) {
+		}
 
-        filterChain.doFilter(request, response);
-    }
+		filterChain.doFilter(request, response);
+	}
 }
-

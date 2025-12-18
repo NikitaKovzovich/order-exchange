@@ -3,16 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Header } from '../shared/header/header';
-
-interface SupportTicket {
-  id: number;
-  title: string;
-  subject: string;
-  company: string;
-  userName: string;
-  status: string;
-  createdAt: string;
-}
+import { ChatService } from '../../services/chat.service';
+import { SupportTicket, TicketStatus } from '../../models/api.models';
 
 @Component({
   selector: 'admin-support',
@@ -24,24 +16,37 @@ interface SupportTicket {
 export class Support implements OnInit {
   searchQuery: string = '';
   selectedStatus: string = 'all';
+  isLoading: boolean = false;
 
-  tickets: SupportTicket[] = [
-    { id: 1, title: 'Проблема с оплатой', subject: 'Проблема с оплатой', company: 'БелПродукт', userName: 'ООО "БелПродукт"', status: 'open', createdAt: '2024-10-18' },
-    { id: 2, title: 'Вопрос по доставке', subject: 'Вопрос по доставке', company: 'Евроопт', userName: 'Евроопт', status: 'open', createdAt: '2024-10-17' },
-    { id: 3, title: 'Ошибка в заказе', subject: 'Ошибка в заказе', company: 'ИП Иванов', userName: 'ИП Иванов', status: 'closed', createdAt: '2024-10-16' }
-  ];
-
+  tickets: SupportTicket[] = [];
   filteredTickets: SupportTicket[] = [];
 
+  constructor(private chatService: ChatService) {}
+
   ngOnInit() {
-    this.filteredTickets = this.tickets;
+    this.loadTickets();
+  }
+
+  loadTickets() {
+    this.isLoading = true;
+    this.chatService.getAllTickets().subscribe({
+      next: (tickets) => {
+        this.tickets = tickets;
+        this.applyFilters();
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading tickets:', error);
+        this.isLoading = false;
+      }
+    });
   }
 
   applyFilters() {
     this.filteredTickets = this.tickets.filter(ticket => {
       const matchesSearch = !this.searchQuery ||
-        ticket.title.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-        ticket.company.toLowerCase().includes(this.searchQuery.toLowerCase());
+        ticket.subject.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+        ticket.ticketNumber.toLowerCase().includes(this.searchQuery.toLowerCase());
 
       const matchesStatus = this.selectedStatus === 'all' || ticket.status === this.selectedStatus;
 
@@ -49,13 +54,36 @@ export class Support implements OnInit {
     });
   }
 
-  getStatusLabel(status: string): string {
-    return status === 'open' ? 'Открыто' : 'Закрыто';
+  assignTicket(ticketId: number) {
+    this.chatService.assignTicket(ticketId).subscribe({
+      next: () => this.loadTickets(),
+      error: (error) => console.error('Error assigning ticket:', error)
+    });
   }
 
-  getStatusClass(status: string): string {
-    return status === 'open'
-      ? 'bg-green-100 text-green-800'
-      : 'bg-gray-100 text-gray-800';
+  getStatusLabel(status: TicketStatus): string {
+    const labels: { [key: string]: string } = {
+      'OPEN': 'Открыт',
+      'IN_PROGRESS': 'В работе',
+      'WAITING_USER': 'Ожидает ответа',
+      'RESOLVED': 'Решен',
+      'CLOSED': 'Закрыт'
+    };
+    return labels[status] || status;
+  }
+
+  getStatusClass(status: TicketStatus): string {
+    const classes: { [key: string]: string } = {
+      'OPEN': 'bg-green-100 text-green-800',
+      'IN_PROGRESS': 'bg-blue-100 text-blue-800',
+      'WAITING_USER': 'bg-yellow-100 text-yellow-800',
+      'RESOLVED': 'bg-indigo-100 text-indigo-800',
+      'CLOSED': 'bg-gray-100 text-gray-800'
+    };
+    return classes[status] || 'bg-gray-100 text-gray-800';
+  }
+
+  formatDate(dateStr: string): string {
+    return new Date(dateStr).toLocaleDateString('ru-RU');
   }
 }

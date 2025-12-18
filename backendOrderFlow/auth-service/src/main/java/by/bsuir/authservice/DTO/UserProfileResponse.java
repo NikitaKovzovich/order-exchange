@@ -10,9 +10,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class UserProfileResponse {
-    private Long id;
-    private String email;
-    private String role;
-    private Long companyId;
+	private Long id;
+	private String email;
+	private String role;
+	private Long companyId;
 }
-

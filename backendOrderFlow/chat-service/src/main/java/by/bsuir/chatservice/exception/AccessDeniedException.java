@@ -1,0 +1,7 @@
+package by.bsuir.chatservice.exception;
+
+public class AccessDeniedException extends RuntimeException {
+	public AccessDeniedException(String message) {
+		super(message);
+	}
+}

@@ -11,11 +11,10 @@ import java.util.Optional;
 @Repository
 public interface EventRepository extends JpaRepository<Event, Long> {
 
-    List<Event> findByAggregateIdOrderByVersionAsc(String aggregateId);
+	List<Event> findByAggregateIdOrderByVersionAsc(String aggregateId);
 
-    @Query("SELECT COALESCE(MAX(e.version), 0) FROM Event e WHERE e.aggregateId = :aggregateId")
-    Integer findMaxVersionByAggregateId(String aggregateId);
+	@Query("SELECT COALESCE(MAX(e.version), 0) FROM Event e WHERE e.aggregateId = :aggregateId")
+	Integer findMaxVersionByAggregateId(String aggregateId);
 
-    Optional<Event> findFirstByAggregateIdOrderByVersionDesc(String aggregateId);
+	Optional<Event> findFirstByAggregateIdOrderByVersionDesc(String aggregateId);
 }
-

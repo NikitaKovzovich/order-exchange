@@ -1,8 +1,11 @@
-import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { Chart } from 'chart.js';
 import { Header } from '../shared/header/header';
+import { AdminService, PendingVerificationRequest } from '../../services/admin.service';
+import { ChatService } from '../../services/chat.service';
+import { SupportTicket } from '../../models/api.models';
 
 interface StatCard {
   title: string;
@@ -13,22 +16,6 @@ interface StatCard {
   colorClass: string;
 }
 
-interface RegistrationRequest {
-  company: string;
-  role: string;
-  roleClass: string;
-  date: string;
-  id: number;
-}
-
-interface SupportTicket {
-  id: string;
-  title: string;
-  company: string;
-  status: string;
-  statusClass: string;
-}
-
 @Component({
   selector: 'admin-dashboard',
   standalone: true,
@@ -36,54 +23,85 @@ interface SupportTicket {
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.css']
 })
-export class Dashboard implements OnInit, AfterViewInit {
+export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('usersChart') usersChart?: ElementRef<HTMLCanvasElement>;
 
-  stats: StatCard[] = [
-    {
-      title: 'Всего пользователей',
-      value: '1,254',
-      change: '+25 за неделю',
-      icon: 'users',
-      trend: 'up',
-      colorClass: 'bg-blue-100 text-blue-600'
-    },
-    {
-      title: 'Заказов (за месяц)',
-      value: '5,890',
-      change: '+12% к прошлому месяцу',
-      icon: 'orders',
-      trend: 'up',
-      colorClass: 'bg-green-100 text-green-600'
-    },
-    {
-      title: 'Общий оборот (за месяц)',
-      value: '1.2M BYN',
-      change: '-5% к прошлому месяцу',
-      icon: 'revenue',
-      trend: 'down',
-      colorClass: 'bg-yellow-100 text-yellow-600'
-    }
-  ];
-
-  registrationRequests: RegistrationRequest[] = [
-    { company: 'Молочный Мир', role: 'Поставщик', roleClass: 'bg-green-100 text-green-800', date: '16.10.2025', id: 1 },
-    { company: 'Супермаркет "Угол"', role: 'Торговая сеть', roleClass: 'bg-blue-100 text-blue-800', date: '16.10.2025', id: 2 },
-    { company: 'ФруктТорг', role: 'Поставщик', roleClass: 'bg-green-100 text-green-800', date: '15.10.2025', id: 3 }
-  ];
-
-  supportTickets: SupportTicket[] = [
-    { id: 'TKT-105', title: 'Не могу загрузить УПД', company: 'Сеть Магазинов', status: 'Новое', statusClass: 'bg-red-100 text-red-800' },
-    { id: 'TKT-104', title: 'Ошибка при смене пароля', company: 'Продукты Оптом', status: 'В работе', statusClass: 'bg-yellow-100 text-yellow-800' },
-    { id: 'TKT-102', title: 'Вопрос по API', company: 'Гипермаркет', status: 'Решен', statusClass: 'bg-gray-100 text-gray-800' }
-  ];
+  stats: StatCard[] = [];
+  registrationRequests: PendingVerificationRequest[] = [];
+  supportTickets: SupportTicket[] = [];
+  isLoading: boolean = false;
 
   private chartInstance?: Chart;
 
-  ngOnInit() {}
+  constructor(
+    private adminService: AdminService,
+    private chatService: ChatService
+  ) {}
+
+  ngOnInit() {
+    this.loadDashboardData();
+  }
 
   ngAfterViewInit() {
-    this.initUsersChart();
+    setTimeout(() => this.initUsersChart(), 100);
+  }
+
+  ngOnDestroy() {
+    this.chartInstance?.destroy();
+  }
+
+  loadDashboardData() {
+    this.isLoading = true;
+
+    this.adminService.getDashboardStats().subscribe({
+      next: (data) => {
+        this.stats = [
+          {
+            title: 'Всего пользователей',
+            value: data.totalUsers.toLocaleString('ru-RU'),
+            change: '',
+            icon: 'users',
+            trend: 'up',
+            colorClass: 'bg-blue-100 text-blue-600'
+          },
+          {
+            title: 'Активных заказов',
+            value: data.activeOrders.toLocaleString('ru-RU'),
+            change: '',
+            icon: 'orders',
+            trend: 'up',
+            colorClass: 'bg-green-100 text-green-600'
+          },
+          {
+            title: 'Ожидают верификации',
+            value: data.pendingVerifications,
+            change: '',
+            icon: 'verification',
+            trend: data.pendingVerifications > 0 ? 'up' : 'down',
+            colorClass: 'bg-yellow-100 text-yellow-600'
+          }
+        ];
+      },
+      error: (error) => console.error('Error loading stats:', error)
+    });
+
+    this.adminService.getPendingVerificationRequests().subscribe({
+      next: (requests) => {
+        this.registrationRequests = requests.slice(0, 5);
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading verification requests:', error);
+        this.isLoading = false;
+      }
+    });
+
+    this.chatService.getAllTickets().subscribe({
+      next: (tickets) => {
+        this.supportTickets = tickets.filter(t => t.status !== 'CLOSED').slice(0, 5);
+      },
+      error: (error) => console.error('Error loading tickets:', error)
+    });
   }
 
   private initUsersChart() {
@@ -106,18 +124,31 @@ export class Dashboard implements OnInit, AfterViewInit {
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          },
-          plugins: {
-            legend: {
-              display: false
-            }
-          }
+          scales: { y: { beginAtZero: true } },
+          plugins: { legend: { display: false } }
         }
       });
     }
+  }
+
+  getRoleClass(role: string): string {
+    return role === 'SUPPLIER' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800';
+  }
+
+  getRoleLabel(role: string): string {
+    return role === 'SUPPLIER' ? 'Поставщик' : 'Торговая сеть';
+  }
+
+  getStatusClass(status: string): string {
+    const classes: { [key: string]: string } = {
+      'OPEN': 'bg-red-100 text-red-800',
+      'IN_PROGRESS': 'bg-yellow-100 text-yellow-800',
+      'RESOLVED': 'bg-gray-100 text-gray-800'
+    };
+    return classes[status] || 'bg-gray-100 text-gray-800';
+  }
+
+  formatDate(dateStr: string): string {
+    return new Date(dateStr).toLocaleDateString('ru-RU');
   }
 }

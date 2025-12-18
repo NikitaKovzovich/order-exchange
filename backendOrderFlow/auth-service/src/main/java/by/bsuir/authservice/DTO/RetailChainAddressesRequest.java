@@ -12,7 +12,6 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class RetailChainAddressesRequest {
-    private Long companyId;
-    private List<AddressDTO> addresses;
+	private Long companyId;
+	private List<AddressDTO> addresses;
 }
-

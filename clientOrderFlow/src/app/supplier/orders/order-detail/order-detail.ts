@@ -1,118 +1,175 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-
-interface OrderItem {
-  name: string;
-  sku: string;
-  quantity: number;
-  price: number;
-  total: number;
-}
-
-interface Order {
-  id: string;
-  date: string;
-  status: 'pending' | 'awaiting-payment' | 'verifying-payment' | 'paid' | 'awaiting-shipping' | 'in-transit' | 'delivered';
-  total: number;
-  customerName: string;
-  customerInn: string;
-  supplierName: string;
-  supplierInn: string;
-  deliveryAddress: string;
-  items: OrderItem[];
-}
+import { FormsModule } from '@angular/forms';
+import { OrderService } from '../../../services/order.service';
+import { DocumentService } from '../../../services/document.service';
+import { Order, OrderStatus } from '../../../models/api.models';
 
 @Component({
   selector: 'app-order-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule],
   templateUrl: './order-detail.html',
   styleUrls: ['./order-detail.css']
 })
 export class OrderDetail implements OnInit {
-  orderId: string = '';
-
-  order: Order = {
-    id: '10234',
-    date: '2024-10-15',
-    status: 'pending',
-    total: 624.00,
-    customerName: 'Открытое акционерное общество "Сеть Магазинов"',
-    customerInn: '199876543',
-    supplierName: 'Частное торговое унитарное предприятие "Продукты Оптом"',
-    supplierInn: '191234567',
-    deliveryAddress: 'г. Минск, ул. Торговая, д. 15',
-    items: [
-      { name: 'Молоко "Деревенское" 3.2% 1л', sku: 'MLK-001', quantity: 100, price: 2.50, total: 250.00 },
-      { name: 'Хлеб "Бородинский"', sku: 'BRD-015', quantity: 80, price: 1.80, total: 144.00 },
-      { name: 'Сыр "Российский"', sku: 'CHS-032', quantity: 10, price: 18.00, total: 180.00 },
-      { name: 'Масло сливочное 82%', sku: 'BTR-008', quantity: 4, price: 12.50, total: 50.00 }
-    ]
-  };
+  orderId: number = 0;
+  order: Order | null = null;
+  isLoading: boolean = false;
+  showRejectModal: boolean = false;
+  rejectionReason: string = '';
 
   constructor(
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private orderService: OrderService,
+    private documentService: DocumentService
   ) {}
 
   ngOnInit() {
-    this.orderId = this.route.snapshot.paramMap.get('id') || '';
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) {
+      this.orderId = parseInt(id);
+      this.loadOrder();
+    }
   }
 
-  getStatusLabel(status: string): string {
+  loadOrder() {
+    this.isLoading = true;
+    this.orderService.getOrderById(this.orderId).subscribe({
+      next: (order) => {
+        this.order = order;
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading order:', error);
+        this.isLoading = false;
+      }
+    });
+  }
+
+  getStatusLabel(status: OrderStatus): string {
     const labels: { [key: string]: string } = {
-      'pending': 'Ожидает подтверждения',
-      'awaiting-payment': 'Ожидает оплаты',
-      'verifying-payment': 'Ожидает проверки оплаты',
-      'paid': 'Оплачен',
-      'awaiting-shipping': 'Ожидает отгрузки',
-      'in-transit': 'В пути',
-      'delivered': 'Доставлен'
+      'PENDING_CONFIRMATION': 'Ожидает подтверждения',
+      'CONFIRMED': 'Подтвержден',
+      'REJECTED': 'Отклонен',
+      'AWAITING_PAYMENT': 'Ожидает оплаты',
+      'PENDING_PAYMENT_VERIFICATION': 'Ожидает проверки оплаты',
+      'PAID': 'Оплачен',
+      'PAYMENT_PROBLEM': 'Проблема с оплатой',
+      'AWAITING_SHIPMENT': 'Ожидает отгрузки',
+      'SHIPPED': 'В пути',
+      'DELIVERED': 'Доставлен',
+      'AWAITING_CORRECTION': 'Ожидает корректировки',
+      'CLOSED': 'Закрыт',
+      'CANCELLED': 'Отменен'
     };
     return labels[status] || status;
   }
 
-  getStatusColor(status: string): string {
+  getStatusColor(status: OrderStatus): string {
     const colors: { [key: string]: string } = {
-      'pending': 'text-blue-600 bg-blue-200',
-      'awaiting-payment': 'text-yellow-600 bg-yellow-200',
-      'verifying-payment': 'text-purple-600 bg-purple-200',
-      'paid': 'text-green-600 bg-green-200',
-      'awaiting-shipping': 'text-orange-600 bg-orange-200',
-      'in-transit': 'text-cyan-600 bg-cyan-200',
-      'delivered': 'text-indigo-600 bg-indigo-200'
+      'PENDING_CONFIRMATION': 'text-blue-600 bg-blue-200',
+      'CONFIRMED': 'text-teal-600 bg-teal-200',
+      'REJECTED': 'text-red-600 bg-red-200',
+      'AWAITING_PAYMENT': 'text-yellow-600 bg-yellow-200',
+      'PENDING_PAYMENT_VERIFICATION': 'text-purple-600 bg-purple-200',
+      'PAID': 'text-green-600 bg-green-200',
+      'PAYMENT_PROBLEM': 'text-red-600 bg-red-200',
+      'AWAITING_SHIPMENT': 'text-orange-600 bg-orange-200',
+      'SHIPPED': 'text-cyan-600 bg-cyan-200',
+      'DELIVERED': 'text-indigo-600 bg-indigo-200',
+      'AWAITING_CORRECTION': 'text-orange-600 bg-orange-200',
+      'CLOSED': 'text-gray-600 bg-gray-200',
+      'CANCELLED': 'text-gray-600 bg-gray-200'
     };
     return colors[status] || 'text-gray-600 bg-gray-200';
   }
 
   confirmOrder() {
-    this.order.status = 'awaiting-payment';
-    alert('Заказ подтвержден. Ожидается оплата от клиента.');
+    if (!this.order) return;
+    this.orderService.confirmOrder(this.orderId).subscribe({
+      next: (order) => {
+        this.order = order;
+      },
+      error: (error) => console.error('Error confirming order:', error)
+    });
+  }
+
+  openRejectModal() {
+    this.showRejectModal = true;
+  }
+
+  closeRejectModal() {
+    this.showRejectModal = false;
+    this.rejectionReason = '';
   }
 
   rejectOrder() {
-    if (confirm('Вы уверены, что хотите отклонить заказ?')) {
-      alert('Заказ отклонен');
-      this.router.navigate(['/supplier/orders']);
-    }
+    if (!this.rejectionReason.trim()) return;
+    this.orderService.rejectOrder(this.orderId, { reason: this.rejectionReason }).subscribe({
+      next: () => {
+        this.router.navigate(['/supplier/orders']);
+      },
+      error: (error) => console.error('Error rejecting order:', error)
+    });
   }
 
   verifyPayment() {
-    this.order.status = 'paid';
-    alert('Оплата подтверждена!');
+    if (!this.order) return;
+    this.orderService.confirmPayment(this.orderId).subscribe({
+      next: (order) => {
+        this.order = order;
+      },
+      error: (error) => console.error('Error verifying payment:', error)
+    });
+  }
+
+  rejectPayment() {
+    const reason = prompt('Укажите причину отклонения оплаты:');
+    if (!reason) return;
+    this.orderService.rejectPayment(this.orderId, reason).subscribe({
+      next: (order) => {
+        this.order = order;
+      },
+      error: (error) => console.error('Error rejecting payment:', error)
+    });
   }
 
   markAsShipped() {
-    this.order.status = 'in-transit';
-    alert('Заказ отмечен как отгруженный и находится в пути.');
+    if (!this.order) return;
+    this.orderService.shipOrder(this.orderId).subscribe({
+      next: (order) => {
+        this.order = order;
+      },
+      error: (error) => console.error('Error shipping order:', error)
+    });
   }
 
-  generateInvoice() {
-    alert('Счет на оплату сформирован и отправлен клиенту.');
+  generateTTN() {
+    this.documentService.generateTTN(this.orderId).subscribe({
+      next: (doc) => {
+        this.documentService.downloadDocument(doc.id).subscribe({
+          next: (blob) => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = doc.fileName;
+            a.click();
+            window.URL.revokeObjectURL(url);
+          }
+        });
+      },
+      error: (error) => console.error('Error generating TTN:', error)
+    });
   }
 
-  generateUPD() {
-    alert('УПД сформирован и доступен для скачивания.');
+  formatDate(dateStr: string): string {
+    return new Date(dateStr).toLocaleDateString('ru-RU');
+  }
+
+  formatAmount(amount: number): string {
+    return amount.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 }

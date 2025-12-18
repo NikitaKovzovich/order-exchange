@@ -11,21 +11,20 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class BankAccount {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @OneToOne
-    @JoinColumn(name = "company_id", nullable = false, unique = true)
-    private Company company;
+	@OneToOne
+	@JoinColumn(name = "company_id", nullable = false, unique = true)
+	private Company company;
 
-    @Column(name = "bank_name", nullable = false)
-    private String bankName;
+	@Column(name = "bank_name", nullable = false)
+	private String bankName;
 
-    @Column(name = "bic", nullable = false, length = 20)
-    private String bic;
+	@Column(name = "bic", nullable = false, length = 20)
+	private String bic;
 
-    @Column(name = "account_number", nullable = false, length = 50)
-    private String accountNumber;
+	@Column(name = "account_number", nullable = false, length = 50)
+	private String accountNumber;
 }
-

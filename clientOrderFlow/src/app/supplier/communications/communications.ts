@@ -1,22 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-
-interface Message {
-  sender: string;
-  text: string;
-  time: string;
-}
-
-interface Chat {
-  id: number;
-  name: string;
-  lastMessage: string;
-  lastMessageTime: string;
-  unread: number;
-  status: string;
-  messages: Message[];
-}
+import { ChatService } from '../../services/chat.service';
+import { AuthService } from '../../services/auth.service';
+import { ChatChannel, ChatMessage } from '../../models/api.models';
 
 @Component({
   selector: 'app-communications',
@@ -26,73 +13,89 @@ interface Chat {
 })
 export class Communications implements OnInit {
   searchQuery: string = '';
-  selectedChat: Chat | null = null;
+  selectedChannel: ChatChannel | null = null;
+  messages: ChatMessage[] = [];
   newMessage: string = '';
+  isLoading: boolean = false;
+  channels: ChatChannel[] = [];
+  currentUserId: number = 0;
 
-  chats: Chat[] = [
-    {
-      id: 1,
-      name: 'Сеть Магазинов',
-      lastMessage: 'Когда ожидается поставка?',
-      lastMessageTime: '10:23',
-      unread: 2,
-      status: 'Онлайн',
-      messages: [
-        { sender: 'them', text: 'Добрый день! Интересует молочная продукция', time: '10:15' },
-        { sender: 'me', text: 'Здравствуйте! Да, у нас есть в наличии', time: '10:18' },
-        { sender: 'them', text: 'Когда ожидается поставка?', time: '10:23' }
-      ]
-    },
-    {
-      id: 2,
-      name: 'Супермаркет "Угол"',
-      lastMessage: 'Спасибо за быструю доставку!',
-      lastMessageTime: 'Вчера',
-      unread: 0,
-      status: 'Был(а) 2 часа назад',
-      messages: [
-        { sender: 'them', text: 'Получили заказ', time: 'Вчера 14:30' },
-        { sender: 'them', text: 'Спасибо за быструю доставку!', time: 'Вчера 14:31' },
-        { sender: 'me', text: 'Рады сотрудничеству!', time: 'Вчера 15:00' }
-      ]
-    },
-    {
-      id: 3,
-      name: 'Гипермаркет "Центр"',
-      lastMessage: 'Нужно обсудить новый заказ',
-      lastMessageTime: '28.09',
-      unread: 0,
-      status: 'Был(а) вчера',
-      messages: [
-        { sender: 'them', text: 'Нужно обсудить новый заказ', time: '28.09 16:45' },
-        { sender: 'me', text: 'Конечно, когда вам удобно?', time: '28.09 17:00' }
-      ]
-    }
-  ];
+  constructor(
+    private chatService: ChatService,
+    private authService: AuthService
+  ) {}
 
   ngOnInit() {
+    const user = this.authService.getCurrentUser();
+    if (user?.userId) {
+      this.currentUserId = user.userId;
+    }
+    this.loadChannels();
   }
 
-  selectChat(chat: Chat) {
-    this.selectedChat = chat;
-    chat.unread = 0;
+  loadChannels() {
+    this.isLoading = true;
+    this.chatService.getMyChannels().subscribe({
+      next: (channels) => {
+        this.channels = channels;
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading channels:', error);
+        this.isLoading = false;
+      }
+    });
+  }
+
+  selectChat(channel: ChatChannel) {
+    this.selectedChannel = channel;
+    this.loadMessages(channel.orderId);
+  }
+
+  loadMessages(orderId: number) {
+    this.chatService.getMessages(orderId).subscribe({
+      next: (response) => {
+        this.messages = response.content;
+        this.markAsRead(orderId);
+      },
+      error: (error) => console.error('Error loading messages:', error)
+    });
+  }
+
+  markAsRead(orderId: number) {
+    this.chatService.markAsRead(orderId).subscribe();
   }
 
   sendMessage() {
-    if (this.newMessage.trim() && this.selectedChat) {
-      const now = new Date();
-      const time = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
+    if (!this.newMessage.trim() || !this.selectedChannel) return;
 
-      this.selectedChat.messages.push({
-        sender: 'me',
-        text: this.newMessage,
-        time: time
-      });
+    this.chatService.sendMessage(this.selectedChannel.orderId, {
+      messageText: this.newMessage
+    }).subscribe({
+      next: (message) => {
+        this.messages.push(message);
+        this.newMessage = '';
+        this.loadChannels();
+      },
+      error: (error) => console.error('Error sending message:', error)
+    });
+  }
 
-      this.selectedChat.lastMessage = this.newMessage;
-      this.selectedChat.lastMessageTime = time;
+  get filteredChannels(): ChatChannel[] {
+    if (!this.searchQuery) return this.channels;
+    return this.channels.filter(c =>
+      c.channelName.toLowerCase().includes(this.searchQuery.toLowerCase())
+    );
+  }
 
-      this.newMessage = '';
+  formatTime(dateStr: string): string {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+
+    if (isToday) {
+      return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
     }
+    return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
   }
 }

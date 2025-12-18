@@ -76,7 +76,11 @@ public class GlobalJwtFilter implements GlobalFilter, Ordered {
                cleanPath.startsWith("/api/auth/company") ||
                cleanPath.startsWith("/api/addresses/company") ||
                cleanPath.startsWith("/actuator") ||
-               cleanPath.startsWith("/eureka");
+               cleanPath.startsWith("/eureka") ||
+               cleanPath.startsWith("/swagger-ui") ||
+               cleanPath.startsWith("/api-docs") ||
+               cleanPath.startsWith("/v3/api-docs") ||
+               cleanPath.contains("/api-docs");
     }
 
     @Override

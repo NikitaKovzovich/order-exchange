@@ -11,30 +11,29 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class Address {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "company_id", nullable = false)
-    private Company company;
+	@ManyToOne
+	@JoinColumn(name = "company_id", nullable = false)
+	private Company company;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "address_type", nullable = false)
-    private AddressType addressType;
+	@Enumerated(EnumType.STRING)
+	@Column(name = "address_type", nullable = false)
+	private AddressType addressType;
 
-    @Column(name = "full_address", nullable = false, columnDefinition = "TEXT")
-    private String fullAddress;
+	@Column(name = "full_address", nullable = false, columnDefinition = "TEXT")
+	private String fullAddress;
 
-    @Builder.Default
-    @Column(name = "is_default")
-    private Boolean isDefault = false;
+	@Builder.Default
+	@Column(name = "is_default")
+	private Boolean isDefault = false;
 
-    public enum AddressType {
-        legal,
-        postal,
-        shipping,
-        delivery
-    }
+	public enum AddressType {
+		legal,
+		postal,
+		shipping,
+		delivery
+	}
 }
-

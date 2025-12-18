@@ -31,6 +31,14 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       headers['X-User-Id'] = currentUser.userId.toString();
     }
 
+    if (currentUser?.role) {
+      headers['X-User-Role'] = currentUser.role;
+    }
+
+    if (currentUser?.companyId) {
+      headers['X-User-Company-Id'] = currentUser.companyId.toString();
+    }
+
     req = req.clone({ setHeaders: headers });
   }
 

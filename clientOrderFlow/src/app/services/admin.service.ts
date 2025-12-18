@@ -81,6 +81,7 @@ export interface PendingVerificationRequest {
 })
 export class AdminService {
   private readonly API_URL = '/api/admin';
+  private readonly VERIFICATION_URL = '/api/admin/verification';
 
   constructor(private http: HttpClient) {}
 
@@ -122,8 +123,8 @@ export class AdminService {
 
   getVerificationRequests(status?: 'PENDING' | 'APPROVED' | 'REJECTED'): Observable<VerificationRequest[]> {
     const url = status
-      ? `${this.API_URL}/verification?status=${status}`
-      : `${this.API_URL}/verification`;
+      ? `${this.VERIFICATION_URL}?status=${status}`
+      : this.VERIFICATION_URL;
 
     return this.http.get<VerificationRequest[]>(url).pipe(
       catchError(error => {
@@ -134,7 +135,7 @@ export class AdminService {
   }
 
   getVerificationById(verificationId: number): Observable<VerificationDetails> {
-    return this.http.get<VerificationDetails>(`${this.API_URL}/verification/${verificationId}`).pipe(
+    return this.http.get<VerificationDetails>(`${this.VERIFICATION_URL}/${verificationId}`).pipe(
       catchError(error => {
         console.error('Get verification details error:', error);
         return throwError(() => error);
@@ -143,7 +144,7 @@ export class AdminService {
   }
 
   approveVerification(verificationId: number): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${this.API_URL}/verification/${verificationId}/approve`, {}).pipe(
+    return this.http.post<{ message: string }>(`${this.VERIFICATION_URL}/${verificationId}/approve`, {}).pipe(
       catchError(error => {
         console.error('Approve verification error:', error);
         return throwError(() => error);
@@ -153,7 +154,7 @@ export class AdminService {
 
   rejectVerification(verificationId: number, reason: string): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(
-      `${this.API_URL}/verification/${verificationId}/reject`,
+      `${this.VERIFICATION_URL}/${verificationId}/reject`,
       { reason }
     ).pipe(
       catchError(error => {
@@ -164,7 +165,7 @@ export class AdminService {
   }
 
   getPendingVerificationRequests(): Observable<PendingVerificationRequest[]> {
-    return this.http.get<PendingVerificationRequest[]>(`${this.API_URL}/verification/pending`).pipe(
+    return this.http.get<PendingVerificationRequest[]>(`${this.VERIFICATION_URL}/pending`).pipe(
       catchError(error => {
         console.error('Get pending verification requests error:', error);
         return throwError(() => error);
@@ -173,9 +174,27 @@ export class AdminService {
   }
 
   getVerificationDocuments(verificationId: number): Observable<VerificationDocument[]> {
-    return this.http.get<VerificationDocument[]>(`${this.API_URL}/verification/${verificationId}/documents`).pipe(
+    return this.http.get<VerificationDocument[]>(`${this.VERIFICATION_URL}/${verificationId}/documents`).pipe(
       catchError(error => {
         console.error('Get verification documents error:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  getDashboardStats(): Observable<{ totalUsers: number; activeOrders: number; pendingVerifications: number; openTickets: number }> {
+    return this.http.get<{ totalUsers: number; activeOrders: number; pendingVerifications: number; openTickets: number }>(`${this.API_URL}/dashboard/stats`).pipe(
+      catchError(error => {
+        console.error('Get dashboard stats error:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  getUsersStats(): Observable<{ total: number; suppliers: number; retailers: number; admins: number }> {
+    return this.http.get<{ total: number; suppliers: number; retailers: number; admins: number }>(`${this.API_URL}/dashboard/users-stats`).pipe(
+      catchError(error => {
+        console.error('Get users stats error:', error);
         return throwError(() => error);
       })
     );

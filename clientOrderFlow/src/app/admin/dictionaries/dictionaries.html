@@ -43,7 +43,7 @@
             </thead>
             <tbody>
               <tr *ngFor="let unit of units" class="bg-white border-b hover:bg-gray-50">
-                <td class="px-6 py-4 font-medium text-gray-900">{{ unit.value }}</td>
+                <td class="px-6 py-4 font-medium text-gray-900">{{ unit.name }}</td>
                 <td class="px-6 py-4 text-right space-x-4">
                   <button
                     (click)="openEditModal(unit)"
@@ -86,7 +86,7 @@
             </thead>
             <tbody>
               <tr *ngFor="let vat of vatRates" class="bg-white border-b hover:bg-gray-50">
-                <td class="px-6 py-4 font-medium text-gray-900">{{ vat.value }}</td>
+                <td class="px-6 py-4 font-medium text-gray-900">{{ vat.description }} ({{ vat.ratePercentage }}%)</td>
                 <td class="px-6 py-4 text-right space-x-4">
                   <button
                     (click)="openEditModal(vat)"

@@ -1,7 +1,16 @@
-version: '3.8'
+
+# =============================================================================
+# OrderFlow Platform - All Services Docker Compose
+# =============================================================================
+# Этот файл запускает все базы данных для микросервисной платформы OrderFlow
+# Использование: docker-compose up -d
+# =============================================================================
 
 services:
-  mysql:
+  # ===========================================================================
+  # Auth Service Database (Port 3306)
+  # ===========================================================================
+  auth-mysql:
     image: mysql:8.0
     container_name: user_db_mysql
     environment:
@@ -13,7 +22,227 @@ services:
       - "3306:3306"
     volumes:
       - ./auth-service/scripts/user-db.sql:/docker-entrypoint-initdb.d/user-db.sql
-      - mysql_data:/var/lib/mysql
+      - auth_mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - orderflow-network
 
+  # ===========================================================================
+  # Catalog Service Database (Port 3307)
+  # ===========================================================================
+  catalog-mysql:
+    image: mysql:8.0
+    container_name: catalog_db_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: catalog_db
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app_password
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./catalog-service/scripts/catalog_db.sql:/docker-entrypoint-initdb.d/catalog_db.sql
+      - catalog_mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - orderflow-network
+
+  # ===========================================================================
+  # Order Service Database (Port 3308)
+  # ===========================================================================
+  order-mysql:
+    image: mysql:8.0
+    container_name: order_db_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: order_db
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app_password
+    ports:
+      - "3308:3306"
+    volumes:
+      - ./order-service/scripts/order_db.sql:/docker-entrypoint-initdb.d/order_db.sql
+      - order_mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - orderflow-network
+
+  # ===========================================================================
+  # Chat Service Database (Port 3309)
+  # ===========================================================================
+  chat-mysql:
+    image: mysql:8.0
+    container_name: chat_db_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: chat_db
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app_password
+    ports:
+      - "3309:3306"
+    volumes:
+      - ./chat-service/scripts/chat_db.sql:/docker-entrypoint-initdb.d/chat_db.sql
+      - chat_mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - orderflow-network
+
+  # ===========================================================================
+  # Document Service Database (Port 3310)
+  # ===========================================================================
+  document-mysql:
+    image: mysql:8.0
+    container_name: document_db_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: document_db
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app_password
+    ports:
+      - "3310:3306"
+    volumes:
+      - ./document-service/scripts/document_db.sql:/docker-entrypoint-initdb.d/document_db.sql
+      - document_mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - orderflow-network
+
+  # ===========================================================================
+  # MinIO Object Storage (for Document Service)
+  # API: Port 9000, Console: Port 9001
+  # ===========================================================================
+  minio:
+    image: minio/minio:latest
+    container_name: document_minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - orderflow-network
+
+  # ===========================================================================
+  # RabbitMQ Message Broker
+  # AMQP: Port 5672, Management Console: Port 15672
+  # ===========================================================================
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: orderflow_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: orderflow
+      RABBITMQ_DEFAULT_PASS: orderflow123
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - orderflow-network
+
+  # ===========================================================================
+  # Prometheus - Metrics Collection
+  # Port: 9090
+  # ===========================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: orderflow_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - orderflow-network
+
+  # ===========================================================================
+  # Grafana - Metrics Visualization
+  # Port: 3001
+  # ===========================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: orderflow_grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin123
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - orderflow-network
+
+# =============================================================================
+# Volumes
+# =============================================================================
 volumes:
-  mysql_data:
+  auth_mysql_data:
+    driver: local
+  catalog_mysql_data:
+    driver: local
+  order_mysql_data:
+    driver: local
+  chat_mysql_data:
+    driver: local
+  document_mysql_data:
+    driver: local
+  minio_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+# =============================================================================
+# Network
+# =============================================================================
+networks:
+  orderflow-network:
+    driver: bridge
+

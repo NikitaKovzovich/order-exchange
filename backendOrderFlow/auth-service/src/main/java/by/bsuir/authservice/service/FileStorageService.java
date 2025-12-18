@@ -9,31 +9,30 @@ import java.util.UUID;
 @Service
 public class FileStorageService {
 
-    @Value("${file.upload-dir:uploads}")
-    private String uploadDir;
+	@Value("${file.upload-dir:uploads}")
+	private String uploadDir;
 
-    public String storeFile(MultipartFile file, String subfolder) {
-        if (file == null || file.isEmpty()) {
-            return null;
-        }
+	public String storeFile(MultipartFile file, String subfolder) {
+		if (file == null || file.isEmpty()) {
+			return null;
+		}
 
-        String originalFilename = file.getOriginalFilename();
-        String fileExtension = "";
-        if (originalFilename != null && originalFilename.contains(".")) {
-            fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
-        }
+		String originalFilename = file.getOriginalFilename();
+		String fileExtension = "";
+		if (originalFilename != null && originalFilename.contains(".")) {
+			fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+		}
 
-        String filename = UUID.randomUUID().toString() + fileExtension;
-        String filePath = subfolder + "/" + filename;
+		String filename = UUID.randomUUID().toString() + fileExtension;
+		String filePath = subfolder + "/" + filename;
 
-        return filePath;
-    }
+		return filePath;
+	}
 
-    public void deleteFile(String filePath) {
-    }
+	public void deleteFile(String filePath) {
+	}
 
-    public String loadFile(String filePath) {
-        return uploadDir + "/" + filePath;
-    }
+	public String loadFile(String filePath) {
+		return uploadDir + "/" + filePath;
+	}
 }
-

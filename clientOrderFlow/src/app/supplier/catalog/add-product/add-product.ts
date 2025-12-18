@@ -1,27 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-
-interface Product {
-  name: string;
-  sku: string;
-  category: string;
-  description: string;
-  price: number;
-  unit: string;
-  vat: string;
-  stock: number;
-  weight: number;
-  length: number;
-  width: number;
-  height: number;
-  mfgDate: string;
-  expDate: string;
-  origin: string;
-  photos: File[];
-  status: 'draft' | 'published';
-}
+import { CatalogService } from '../../../services/catalog.service';
+import { Category, Unit, VatRate, CreateProductRequest } from '../../../models/api.models';
 
 @Component({
   selector: 'app-add-product',
@@ -29,30 +11,67 @@ interface Product {
   templateUrl: './add-product.html',
   styleUrl: './add-product.css'
 })
-export class AddProduct {
+export class AddProduct implements OnInit {
   currentStep: number = 1;
+  isLoading: boolean = false;
+  isSaving: boolean = false;
 
-  product: Product = {
+  categories: Category[] = [];
+  units: Unit[] = [];
+  vatRates: VatRate[] = [];
+
+  product = {
     name: '',
     sku: '',
-    category: 'Молочные продукты',
+    categoryId: 0,
     description: '',
-    price: 0,
-    unit: 'шт',
-    vat: '20%',
-    stock: 0,
+    pricePerUnit: 0,
+    unitId: 0,
+    vatRateId: 0,
+    initialQuantity: 0,
     weight: 0,
-    length: 0,
-    width: 0,
-    height: 0,
-    mfgDate: '',
-    expDate: '',
-    origin: '',
-    photos: [],
-    status: 'draft'
+    countryOfOrigin: '',
+    barcode: '',
+    photos: [] as File[]
   };
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private catalogService: CatalogService
+  ) {}
+
+  ngOnInit() {
+    this.loadReferenceData();
+  }
+
+  loadReferenceData() {
+    this.isLoading = true;
+
+    this.catalogService.getCategories().subscribe({
+      next: (categories) => this.categories = categories,
+      error: (error) => console.error('Error loading categories:', error)
+    });
+
+    this.catalogService.getUnits().subscribe({
+      next: (units) => {
+        this.units = units;
+        if (units.length > 0) this.product.unitId = units[0].id;
+      },
+      error: (error) => console.error('Error loading units:', error)
+    });
+
+    this.catalogService.getVatRates().subscribe({
+      next: (vatRates) => {
+        this.vatRates = vatRates;
+        if (vatRates.length > 0) this.product.vatRateId = vatRates[0].id;
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading VAT rates:', error);
+        this.isLoading = false;
+      }
+    });
+  }
 
   nextStep() {
     if (this.currentStep < 3) {
@@ -72,10 +91,61 @@ export class AddProduct {
   }
 
   saveProduct() {
-    this.product.status = 'draft';
-    console.log('Saving product as draft:', this.product);
+    this.isSaving = true;
 
-    alert('Товар успешно сохранен как черновик! Перейдите в каталог и нажмите "Обновить каталог" для публикации.');
-    this.router.navigate(['/supplier/catalog']);
+    const request: CreateProductRequest = {
+      name: this.product.name,
+      sku: this.product.sku,
+      categoryId: this.product.categoryId,
+      description: this.product.description,
+      pricePerUnit: this.product.pricePerUnit,
+      unitId: this.product.unitId,
+      vatRateId: this.product.vatRateId,
+      initialQuantity: this.product.initialQuantity,
+      weight: this.product.weight || undefined,
+      countryOfOrigin: this.product.countryOfOrigin || undefined,
+      barcode: this.product.barcode || undefined
+    };
+
+    this.catalogService.createProduct(request).subscribe({
+      next: (createdProduct) => {
+        if (this.product.photos.length > 0) {
+          this.uploadImages(createdProduct.id);
+        } else {
+          this.isSaving = false;
+          this.router.navigate(['/supplier/catalog']);
+        }
+      },
+      error: (error) => {
+        console.error('Error creating product:', error);
+        this.isSaving = false;
+        alert('Ошибка при создании товара');
+      }
+    });
+  }
+
+  private uploadImages(productId: number) {
+    let uploaded = 0;
+    const total = this.product.photos.length;
+
+    this.product.photos.forEach((file, index) => {
+      this.catalogService.uploadProductImage(productId, file, index === 0).subscribe({
+        next: () => {
+          uploaded++;
+          if (uploaded === total) {
+            this.isSaving = false;
+            this.router.navigate(['/supplier/catalog']);
+          }
+        },
+        error: (error) => {
+          console.error('Error uploading image:', error);
+          uploaded++;
+          if (uploaded === total) {
+            this.isSaving = false;
+            this.router.navigate(['/supplier/catalog']);
+          }
+        }
+      });
+    });
   }
 }

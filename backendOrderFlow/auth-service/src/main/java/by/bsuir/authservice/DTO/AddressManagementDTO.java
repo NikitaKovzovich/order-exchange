@@ -10,9 +10,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class AddressManagementDTO {
-    private Long companyId;
-    private String addressType;
-    private String fullAddress;
-    private Boolean isDefault;
+	private Long companyId;
+	private String addressType;
+	private String fullAddress;
+	private Boolean isDefault;
 }
-

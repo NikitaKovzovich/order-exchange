@@ -2,37 +2,24 @@
   <div class="flex-1 flex flex-col overflow-hidden">
     <header class="bg-white shadow-sm h-16 flex justify-between items-center px-6 flex-shrink-0">
       <h1 class="text-xl font-semibold text-gray-800">Создание нового товара</h1>
-      <div class="flex items-center">
-        <div class="relative mr-4">
-          <button class="p-2 bg-gray-100 rounded-full hover:bg-gray-200">
-            <svg class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-            </svg>
-          </button>
-          <span class="absolute top-0 right-0 h-3 w-3 bg-red-500 rounded-full border-2 border-white"></span>
-        </div>
-        <div class="flex items-center">
-          <img class="h-10 w-10 rounded-full object-cover" src="https://placehold.co/100x100/E2E8F0/4A5568?text=Лого" alt="Company Logo">
-          <div class="ml-3">
-            <p class="text-sm font-semibold text-gray-800">Продукты Оптом</p>
-            <a routerLink="/" class="text-xs text-indigo-600 hover:underline">Выйти</a>
-          </div>
-        </div>
-      </div>
     </header>
 
     <main class="flex-1 overflow-y-auto p-6">
-      <div class="max-w-4xl mx-auto">
+      <div *ngIf="isLoading" class="text-center py-12">
+        <p class="text-gray-500">Загрузка...</p>
+      </div>
+
+      <div *ngIf="!isLoading" class="max-w-4xl mx-auto">
         <div class="border-b border-gray-200 mb-8">
           <nav class="-mb-px flex space-x-8">
-            <a (click)="currentStep = 1" [class.border-indigo-500]="currentStep === 1" [class.text-indigo-600]="currentStep === 1" [class.border-transparent]="currentStep !== 1" [class.text-gray-500]="currentStep !== 1" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm cursor-pointer hover:text-gray-700 hover:border-gray-300">
-              <span [class.bg-indigo-600]="currentStep >= 1" [class.text-white]="currentStep >= 1" [class.bg-gray-300]="currentStep < 1" [class.text-gray-600]="currentStep < 1" class="w-6 h-6 rounded-full inline-flex items-center justify-center mr-2 text-xs">1</span> Основная информация
+            <a (click)="currentStep = 1" [class.border-indigo-500]="currentStep === 1" [class.text-indigo-600]="currentStep === 1" [class.border-transparent]="currentStep !== 1" [class.text-gray-500]="currentStep !== 1" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm cursor-pointer">
+              <span [class.bg-indigo-600]="currentStep >= 1" [class.text-white]="currentStep >= 1" [class.bg-gray-300]="currentStep < 1" class="w-6 h-6 rounded-full inline-flex items-center justify-center mr-2 text-xs">1</span> Основная информация
             </a>
-            <a (click)="currentStep = 2" [class.border-indigo-500]="currentStep === 2" [class.text-indigo-600]="currentStep === 2" [class.border-transparent]="currentStep !== 2" [class.text-gray-500]="currentStep !== 2" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm cursor-pointer hover:text-gray-700 hover:border-gray-300">
-              <span [class.bg-indigo-600]="currentStep >= 2" [class.text-white]="currentStep >= 2" [class.bg-gray-300]="currentStep < 2" [class.text-gray-600]="currentStep < 2" class="w-6 h-6 rounded-full inline-flex items-center justify-center mr-2 text-xs">2</span> Цена и остатки
+            <a (click)="currentStep = 2" [class.border-indigo-500]="currentStep === 2" [class.text-indigo-600]="currentStep === 2" [class.border-transparent]="currentStep !== 2" [class.text-gray-500]="currentStep !== 2" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm cursor-pointer">
+              <span [class.bg-indigo-600]="currentStep >= 2" [class.text-white]="currentStep >= 2" [class.bg-gray-300]="currentStep < 2" class="w-6 h-6 rounded-full inline-flex items-center justify-center mr-2 text-xs">2</span> Цена и остатки
             </a>
-            <a (click)="currentStep = 3" [class.border-indigo-500]="currentStep === 3" [class.text-indigo-600]="currentStep === 3" [class.border-transparent]="currentStep !== 3" [class.text-gray-500]="currentStep !== 3" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm cursor-pointer hover:text-gray-700 hover:border-gray-300">
-              <span [class.bg-indigo-600]="currentStep >= 3" [class.text-white]="currentStep >= 3" [class.bg-gray-300]="currentStep < 3" [class.text-gray-600]="currentStep < 3" class="w-6 h-6 rounded-full inline-flex items-center justify-center mr-2 text-xs">3</span> Логистика и доп.
+            <a (click)="currentStep = 3" [class.border-indigo-500]="currentStep === 3" [class.text-indigo-600]="currentStep === 3" [class.border-transparent]="currentStep !== 3" [class.text-gray-500]="currentStep !== 3" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm cursor-pointer">
+              <span [class.bg-indigo-600]="currentStep >= 3" [class.text-white]="currentStep >= 3" [class.bg-gray-300]="currentStep < 3" class="w-6 h-6 rounded-full inline-flex items-center justify-center mr-2 text-xs">3</span> Логистика
             </a>
           </nav>
         </div>
@@ -50,11 +37,9 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Категория товара</label>
-              <select [(ngModel)]="product.category" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2">
-                <option>Молочные продукты</option>
-                <option>Хлебобулочные изделия</option>
-                <option>Сыры</option>
-                <option>Мясные изделия</option>
+              <select [(ngModel)]="product.categoryId" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2">
+                <option [ngValue]="0">Выберите категорию</option>
+                <option *ngFor="let cat of categories" [ngValue]="cat.id">{{ cat.name }}</option>
               </select>
             </div>
             <div class="col-span-2">
@@ -87,74 +72,52 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700">Цена за единицу, BYN</label>
-              <input type="number" [(ngModel)]="product.price" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2" placeholder="0.00" step="0.01">
+              <input type="number" [(ngModel)]="product.pricePerUnit" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2" placeholder="0.00" step="0.01">
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Единица измерения</label>
-              <select [(ngModel)]="product.unit" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2">
-                <option>шт</option>
-                <option>кг</option>
-                <option>упак</option>
-                <option>л</option>
+              <select [(ngModel)]="product.unitId" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2">
+                <option *ngFor="let unit of units" [ngValue]="unit.id">{{ unit.name }}</option>
               </select>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Ставка НДС</label>
-              <select [(ngModel)]="product.vat" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2">
-                <option>20%</option>
-                <option>10%</option>
-                <option>0%</option>
-                <option>Без НДС</option>
+              <select [(ngModel)]="product.vatRateId" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2">
+                <option *ngFor="let vat of vatRates" [ngValue]="vat.id">{{ vat.description }} ({{ vat.ratePercentage }}%)</option>
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700">Доступное количество на складе</label>
-              <input type="number" [(ngModel)]="product.stock" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2" placeholder="0">
+              <label class="block text-sm font-medium text-gray-700">Количество на складе</label>
+              <input type="number" [(ngModel)]="product.initialQuantity" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2" placeholder="0">
             </div>
           </div>
         </div>
 
         <div *ngIf="currentStep === 3" class="bg-white p-8 rounded-lg shadow-sm">
-          <h3 class="text-lg font-semibold mb-6">Шаг 3: Логистика и дополнительная информация</h3>
+          <h3 class="text-lg font-semibold mb-6">Шаг 3: Логистика</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700">Вес (кг)</label>
-              <input type="number" [(ngModel)]="product.weight" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2" placeholder="0.0" step="0.01">
-            </div>
-            <div class="col-span-2">
-              <label class="block text-sm font-medium text-gray-700">Габариты упаковки (Д x Ш x В), см</label>
-              <div class="flex items-center space-x-2 mt-1">
-                <input type="number" [(ngModel)]="product.length" placeholder="Длина" class="w-full border border-gray-300 rounded-md shadow-sm sm:text-sm px-3 py-2">
-                <span>x</span>
-                <input type="number" [(ngModel)]="product.width" placeholder="Ширина" class="w-full border border-gray-300 rounded-md shadow-sm sm:text-sm px-3 py-2">
-                <span>x</span>
-                <input type="number" [(ngModel)]="product.height" placeholder="Высота" class="w-full border border-gray-300 rounded-md shadow-sm sm:text-sm px-3 py-2">
-              </div>
+              <input type="number" [(ngModel)]="product.weight" step="0.001" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2" placeholder="0.000">
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700">Дата производства</label>
-              <input type="date" [(ngModel)]="product.mfgDate" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Срок годности</label>
-              <input type="date" [(ngModel)]="product.expDate" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2">
-            </div>
-            <div class="col-span-2">
               <label class="block text-sm font-medium text-gray-700">Страна происхождения</label>
-              <input type="text" [(ngModel)]="product.origin" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2" placeholder="Например, Республика Беларусь">
+              <input type="text" [(ngModel)]="product.countryOfOrigin" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2" placeholder="Беларусь">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Штрих-код</label>
+              <input type="text" [(ngModel)]="product.barcode" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2" placeholder="4810000000000">
             </div>
           </div>
         </div>
 
-        <div class="mt-8 flex justify-between items-center">
-          <div>
-            <a routerLink="/supplier/catalog" class="text-sm text-gray-600 hover:underline">Назад к каталогу</a>
-          </div>
-          <div class="flex space-x-4">
-            <button type="button" *ngIf="currentStep > 1" (click)="previousStep()" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">Назад</button>
-            <button type="button" *ngIf="currentStep < 3" (click)="nextStep()" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Далее</button>
-            <button type="button" *ngIf="currentStep === 3" (click)="saveProduct()" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">Сохранить товар</button>
-          </div>
+        <div class="mt-8 flex justify-between">
+          <button *ngIf="currentStep > 1" (click)="previousStep()" class="inline-flex items-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Назад</button>
+          <div class="flex-grow"></div>
+          <button *ngIf="currentStep < 3" (click)="nextStep()" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">Далее</button>
+          <button *ngIf="currentStep === 3" (click)="saveProduct()" [disabled]="isSaving" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 disabled:opacity-50">
+            {{ isSaving ? 'Сохранение...' : 'Сохранить товар' }}
+          </button>
         </div>
       </div>
     </main>

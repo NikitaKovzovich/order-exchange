@@ -9,7 +9,6 @@ import java.util.Optional;
 
 @Repository
 public interface ResponsiblePersonRepository extends JpaRepository<ResponsiblePerson, Long> {
-    List<ResponsiblePerson> findByCompanyId(Long companyId);
-    Optional<ResponsiblePerson> findByCompanyIdAndPosition(Long companyId, ResponsiblePerson.Position position);
+	List<ResponsiblePerson> findByCompanyId(Long companyId);
+	Optional<ResponsiblePerson> findByCompanyIdAndPosition(Long companyId, ResponsiblePerson.Position position);
 }
-

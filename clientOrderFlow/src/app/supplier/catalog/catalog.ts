@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { CatalogService } from '../../services/catalog.service';
+import { Product, ProductStatus } from '../../models/api.models';
 
 @Component({
   selector: 'app-catalog',
@@ -13,58 +15,119 @@ export class Catalog implements OnInit {
   viewMode: 'grid' | 'list' = 'grid';
   searchQuery: string = '';
   showDraftsAlert: boolean = true;
+  isLoading: boolean = false;
+  currentPage: number = 0;
+  totalPages: number = 0;
+  totalElements: number = 0;
 
-  products = [
-    { id: 1, name: 'Молоко "Деревенское" 3.2% 1л', sku: 'MLK-001', price: '2.50', stock: 150, unit: 'шт', status: 'Опубликован' },
-    { id: 2, name: 'Хлеб "Бородинский"', sku: 'BRD-015', price: '1.80', stock: 80, unit: 'шт', status: 'Опубликован' },
-    { id: 3, name: 'Сыр "Российский" весовой', sku: 'CHS-032', price: '18.00', stock: 25, unit: 'кг', status: 'Опубликован' },
-    { id: 4, name: 'Масло сливочное 82%', sku: 'BTR-008', price: '12.50', stock: 45, unit: 'шт', status: 'Опубликован' },
-    { id: 5, name: 'Йогурт "Натуральный" 2.5%', sku: 'YGT-022', price: '3.20', stock: 100, unit: 'шт', status: 'Черновик' },
-    { id: 6, name: 'Творог "Домашний" 9%', sku: 'CTG-015', price: '4.80', stock: 60, unit: 'шт', status: 'Опубликован' },
-  ];
+  products: Product[] = [];
+  filteredProducts: Product[] = [];
 
-  filteredProducts = [...this.products];
+  constructor(private catalogService: CatalogService) {}
 
   ngOnInit() {
+    this.loadProducts();
+  }
+
+  loadProducts() {
+    this.isLoading = true;
+    this.catalogService.getSupplierProducts({
+      page: this.currentPage,
+      size: 20,
+      search: this.searchQuery || undefined
+    }).subscribe({
+      next: (response) => {
+        this.products = response.content;
+        this.filteredProducts = [...this.products];
+        this.totalPages = response.totalPages;
+        this.totalElements = response.totalElements;
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading products:', error);
+        this.isLoading = false;
+      }
+    });
   }
 
   get hasDrafts(): boolean {
-    return this.products.some(p => p.status === 'Черновик');
+    return this.products.some(p => p.status === 'DRAFT');
   }
 
   onSearch() {
-    const query = this.searchQuery.toLowerCase().trim();
-    if (!query) {
-      this.filteredProducts = [...this.products];
-    } else {
-      this.filteredProducts = this.products.filter(product =>
-        product.name.toLowerCase().includes(query) ||
-        product.sku.toLowerCase().includes(query)
-      );
-    }
+    this.currentPage = 0;
+    this.loadProducts();
   }
 
   publishCatalog() {
-    this.products.forEach(product => {
-      if (product.status === 'Черновик') {
-        product.status = 'Опубликован';
-      }
+    const drafts = this.products.filter(p => p.status === 'DRAFT');
+    let published = 0;
+
+    drafts.forEach(product => {
+      this.catalogService.publishProduct(product.id).subscribe({
+        next: () => {
+          published++;
+          if (published === drafts.length) {
+            this.loadProducts();
+            this.showDraftsAlert = false;
+          }
+        },
+        error: (error) => console.error('Error publishing product:', error)
+      });
     });
-    this.filteredProducts = [...this.products];
-    this.showDraftsAlert = false;
-    alert('Каталог успешно обновлен! Все товары опубликованы.');
   }
 
-  getStatusClass(status: string): string {
+  publishProduct(product: Product) {
+    this.catalogService.publishProduct(product.id).subscribe({
+      next: () => this.loadProducts(),
+      error: (error) => console.error('Error publishing product:', error)
+    });
+  }
+
+  archiveProduct(product: Product) {
+    this.catalogService.archiveProduct(product.id).subscribe({
+      next: () => this.loadProducts(),
+      error: (error) => console.error('Error archiving product:', error)
+    });
+  }
+
+  deleteProduct(product: Product) {
+    if (confirm(`Удалить товар "${product.name}"?`)) {
+      this.catalogService.deleteProduct(product.id).subscribe({
+        next: () => this.loadProducts(),
+        error: (error) => console.error('Error deleting product:', error)
+      });
+    }
+  }
+
+  getStatusClass(status: ProductStatus): string {
     switch(status) {
-      case 'Опубликован':
+      case 'PUBLISHED':
         return 'text-green-600 bg-green-200';
-      case 'Черновик':
+      case 'DRAFT':
         return 'text-yellow-600 bg-yellow-200';
-      case 'Неопубликован':
+      case 'ARCHIVED':
         return 'text-gray-600 bg-gray-200';
       default:
         return 'text-gray-600 bg-gray-200';
     }
+  }
+
+  getStatusLabel(status: ProductStatus): string {
+    switch(status) {
+      case 'PUBLISHED':
+        return 'Опубликован';
+      case 'DRAFT':
+        return 'Черновик';
+      case 'ARCHIVED':
+        return 'В архиве';
+      default:
+        return status;
+    }
+  }
+
+  onPageChange(page: number) {
+    this.currentPage = page;
+    this.loadProducts();
   }
 }

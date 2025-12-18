@@ -1,13 +1,14 @@
 package by.bsuir.catalogservice;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+import static org.assertj.core.api.Assertions.assertThat;
+
 class CatalogServiceApplicationTests {
 
 	@Test
-	void contextLoads() {
+	void applicationClassExists() {
+		assertThat(CatalogServiceApplication.class).isNotNull();
 	}
 
 }

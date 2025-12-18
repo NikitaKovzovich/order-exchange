@@ -60,13 +60,13 @@
           </thead>
           <tbody>
             <tr *ngFor="let user of filteredProviders" class="bg-white border-b hover:bg-gray-50">
-              <td class="px-6 py-4 font-medium text-gray-900">{{ user.name }}</td>
-              <td class="px-6 py-4">{{ user.taxId }}</td>
-              <td class="px-6 py-4">{{ user.registeredAt }}</td>
+              <td class="px-6 py-4 font-medium text-gray-900">{{ user.company?.legalName }}</td>
+              <td class="px-6 py-4">{{ user.company?.taxId }}</td>
+              <td class="px-6 py-4">{{ formatDate(user.createdAt) }}</td>
               <td class="px-6 py-4">
-                <span [ngClass]="user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                <span [ngClass]="user.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
                       class="text-xs font-semibold px-2 py-1 rounded-full">
-                  {{ user.status === 'active' ? 'Активен' : 'Заблокирован' }}
+                  {{ user.status === 'ACTIVE' ? 'Активен' : 'Заблокирован' }}
                 </span>
               </td>
               <td class="px-6 py-4 text-right">
@@ -93,13 +93,13 @@
           </thead>
           <tbody>
             <tr *ngFor="let user of filteredRetailers" class="bg-white border-b hover:bg-gray-50">
-              <td class="px-6 py-4 font-medium text-gray-900">{{ user.name }}</td>
-              <td class="px-6 py-4">{{ user.taxId }}</td>
-              <td class="px-6 py-4">{{ user.registeredAt }}</td>
+              <td class="px-6 py-4 font-medium text-gray-900">{{ user.company?.legalName }}</td>
+              <td class="px-6 py-4">{{ user.company?.taxId }}</td>
+              <td class="px-6 py-4">{{ formatDate(user.createdAt) }}</td>
               <td class="px-6 py-4">
-                <span [ngClass]="user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                <span [ngClass]="user.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
                       class="text-xs font-semibold px-2 py-1 rounded-full">
-                  {{ user.status === 'active' ? 'Активен' : 'Заблокирован' }}
+                  {{ user.status === 'ACTIVE' ? 'Активен' : 'Заблокирован' }}
                 </span>
               </td>
               <td class="px-6 py-4 text-right">

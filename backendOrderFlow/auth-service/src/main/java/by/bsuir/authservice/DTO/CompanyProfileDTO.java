@@ -13,13 +13,12 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class CompanyProfileDTO {
-    private Long id;
-    private String legalName;
-    private String legalForm;
-    private String taxId;
-    private LocalDate registrationDate;
-    private String status;
-    private String contactPhone;
-    private List<AddressResponseDTO> addresses;
+	private Long id;
+	private String legalName;
+	private String legalForm;
+	private String taxId;
+	private LocalDate registrationDate;
+	private String status;
+	private String contactPhone;
+	private List<AddressResponseDTO> addresses;
 }
-

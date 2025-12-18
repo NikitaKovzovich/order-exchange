@@ -49,13 +49,13 @@
             </thead>
             <tbody>
               <tr *ngFor="let request of registrationRequests" class="bg-white border-b hover:bg-gray-50">
-                <td class="px-6 py-4 font-medium text-gray-900">{{ request.company }}</td>
+                <td class="px-6 py-4 font-medium text-gray-900">{{ request.company?.legalName }}</td>
                 <td class="px-6 py-4">
-                  <span [ngClass]="request.roleClass" class="text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">
-                    {{ request.role }}
+                  <span [ngClass]="getRoleClass(request.user?.role || '')" class="text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">
+                    {{ getRoleLabel(request.user?.role || '') }}
                   </span>
                 </td>
-                <td class="px-6 py-4">{{ request.date }}</td>
+                <td class="px-6 py-4">{{ formatDate(request.createdAt) }}</td>
                 <td class="px-6 py-4">
                   <a [routerLink]="['/admin/verification', request.id]" class="font-medium text-indigo-600 hover:underline">Проверить</a>
                 </td>
@@ -71,10 +71,10 @@
         <ul class="space-y-3">
           <li *ngFor="let ticket of supportTickets" class="flex justify-between items-center p-3 bg-gray-50 rounded-md">
             <div>
-              <p class="text-sm font-medium text-gray-900">#{{ ticket.id }}: {{ ticket.title }}</p>
-              <p class="text-xs text-gray-500">от {{ ticket.company }}</p>
+              <p class="text-sm font-medium text-gray-900">#{{ ticket.ticketNumber }}: {{ ticket.subject }}</p>
+              <p class="text-xs text-gray-500">{{ ticket.userEmail }}</p>
             </div>
-            <span [ngClass]="ticket.statusClass" class="text-xs font-semibold px-2 py-1 rounded-full">
+            <span [ngClass]="getStatusClass(ticket.status)" class="text-xs font-semibold px-2 py-1 rounded-full">
               {{ ticket.status }}
             </span>
           </li>

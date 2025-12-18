@@ -1,6 +1,8 @@
-import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Chart } from 'chart.js';
+import { AnalyticsService, SupplierAnalyticsResponse } from '../../services/analytics.service';
+import { AnalyticsPeriod } from '../../models/api.models';
 
 @Component({
   selector: 'app-analytics',
@@ -8,74 +10,85 @@ import { Chart } from 'chart.js';
   templateUrl: './analytics.html',
   styleUrl: './analytics.css'
 })
-export class Analytics implements OnInit, AfterViewInit {
+export class Analytics implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('salesChart') salesChart?: ElementRef<HTMLCanvasElement>;
   @ViewChild('topProductsChart') topProductsChart?: ElementRef<HTMLCanvasElement>;
 
-  selectedPeriod: string = 'Неделя';
-  periods = ['День', 'Неделя', 'Месяц', 'Квартал', 'Год'];
-
-  stats = {
-    totalRevenue: '408 000',
-    totalOrders: 33,
-    avgCheck: '12 363',
-    totalShipped: 1450
-  };
-
-  funnelData = [
-    { stage: 'Ожидает подтвержд.', count: 45, percentage: 100, color: 'bg-blue-500' },
-    { stage: 'Подтвержден', count: 43, percentage: 96, color: 'bg-blue-400' },
-    { stage: 'Ожидает оплаты', count: 42, percentage: 93, color: 'bg-indigo-400' },
-    { stage: 'Оплачен', count: 37, percentage: 82, color: 'bg-indigo-500' },
-    { stage: 'Ожидает отгрузки', count: 35, percentage: 78, color: 'bg-purple-500' },
-    { stage: 'В пути', count: 33, percentage: 73, color: 'bg-purple-600' },
-    { stage: 'Доставлен', count: 31, percentage: 69, color: 'bg-green-500' },
-    { stage: 'Закрыт', count: 30, percentage: 67, color: 'bg-green-600' }
+  selectedPeriod: AnalyticsPeriod = 'month';
+  periods: { value: AnalyticsPeriod; label: string }[] = [
+    { value: 'week', label: 'Неделя' },
+    { value: 'month', label: 'Месяц' },
+    { value: 'quarter', label: 'Квартал' },
+    { value: 'year', label: 'Год' }
   ];
 
-  topProductsByRevenue = [
-    { name: 'Сыр "Российский" весовой', revenue: '88 200' },
-    { name: 'Молоко "Деревенское" 3.2% 1л', revenue: '65 500' },
-    { name: 'Масло сливочное 82.5%', revenue: '45 100' },
-    { name: 'Хлеб "Бородинский" (нарезка)', revenue: '32 400' },
-    { name: 'Творог 9%', revenue: '28 900' }
-  ];
-
-  topProductsByQuantity = [
-    { name: 'Молоко "Деревенское" 3.2% 1л', quantity: 850 },
-    { name: 'Хлеб "Бородинский" (нарезка)', quantity: 720 },
-    { name: 'Йогурт питьевой "Клубника"', quantity: 540 },
-    { name: 'Батон "Нарезной"', quantity: 490 },
-    { name: 'Сметана 20%', quantity: 350 }
-  ];
-
-  clientAnalytics = [
-    { name: 'Сеть Магазинов', orders: 12, revenue: '180 500', avgCheck: '15 041', lastOrder: '15.10.2025' },
-    { name: 'Гипермаркет "Центр"', orders: 8, revenue: '120 200', avgCheck: '15 025', lastOrder: '14.10.2025' },
-    { name: 'Супермаркет "Угол"', orders: 13, revenue: '107 300', avgCheck: '8 253', lastOrder: '12.10.2025' }
-  ];
+  analytics: SupplierAnalyticsResponse | null = null;
+  isLoading: boolean = false;
 
   private salesChartInstance?: Chart;
   private topProductsChartInstance?: Chart;
 
+  constructor(private analyticsService: AnalyticsService) {}
+
   ngOnInit() {
+    this.loadAnalytics();
   }
 
   ngAfterViewInit() {
+    setTimeout(() => this.initCharts(), 100);
+  }
+
+  ngOnDestroy() {
+    this.salesChartInstance?.destroy();
+    this.topProductsChartInstance?.destroy();
+  }
+
+  loadAnalytics() {
+    this.isLoading = true;
+    this.analyticsService.getSupplierAnalytics(this.selectedPeriod).subscribe({
+      next: (data) => {
+        this.analytics = data;
+        this.isLoading = false;
+        setTimeout(() => this.initCharts(), 100);
+      },
+      error: (error) => {
+        console.error('Error loading analytics:', error);
+        this.isLoading = false;
+      }
+    });
+  }
+
+  onPeriodChange(period: AnalyticsPeriod) {
+    this.selectedPeriod = period;
+    this.loadAnalytics();
+  }
+
+  private initCharts() {
+    if (!this.analytics) return;
     this.initSalesChart();
     this.initTopProductsChart();
   }
 
   private initSalesChart() {
-    const ctx = this.salesChart?.nativeElement.getContext('2d');
+    if (!this.salesChart?.nativeElement || !this.analytics) return;
+
+    this.salesChartInstance?.destroy();
+
+    const ctx = this.salesChart.nativeElement.getContext('2d');
     if (ctx) {
+      const labels = this.analytics.salesDynamics.map(d => {
+        const date = new Date(d.date);
+        return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+      });
+      const data = this.analytics.salesDynamics.map(d => d.revenue);
+
       this.salesChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+          labels,
           datasets: [{
             label: 'Выручка (BYN)',
-            data: [12000, 19000, 15000, 18000, 22000, 31000, 25000],
+            data,
             borderColor: 'rgba(79, 70, 229, 1)',
             backgroundColor: 'rgba(79, 70, 229, 0.1)',
             tension: 0.4,
@@ -85,31 +98,31 @@ export class Analytics implements OnInit, AfterViewInit {
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          }
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
         }
       });
     }
   }
 
   private initTopProductsChart() {
-    const ctx = this.topProductsChart?.nativeElement.getContext('2d');
+    if (!this.topProductsChart?.nativeElement || !this.analytics) return;
+
+    this.topProductsChartInstance?.destroy();
+
+    const ctx = this.topProductsChart.nativeElement.getContext('2d');
     if (ctx) {
+      const topProducts = this.analytics.productAnalytics.topByRevenue.slice(0, 5);
+      const labels = topProducts.map(p => p.productName.substring(0, 15) + (p.productName.length > 15 ? '...' : ''));
+      const data = topProducts.map(p => p.revenue);
+
       this.topProductsChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: ['Молоко', 'Хлеб', 'Сыр', 'Масло', 'Творог'],
+          labels,
           datasets: [{
             label: 'Выручка (BYN)',
-            data: [1125, 684, 2250, 2625, 912],
+            data,
             backgroundColor: [
               'rgba(79, 70, 229, 0.7)',
               'rgba(59, 130, 246, 0.7)',
@@ -123,18 +136,14 @@ export class Analytics implements OnInit, AfterViewInit {
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          }
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
         }
       });
     }
+  }
+
+  formatCurrency(value: number): string {
+    return value.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   }
 }
