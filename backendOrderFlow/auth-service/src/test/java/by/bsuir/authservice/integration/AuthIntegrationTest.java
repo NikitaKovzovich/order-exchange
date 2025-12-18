@@ -14,7 +14,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -52,17 +52,21 @@ class AuthIntegrationTest {
 
 	private User testUser;
 	private Company testCompany;
+	private String testEmail;
+	private String uniqueId;
 
 	@BeforeEach
 	void setUp() {
-		userRepository.deleteAll();
-		companyRepository.deleteAll();
+		// Generate unique identifiers to avoid constraint violations
+		uniqueId = UUID.randomUUID().toString().substring(0, 8);
+		String uniqueTaxId = uniqueId + "12345";
+		testEmail = "integration" + uniqueId + "@test.com";
 
 		testCompany = Company.builder()
-				.name("Integration Test Company")
-				.legalName("LLC Integration Test Company")
+				.name("Integration Test Company " + uniqueId)
+				.legalName("LLC Integration Test Company " + uniqueId)
 				.legalForm(Company.LegalForm.LLC)
-				.taxId("1234567890123")
+				.taxId(uniqueTaxId)
 				.registrationDate(LocalDate.now())
 				.status(Company.CompanyStatus.ACTIVE)
 				.contactPhone("+375291234567")
@@ -70,7 +74,7 @@ class AuthIntegrationTest {
 		testCompany = companyRepository.save(testCompany);
 
 		testUser = User.builder()
-				.email("integration@test.com")
+				.email(testEmail)
 				.passwordHash(passwordEncoder.encode("password123"))
 				.role(User.Role.SUPPLIER)
 				.isActive(true)
@@ -84,7 +88,7 @@ class AuthIntegrationTest {
 	@DisplayName("Should login with valid credentials")
 	void shouldLoginWithValidCredentials() throws Exception {
 		Map<String, String> loginRequest = Map.of(
-				"email", "integration@test.com",
+				"email", testEmail,
 				"password", "password123"
 		);
 
@@ -93,7 +97,7 @@ class AuthIntegrationTest {
 						.content(objectMapper.writeValueAsString(loginRequest)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.token").exists())
-				.andExpect(jsonPath("$.email").value("integration@test.com"))
+				.andExpect(jsonPath("$.email").value(testEmail))
 				.andExpect(jsonPath("$.role").value("SUPPLIER"));
 	}
 
@@ -101,7 +105,7 @@ class AuthIntegrationTest {
 	@DisplayName("Should reject login with invalid password")
 	void shouldRejectLoginWithInvalidPassword() throws Exception {
 		Map<String, String> loginRequest = Map.of(
-				"email", "integration@test.com",
+				"email", testEmail,
 				"password", "wrongpassword"
 		);
 
@@ -113,32 +117,33 @@ class AuthIntegrationTest {
 
 	@Test
 	@DisplayName("Should get user profile with valid token")
-	@WithMockUser(username = "integration@test.com", roles = {"SUPPLIER"})
 	void shouldGetUserProfileWithValidToken() throws Exception {
 		mockMvc.perform(get("/api/auth/profile")
-						.header("X-User-Email", "integration@test.com"))
+						.header("X-User-Email", testEmail)
+						.header("X-User-Role", "SUPPLIER"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.email").value("integration@test.com"))
+				.andExpect(jsonPath("$.email").value(testEmail))
 				.andExpect(jsonPath("$.role").value("SUPPLIER"));
 	}
 
 	@Test
 	@DisplayName("Should get company profile")
-	@WithMockUser(username = "integration@test.com", roles = {"SUPPLIER"})
 	void shouldGetCompanyProfile() throws Exception {
-		mockMvc.perform(get("/api/auth/company/" + testCompany.getId()))
+		mockMvc.perform(get("/api/auth/company/" + testCompany.getId())
+						.header("X-User-Email", testEmail)
+						.header("X-User-Role", "SUPPLIER"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.legalName").value("LLC Integration Test Company"))
-				.andExpect(jsonPath("$.taxId").value("1234567890123"));
+				.andExpect(jsonPath("$.legalName").value("LLC Integration Test Company " + uniqueId))
+				.andExpect(jsonPath("$.taxId").value(uniqueId + "12345"));
 	}
 
 	@Test
 	@DisplayName("Should validate token")
-	@WithMockUser(username = "integration@test.com", roles = {"SUPPLIER"})
 	void shouldValidateToken() throws Exception {
 		mockMvc.perform(get("/api/auth/validate")
-						.header("X-User-Email", "integration@test.com"))
+						.header("X-User-Email", testEmail)
+						.header("X-User-Role", "SUPPLIER"))
 				.andExpect(status().isOk())
-				.andExpect(content().string("Token is valid for user: integration@test.com"));
+				.andExpect(content().string("Token is valid for user: " + testEmail));
 	}
 }

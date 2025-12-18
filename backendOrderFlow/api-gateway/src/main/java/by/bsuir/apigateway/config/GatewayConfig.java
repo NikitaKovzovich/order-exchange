@@ -35,6 +35,12 @@ public class GatewayConfig {
                 .route("catalog-service-inventory", r -> r
                         .path("/api/inventory/**")
                         .uri("lb://catalog-service"))
+                .route("catalog-service-units", r -> r
+                        .path("/api/units/**")
+                        .uri("lb://catalog-service"))
+                .route("catalog-service-vat-rates", r -> r
+                        .path("/api/vat-rates/**")
+                        .uri("lb://catalog-service"))
 
                 // Order Service Routes
                 .route("order-service-orders", r -> r
@@ -43,21 +49,27 @@ public class GatewayConfig {
                 .route("order-service-cart", r -> r
                         .path("/api/cart/**")
                         .uri("lb://order-service"))
+                .route("order-service-analytics", r -> r
+                        .path("/api/analytics/**")
+                        .uri("lb://order-service"))
 
                 // Chat Service Routes
+                .route("chat-service-websocket", r -> r
+                        .path("/ws/**")
+                        .uri("lb://chat-service"))
                 .route("chat-service-chats", r -> r
                         .path("/api/chats/**")
                         .uri("lb://chat-service"))
                 .route("chat-service-support", r -> r
                         .path("/api/support/**")
                         .uri("lb://chat-service"))
-                .route("chat-service-websocket", r -> r
-                        .path("/ws/**")
-                        .uri("lb://chat-service"))
 
                 // Document Service Routes
                 .route("document-service", r -> r
                         .path("/api/documents/**")
+                        .uri("lb://document-service"))
+                .route("document-service-generated", r -> r
+                        .path("/api/generated-documents/**")
                         .uri("lb://document-service"))
                 .route("document-service-invoices", r -> r
                         .path("/api/invoices/**")

@@ -119,7 +119,7 @@ public class AuthService {
 
 		saveVerificationDocuments(verificationRequest, request);
 
-		return jwtProvider.generateToken(user.getEmail(), userRole.name());
+		return jwtProvider.generateToken(user.getEmail(), userRole.name(), user.getId(), company.getId());
 	}
 
 	private void saveCompanyDocuments(Company company, RegisterRequest request) {
@@ -414,7 +414,8 @@ public class AuthService {
 				"role", user.getRole().name()
 			));
 
-		return jwtProvider.generateToken(email, user.getRole().name());
+		Long companyId = user.getCompany() != null ? user.getCompany().getId() : null;
+		return jwtProvider.generateToken(email, user.getRole().name(), user.getId(), companyId);
 	}
 
 	public User getUserByEmail(String email) {

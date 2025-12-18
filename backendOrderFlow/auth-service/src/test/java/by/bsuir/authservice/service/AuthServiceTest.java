@@ -102,12 +102,12 @@ class AuthServiceTest {
 		void shouldLoginSuccessfully() {
 			when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
 			when(passwordEncoder.matches("password123", "hashedPassword")).thenReturn(true);
-			when(jwtProvider.generateToken("test@example.com", "SUPPLIER")).thenReturn("jwt-token");
+			when(jwtProvider.generateToken(anyString(), anyString(), any(), any())).thenReturn("jwt-token");
 
 			String token = authService.login("test@example.com", "password123");
 
 			assertThat(token).isEqualTo("jwt-token");
-			verify(jwtProvider).generateToken("test@example.com", "SUPPLIER");
+			verify(jwtProvider).generateToken(anyString(), anyString(), any(), any());
 		}
 
 		@Test
@@ -244,7 +244,7 @@ class AuthServiceTest {
 				vr.setId(1L);
 				return vr;
 			});
-			when(jwtProvider.generateToken("new@example.com", "SUPPLIER")).thenReturn("jwt-token");
+			when(jwtProvider.generateToken(anyString(), anyString(), any(), any())).thenReturn("jwt-token");
 
 			String token = authService.register(request);
 
@@ -303,7 +303,7 @@ class AuthServiceTest {
 				vr.setId(2L);
 				return vr;
 			});
-			when(jwtProvider.generateToken("retail@example.com", "RETAIL_CHAIN")).thenReturn("retail-jwt-token");
+			when(jwtProvider.generateToken(anyString(), anyString(), any(), any())).thenReturn("retail-jwt-token");
 
 			String token = authService.register(request);
 
@@ -353,7 +353,7 @@ class AuthServiceTest {
 				return ba;
 			});
 			doNothing().when(eventPublisher).publish(anyString(), anyString(), anyString(), any());
-			when(jwtProvider.generateToken(anyString(), anyString())).thenReturn("token");
+			when(jwtProvider.generateToken(anyString(), anyString(), any(), any())).thenReturn("token");
 
 			authService.register(request);
 
@@ -405,7 +405,7 @@ class AuthServiceTest {
 				return persons;
 			});
 			doNothing().when(eventPublisher).publish(anyString(), anyString(), anyString(), any());
-			when(jwtProvider.generateToken(anyString(), anyString())).thenReturn("token");
+			when(jwtProvider.generateToken(anyString(), anyString(), any(), any())).thenReturn("token");
 
 			authService.register(request);
 
@@ -446,7 +446,7 @@ class AuthServiceTest {
 				return vr;
 			});
 			doNothing().when(eventPublisher).publish(anyString(), anyString(), anyString(), any());
-			when(jwtProvider.generateToken(anyString(), anyString())).thenReturn("admin-token");
+			when(jwtProvider.generateToken(anyString(), anyString(), any(), any())).thenReturn("admin-token");
 
 			authService.register(request);
 

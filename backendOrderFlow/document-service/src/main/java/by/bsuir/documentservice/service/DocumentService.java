@@ -1,6 +1,7 @@
 package by.bsuir.documentservice.service;
 
 import by.bsuir.documentservice.dto.DocumentResponse;
+import by.bsuir.documentservice.dto.DocumentTypeResponse;
 import by.bsuir.documentservice.dto.UploadDocumentRequest;
 import by.bsuir.documentservice.entity.Document;
 import by.bsuir.documentservice.entity.DocumentType;
@@ -99,6 +100,18 @@ public class DocumentService {
 			log.error("Failed to get download URL: {}", e.getMessage());
 			throw new RuntimeException("Failed to get download URL: " + e.getMessage(), e);
 		}
+	}
+
+	@Transactional(readOnly = true)
+	public List<DocumentTypeResponse> getDocumentTypes() {
+		return documentTypeRepository.findAll().stream()
+				.map(type -> new DocumentTypeResponse(
+						type.getId(),
+						type.getCode(),
+						type.getName(),
+						type.getDescription()
+				))
+				.collect(Collectors.toList());
 	}
 
 	@Transactional

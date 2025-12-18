@@ -16,7 +16,7 @@ CREATE TABLE company (
     updated_at TIMESTAMP
 );
 
-CREATE TABLE user (
+CREATE TABLE users (
     id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
@@ -40,8 +40,8 @@ CREATE TABLE verification_request (
     reviewer_id BIGINT UNSIGNED NULL,
     rejection_reason TEXT NULL,
     FOREIGN KEY (company_id) REFERENCES company(id),
-    FOREIGN KEY (user_id) REFERENCES user(id),
-    FOREIGN KEY (reviewer_id) REFERENCES user(id)
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (reviewer_id) REFERENCES users(id)
 );
 
 CREATE TABLE verification_document (

@@ -37,11 +37,21 @@ public class JwtAuthenticationFilter implements GatewayFilter {
 
             String email = jwtProvider.getEmailFromToken(token);
             String role = jwtProvider.getRoleFromToken(token);
+            Long userId = jwtProvider.getUserIdFromToken(token);
+            Long companyId = jwtProvider.getCompanyIdFromToken(token);
 
-            ServerHttpRequest mutatedRequest = request.mutate()
+            ServerHttpRequest.Builder requestBuilder = request.mutate()
                     .header("X-User-Email", email)
-                    .header("X-User-Role", role)
-                    .build();
+                    .header("X-User-Role", role);
+
+            if (userId != null) {
+                requestBuilder.header("X-User-Id", userId.toString());
+            }
+            if (companyId != null) {
+                requestBuilder.header("X-User-Company-Id", companyId.toString());
+            }
+
+            ServerHttpRequest mutatedRequest = requestBuilder.build();
 
             return chain.filter(exchange.mutate().request(mutatedRequest).build());
         } catch (Exception e) {

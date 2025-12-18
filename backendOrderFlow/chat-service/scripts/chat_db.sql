@@ -35,13 +35,13 @@ CREATE TABLE support_ticket (
     requester_company_id BIGINT NOT NULL,
     requester_user_id BIGINT NOT NULL,
     subject VARCHAR(255) NOT NULL,
-    status ENUM('NEW', 'IN_PROGRESS', 'WAITING_USER', 'RESOLVED', 'CLOSED') DEFAULT 'NEW',
+    status ENUM('NEW', 'IN_PROGRESS', 'WAITING_FOR_CUSTOMER', 'RESOLVED', 'CLOSED') DEFAULT 'NEW',
     priority ENUM('LOW', 'NORMAL', 'HIGH', 'URGENT') DEFAULT 'NORMAL',
-    category ENUM('TECHNICAL', 'BILLING', 'ORDER', 'ACCOUNT', 'OTHER'),
+    category ENUM('TECHNICAL_ISSUE', 'PAYMENT_ISSUE', 'ORDER_ISSUE', 'ACCOUNT_ISSUE', 'VERIFICATION_ISSUE', 'OTHER'),
     assigned_admin_id BIGINT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NULL,
-    closed_at TIMESTAMP NULL,
+    resolved_at TIMESTAMP NULL,
     INDEX idx_requester_company_id (requester_company_id),
     INDEX idx_status (status)
 );

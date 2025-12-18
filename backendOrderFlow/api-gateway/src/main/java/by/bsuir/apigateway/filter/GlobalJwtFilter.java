@@ -50,12 +50,22 @@ public class GlobalJwtFilter implements GlobalFilter, Ordered {
 
             String email = jwtProvider.getEmailFromToken(token);
             String role = jwtProvider.getRoleFromToken(token);
+            Long userId = jwtProvider.getUserIdFromToken(token);
+            Long companyId = jwtProvider.getCompanyIdFromToken(token);
+
+            var requestBuilder = exchange.getRequest().mutate()
+                    .header("X-User-Email", email)
+                    .header("X-User-Role", role);
+
+            if (userId != null) {
+                requestBuilder.header("X-User-Id", userId.toString());
+            }
+            if (companyId != null) {
+                requestBuilder.header("X-User-Company-Id", companyId.toString());
+            }
 
             ServerWebExchange mutatedExchange = exchange.mutate()
-                    .request(exchange.getRequest().mutate()
-                            .header("X-User-Email", email)
-                            .header("X-User-Role", role)
-                            .build())
+                    .request(requestBuilder.build())
                     .build();
 
             return chain.filter(mutatedExchange);

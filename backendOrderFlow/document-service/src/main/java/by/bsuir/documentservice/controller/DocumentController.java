@@ -2,6 +2,7 @@ package by.bsuir.documentservice.controller;
 
 import by.bsuir.documentservice.dto.ApiResponse;
 import by.bsuir.documentservice.dto.DocumentResponse;
+import by.bsuir.documentservice.dto.DocumentTypeResponse;
 import by.bsuir.documentservice.dto.UploadDocumentRequest;
 import by.bsuir.documentservice.service.DocumentService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,6 +27,13 @@ import java.util.List;
 public class DocumentController {
 
 	private final DocumentService documentService;
+
+	@GetMapping("/types")
+	@Operation(summary = "Получить список типов документов")
+	public ResponseEntity<ApiResponse<List<DocumentTypeResponse>>> getDocumentTypes() {
+		List<DocumentTypeResponse> response = documentService.getDocumentTypes();
+		return ResponseEntity.ok(ApiResponse.success(response));
+	}
 
 	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@Operation(summary = "Загрузить документ")
@@ -75,6 +83,7 @@ public class DocumentController {
 		String url = documentService.getDownloadUrl(id);
 		return ResponseEntity.ok(ApiResponse.success(url));
 	}
+
 
 	@DeleteMapping("/{id}")
 	@Operation(summary = "Удалить документ")

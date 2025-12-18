@@ -27,6 +27,48 @@ public class JwtProvider {
 		return createToken(claims, email);
 	}
 
+	public String generateToken(String email, String role, Long userId, Long companyId) {
+		Map<String, Object> claims = new HashMap<>();
+		claims.put("role", role);
+		if (userId != null) {
+			claims.put("userId", userId);
+		}
+		if (companyId != null) {
+			claims.put("companyId", companyId);
+		}
+		return createToken(claims, email);
+	}
+
+	public Long getUserIdFromToken(String token) {
+		try {
+			SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes());
+			Claims claims = Jwts.parser()
+					.verifyWith(key)
+					.build()
+					.parseSignedClaims(token)
+					.getPayload();
+			Object userId = claims.get("userId");
+			return userId != null ? ((Number) userId).longValue() : null;
+		} catch (JwtException | IllegalArgumentException e) {
+			return null;
+		}
+	}
+
+	public Long getCompanyIdFromToken(String token) {
+		try {
+			SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes());
+			Claims claims = Jwts.parser()
+					.verifyWith(key)
+					.build()
+					.parseSignedClaims(token)
+					.getPayload();
+			Object companyId = claims.get("companyId");
+			return companyId != null ? ((Number) companyId).longValue() : null;
+		} catch (JwtException | IllegalArgumentException e) {
+			return null;
+		}
+	}
+
 	private String createToken(Map<String, Object> claims, String subject) {
 		Date now = new Date();
 		Date expiryDate = new Date(now.getTime() + expirationTime);

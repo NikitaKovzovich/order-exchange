@@ -462,7 +462,7 @@ X-User-Company-Id: {companyId}
 
 Для удобства тестирования API подготовлены файлы документации:
 
-**[Скачать документацию API](./backendOrderFlow/doc_for_ui/)**
+**[Скачать документацию API](./backendOrderFlow/collections/OrderExchange_Full_Collection.json/)**
 
 ### Безопасность
 
