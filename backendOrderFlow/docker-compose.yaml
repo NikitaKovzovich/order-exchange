@@ -1,144 +1,200 @@
-
 # =============================================================================
-# OrderFlow Platform - All Services Docker Compose
-# =============================================================================
-# Этот файл запускает все базы данных для микросервисной платформы OrderFlow
-# Использование: docker-compose up -d
+# OrderFlow — полный Docker Compose
+# Все микросервисы + все базы данных + инфраструктура
+# Использование: docker-compose up -d --build
 # =============================================================================
 
 services:
+
   # ===========================================================================
-  # Auth Service Database (Port 3306)
+  # DATABASES
   # ===========================================================================
+
   auth-mysql:
     image: mysql:8.0
-    container_name: user_db_mysql
+    container_name: auth-mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: user_db
       MYSQL_USER: app_user
       MYSQL_PASSWORD: app_password
+      MYSQL_INITDB_SKIP_TZINFO: "1"
     ports:
       - "3306:3306"
     volumes:
       - ./auth-service/scripts/user-db.sql:/docker-entrypoint-initdb.d/user-db.sql
       - auth_mysql_data:/var/lib/mysql
-    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --skip-name-resolve
+      --innodb-doublewrite=0
+      --innodb-flush-log-at-trx-commit=2
+      --innodb-flush-method=O_DIRECT_NO_FSYNC
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-proot"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 30
+      start_period: 60s
     networks:
       - orderflow-network
 
-  # ===========================================================================
-  # Catalog Service Database (Port 3307)
-  # ===========================================================================
   catalog-mysql:
     image: mysql:8.0
-    container_name: catalog_db_mysql
+    container_name: catalog-mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: catalog_db
       MYSQL_USER: app_user
       MYSQL_PASSWORD: app_password
+      MYSQL_INITDB_SKIP_TZINFO: "1"
     ports:
       - "3307:3306"
     volumes:
       - ./catalog-service/scripts/catalog_db.sql:/docker-entrypoint-initdb.d/catalog_db.sql
       - catalog_mysql_data:/var/lib/mysql
-    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --skip-name-resolve
+      --innodb-doublewrite=0
+      --innodb-flush-log-at-trx-commit=2
+      --innodb-flush-method=O_DIRECT_NO_FSYNC
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-proot"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 30
+      start_period: 60s
     networks:
       - orderflow-network
 
-  # ===========================================================================
-  # Order Service Database (Port 3308)
-  # ===========================================================================
   order-mysql:
     image: mysql:8.0
-    container_name: order_db_mysql
+    container_name: order-mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: order_db
       MYSQL_USER: app_user
       MYSQL_PASSWORD: app_password
+      MYSQL_INITDB_SKIP_TZINFO: "1"
     ports:
       - "3308:3306"
     volumes:
       - ./order-service/scripts/order_db.sql:/docker-entrypoint-initdb.d/order_db.sql
       - order_mysql_data:/var/lib/mysql
-    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --skip-name-resolve
+      --innodb-doublewrite=0
+      --innodb-flush-log-at-trx-commit=2
+      --innodb-flush-method=O_DIRECT_NO_FSYNC
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-proot"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 30
+      start_period: 60s
     networks:
       - orderflow-network
 
-  # ===========================================================================
-  # Chat Service Database (Port 3309)
-  # ===========================================================================
   chat-mysql:
     image: mysql:8.0
-    container_name: chat_db_mysql
+    container_name: chat-mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: chat_db
       MYSQL_USER: app_user
       MYSQL_PASSWORD: app_password
+      MYSQL_INITDB_SKIP_TZINFO: "1"
     ports:
       - "3309:3306"
     volumes:
       - ./chat-service/scripts/chat_db.sql:/docker-entrypoint-initdb.d/chat_db.sql
       - chat_mysql_data:/var/lib/mysql
-    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --skip-name-resolve
+      --innodb-doublewrite=0
+      --innodb-flush-log-at-trx-commit=2
+      --innodb-flush-method=O_DIRECT_NO_FSYNC
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-proot"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 30
+      start_period: 60s
     networks:
       - orderflow-network
 
-  # ===========================================================================
-  # Document Service Database (Port 3310)
-  # ===========================================================================
   document-mysql:
     image: mysql:8.0
-    container_name: document_db_mysql
+    container_name: document-mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: document_db
       MYSQL_USER: app_user
       MYSQL_PASSWORD: app_password
+      MYSQL_INITDB_SKIP_TZINFO: "1"
     ports:
       - "3310:3306"
     volumes:
       - ./document-service/scripts/document_db.sql:/docker-entrypoint-initdb.d/document_db.sql
       - document_mysql_data:/var/lib/mysql
-    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --skip-name-resolve
+      --innodb-doublewrite=0
+      --innodb-flush-log-at-trx-commit=2
+      --innodb-flush-method=O_DIRECT_NO_FSYNC
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-proot"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 30
+      start_period: 60s
     networks:
       - orderflow-network
 
   # ===========================================================================
-  # MinIO Object Storage (for Document Service)
-  # API: Port 9000, Console: Port 9001
+  # MESSAGE BROKER
   # ===========================================================================
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: orderflow
+      RABBITMQ_DEFAULT_PASS: orderflow123
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    networks:
+      - orderflow-network
+
+  # ===========================================================================
+  # OBJECT STORAGE
+  # ===========================================================================
+
   minio:
     image: minio/minio:latest
-    container_name: document_minio
+    container_name: minio
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin123
@@ -151,59 +207,222 @@ services:
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
-      timeout: 20s
-      retries: 3
-    networks:
-      - orderflow-network
-
-  # ===========================================================================
-  # RabbitMQ Message Broker
-  # AMQP: Port 5672, Management Console: Port 15672
-  # ===========================================================================
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: orderflow_rabbitmq
-    environment:
-      RABBITMQ_DEFAULT_USER: orderflow
-      RABBITMQ_DEFAULT_PASS: orderflow123
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 30s
       timeout: 10s
       retries: 5
     networks:
       - orderflow-network
 
   # ===========================================================================
-  # Prometheus - Metrics Collection
-  # Port: 9090
+  # MICROSERVICES
   # ===========================================================================
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: orderflow_prometheus
+
+  eureka-server:
+    build:
+      context: ./eureka-server
+      dockerfile: Dockerfile
+    container_name: eureka-server
     ports:
-      - "9090:9090"
-    volumes:
-      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
+      - "8761:8761"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "false"
+      EUREKA_CLIENT_FETCH_REGISTRY: "false"
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8761/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    networks:
+      - orderflow-network
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8765:8765"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - orderflow-network
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://auth-mysql:3306/user_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: app_user
+      SPRING_DATASOURCE_PASSWORD: app_password
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: orderflow
+      SPRING_RABBITMQ_PASSWORD: orderflow123
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      JWT_SECRET: 2a442e4cec2e697d12a41e5e8c6aa19cdf0dd009e75cd8ba1433d72b27dc9926
+    depends_on:
+      auth-mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - orderflow-network
+
+  catalog-service:
+    build:
+      context: ./catalog-service
+      dockerfile: Dockerfile
+    container_name: catalog-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://catalog-mysql:3306/catalog_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: app_user
+      SPRING_DATASOURCE_PASSWORD: app_password
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: orderflow
+      SPRING_RABBITMQ_PASSWORD: orderflow123
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+    depends_on:
+      catalog-mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - orderflow-network
+
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    container_name: order-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://order-mysql:3306/order_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: app_user
+      SPRING_DATASOURCE_PASSWORD: app_password
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: orderflow
+      SPRING_RABBITMQ_PASSWORD: orderflow123
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+    depends_on:
+      order-mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - orderflow-network
+
+  chat-service:
+    build:
+      context: ./chat-service
+      dockerfile: Dockerfile
+    container_name: chat-service
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://chat-mysql:3306/chat_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: app_user
+      SPRING_DATASOURCE_PASSWORD: app_password
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: orderflow
+      SPRING_RABBITMQ_PASSWORD: orderflow123
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+    depends_on:
+      chat-mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - orderflow-network
+
+  document-service:
+    build:
+      context: ./document-service
+      dockerfile: Dockerfile
+    container_name: document-service
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://document-mysql:3306/document_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: app_user
+      SPRING_DATASOURCE_PASSWORD: app_password
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: orderflow
+      SPRING_RABBITMQ_PASSWORD: orderflow123
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin123
+      MINIO_BUCKET_NAME: orderflow-documents
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+    depends_on:
+      document-mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
     networks:
       - orderflow-network
 
   # ===========================================================================
-  # Grafana - Metrics Visualization
-  # Port: 3001
+  # MONITORING
   # ===========================================================================
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./.infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    depends_on:
+      - eureka-server
+    networks:
+      - orderflow-network
+
   grafana:
     image: grafana/grafana:latest
-    container_name: orderflow_grafana
+    container_name: grafana
     ports:
       - "3001:3000"
     environment:
@@ -217,30 +436,21 @@ services:
       - orderflow-network
 
 # =============================================================================
-# Volumes
+# VOLUMES
 # =============================================================================
 volumes:
   auth_mysql_data:
-    driver: local
   catalog_mysql_data:
-    driver: local
   order_mysql_data:
-    driver: local
   chat_mysql_data:
-    driver: local
   document_mysql_data:
-    driver: local
   minio_data:
-    driver: local
   rabbitmq_data:
-    driver: local
   prometheus_data:
-    driver: local
   grafana_data:
-    driver: local
 
 # =============================================================================
-# Network
+# NETWORK
 # =============================================================================
 networks:
   orderflow-network:

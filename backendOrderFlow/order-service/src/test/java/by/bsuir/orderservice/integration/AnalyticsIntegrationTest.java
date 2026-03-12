@@ -22,61 +22,61 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class AnalyticsIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+	@Autowired
+	private MockMvc mockMvc;
 
-    @Autowired
-    private OrderRepository orderRepository;
+	@Autowired
+	private OrderRepository orderRepository;
 
-    @Autowired
-    private OrderStatusRepository statusRepository;
+	@Autowired
+	private OrderStatusRepository statusRepository;
 
-    @MockBean
-    private EventPublisher eventPublisher;
+	@MockBean
+	private EventPublisher eventPublisher;
 
-    @Test
-    @DisplayName("Should get overall analytics")
-    void shouldGetOverallAnalytics() throws Exception {
-        mockMvc.perform(get("/api/analytics")
-                        .header("X-User-Id", "1")
-                        .header("X-User-Company-Id", "1")
-                        .header("X-User-Role", "ADMIN"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
-    }
+	@Test
+	@DisplayName("Should get overall analytics")
+	void shouldGetOverallAnalytics() throws Exception {
+		mockMvc.perform(get("/api/analytics")
+						.header("X-User-Id", "1")
+						.header("X-User-Company-Id", "1")
+						.header("X-User-Role", "ADMIN"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true));
+	}
 
-    @Test
-    @DisplayName("Should get supplier analytics")
-    void shouldGetSupplierAnalytics() throws Exception {
-        mockMvc.perform(get("/api/analytics/supplier")
-                        .header("X-User-Id", "1")
-                        .header("X-User-Company-Id", "1")
-                        .header("X-User-Role", "SUPPLIER")
-                        .param("period", "month"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
-    }
+	@Test
+	@DisplayName("Should get supplier analytics")
+	void shouldGetSupplierAnalytics() throws Exception {
+		mockMvc.perform(get("/api/analytics/supplier")
+						.header("X-User-Id", "1")
+						.header("X-User-Company-Id", "1")
+						.header("X-User-Role", "SUPPLIER")
+						.param("period", "month"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true));
+	}
 
-    @Test
-    @DisplayName("Should get customer analytics")
-    void shouldGetCustomerAnalytics() throws Exception {
-        mockMvc.perform(get("/api/analytics/customer")
-                        .header("X-User-Id", "1")
-                        .header("X-User-Company-Id", "2")
-                        .header("X-User-Role", "RETAIL_CHAIN")
-                        .param("period", "month"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
-    }
+	@Test
+	@DisplayName("Should get customer analytics")
+	void shouldGetCustomerAnalytics() throws Exception {
+		mockMvc.perform(get("/api/analytics/customer")
+						.header("X-User-Id", "1")
+						.header("X-User-Company-Id", "2")
+						.header("X-User-Role", "RETAIL_CHAIN")
+						.param("period", "month"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true));
+	}
 
-    @Test
-    @DisplayName("Should get product purchase history")
-    void shouldGetProductPurchaseHistory() throws Exception {
-        mockMvc.perform(get("/api/analytics/customer/product-history")
-                        .header("X-User-Id", "1")
-                        .header("X-User-Company-Id", "2")
-                        .header("X-User-Role", "RETAIL_CHAIN"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
-    }
+	@Test
+	@DisplayName("Should get product purchase history")
+	void shouldGetProductPurchaseHistory() throws Exception {
+		mockMvc.perform(get("/api/analytics/customer/product-history")
+						.header("X-User-Id", "1")
+						.header("X-User-Company-Id", "2")
+						.header("X-User-Role", "RETAIL_CHAIN"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true));
+	}
 }

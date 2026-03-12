@@ -4,8 +4,13 @@ import by.bsuir.authservice.DTO.LoginRequest;
 import by.bsuir.authservice.entity.Address;
 import by.bsuir.authservice.entity.Company;
 import by.bsuir.authservice.entity.User;
+import by.bsuir.authservice.repository.BankAccountRepository;
+import by.bsuir.authservice.repository.CompanyDocumentRepository;
+import by.bsuir.authservice.repository.ResponsiblePersonRepository;
+import by.bsuir.authservice.repository.SupplierSettingsRepository;
 import by.bsuir.authservice.service.AddressService;
 import by.bsuir.authservice.service.AuthService;
+import by.bsuir.authservice.service.FileStorageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -41,6 +46,21 @@ class AuthControllerTest {
 
 	@MockBean
 	private AddressService addressService;
+
+	@MockBean
+	private FileStorageService fileStorageService;
+
+	@MockBean
+	private BankAccountRepository bankAccountRepository;
+
+	@MockBean
+	private ResponsiblePersonRepository responsiblePersonRepository;
+
+	@MockBean
+	private CompanyDocumentRepository companyDocumentRepository;
+
+	@MockBean
+	private SupplierSettingsRepository supplierSettingsRepository;
 
 	private User testUser;
 	private Company testCompany;

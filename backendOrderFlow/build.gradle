@@ -1,3 +1,21 @@
 group = 'by.bsuir'
 version = '0.0.1-SNAPSHOT'
 description = 'backendOrderFlow'
+
+def spotlessBuilds = ['auth-service', 'catalog-service', 'chat-service', 'document-service', 'order-service']
+
+tasks.register('spotlessCheck') {
+    group = 'verification'
+    description = 'Run spotlessCheck in all subprojects'
+    spotlessBuilds.each { name ->
+        dependsOn gradle.includedBuild(name).task(':spotlessCheck')
+    }
+}
+
+tasks.register('spotlessApply') {
+    group = 'formatting'
+    description = 'Run spotlessApply in all subprojects'
+    spotlessBuilds.each { name ->
+        dependsOn gradle.includedBuild(name).task(':spotlessApply')
+    }
+}

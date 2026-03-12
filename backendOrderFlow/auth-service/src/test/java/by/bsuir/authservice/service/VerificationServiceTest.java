@@ -35,6 +35,12 @@ class VerificationServiceTest {
 	@Mock
 	private CompanyRepository companyRepository;
 
+	@Mock
+	private NotificationService notificationService;
+
+	@Mock
+	private RabbitEventPublisher rabbitEventPublisher;
+
 	@InjectMocks
 	private VerificationService verificationService;
 

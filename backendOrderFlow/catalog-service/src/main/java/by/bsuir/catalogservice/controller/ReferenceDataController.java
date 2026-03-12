@@ -19,37 +19,36 @@ import java.util.List;
 @Tag(name = "Reference Data", description = "Units of measure and VAT rates")
 public class ReferenceDataController {
 
-    private final UnitOfMeasureRepository unitOfMeasureRepository;
-    private final VatRateRepository vatRateRepository;
+	private final UnitOfMeasureRepository unitOfMeasureRepository;
+	private final VatRateRepository vatRateRepository;
 
-    @GetMapping("/units")
-    @Operation(summary = "Get all units of measure")
-    public ResponseEntity<ApiResponse<List<UnitOfMeasure>>> getAllUnits() {
-        List<UnitOfMeasure> units = unitOfMeasureRepository.findAll();
-        return ResponseEntity.ok(ApiResponse.success(units, "Units retrieved successfully"));
-    }
+	@GetMapping("/units")
+	@Operation(summary = "Get all units of measure")
+	public ResponseEntity<ApiResponse<List<UnitOfMeasure>>> getAllUnits() {
+		List<UnitOfMeasure> units = unitOfMeasureRepository.findAll();
+		return ResponseEntity.ok(ApiResponse.success(units, "Units retrieved successfully"));
+	}
 
-    @GetMapping("/units/{id}")
-    @Operation(summary = "Get unit by ID")
-    public ResponseEntity<ApiResponse<UnitOfMeasure>> getUnitById(@PathVariable Long id) {
-        return unitOfMeasureRepository.findById(id)
-                .map(unit -> ResponseEntity.ok(ApiResponse.success(unit, "Unit found")))
-                .orElse(ResponseEntity.notFound().build());
-    }
+	@GetMapping("/units/{id}")
+	@Operation(summary = "Get unit by ID")
+	public ResponseEntity<ApiResponse<UnitOfMeasure>> getUnitById(@PathVariable Long id) {
+		return unitOfMeasureRepository.findById(id)
+				.map(unit -> ResponseEntity.ok(ApiResponse.success(unit, "Unit found")))
+				.orElse(ResponseEntity.notFound().build());
+	}
 
-    @GetMapping("/vat-rates")
-    @Operation(summary = "Get all VAT rates")
-    public ResponseEntity<ApiResponse<List<VatRate>>> getAllVatRates() {
-        List<VatRate> vatRates = vatRateRepository.findAll();
-        return ResponseEntity.ok(ApiResponse.success(vatRates, "VAT rates retrieved successfully"));
-    }
+	@GetMapping("/vat-rates")
+	@Operation(summary = "Get all VAT rates")
+	public ResponseEntity<ApiResponse<List<VatRate>>> getAllVatRates() {
+		List<VatRate> vatRates = vatRateRepository.findAll();
+		return ResponseEntity.ok(ApiResponse.success(vatRates, "VAT rates retrieved successfully"));
+	}
 
-    @GetMapping("/vat-rates/{id}")
-    @Operation(summary = "Get VAT rate by ID")
-    public ResponseEntity<ApiResponse<VatRate>> getVatRateById(@PathVariable Long id) {
-        return vatRateRepository.findById(id)
-                .map(vatRate -> ResponseEntity.ok(ApiResponse.success(vatRate, "VAT rate found")))
-                .orElse(ResponseEntity.notFound().build());
-    }
+	@GetMapping("/vat-rates/{id}")
+	@Operation(summary = "Get VAT rate by ID")
+	public ResponseEntity<ApiResponse<VatRate>> getVatRateById(@PathVariable Long id) {
+		return vatRateRepository.findById(id)
+				.map(vatRate -> ResponseEntity.ok(ApiResponse.success(vatRate, "VAT rate found")))
+				.orElse(ResponseEntity.notFound().build());
+	}
 }
-

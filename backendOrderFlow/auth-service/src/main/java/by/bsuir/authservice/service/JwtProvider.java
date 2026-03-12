@@ -3,8 +3,8 @@ package by.bsuir.authservice.service;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -16,10 +16,17 @@ import java.util.Map;
 @Component
 public class JwtProvider {
 	@Value("${jwt.secret:your-very-secret-key-that-should-be-at-least-256-bits-long-for-hs256}")
-	private String secretKey;
+	private String secretKeyString;
 
 	@Value("${jwt.expiration:3600000}")
 	private long expirationTime;
+
+	private SecretKey secretKey;
+
+	@PostConstruct
+	public void init() {
+		this.secretKey = Keys.hmacShaKeyFor(secretKeyString.getBytes());
+	}
 
 	public String generateToken(String email, String role) {
 		Map<String, Object> claims = new HashMap<>();
@@ -39,89 +46,51 @@ public class JwtProvider {
 		return createToken(claims, email);
 	}
 
+	public String getEmailFromToken(String token) {
+		return getClaims(token).getSubject();
+	}
+
+	public String getRoleFromToken(String token) {
+		return (String) getClaims(token).get("role");
+	}
+
 	public Long getUserIdFromToken(String token) {
-		try {
-			SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes());
-			Claims claims = Jwts.parser()
-					.verifyWith(key)
-					.build()
-					.parseSignedClaims(token)
-					.getPayload();
-			Object userId = claims.get("userId");
-			return userId != null ? ((Number) userId).longValue() : null;
-		} catch (JwtException | IllegalArgumentException e) {
-			return null;
-		}
+		Object userId = getClaims(token).get("userId");
+		return userId != null ? ((Number) userId).longValue() : null;
 	}
 
 	public Long getCompanyIdFromToken(String token) {
+		Object companyId = getClaims(token).get("companyId");
+		return companyId != null ? ((Number) companyId).longValue() : null;
+	}
+
+	public boolean validateToken(String token) {
 		try {
-			SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes());
-			Claims claims = Jwts.parser()
-					.verifyWith(key)
-					.build()
-					.parseSignedClaims(token)
-					.getPayload();
-			Object companyId = claims.get("companyId");
-			return companyId != null ? ((Number) companyId).longValue() : null;
+			getClaims(token);
+			return true;
 		} catch (JwtException | IllegalArgumentException e) {
-			return null;
+			return false;
 		}
+	}
+
+	private Claims getClaims(String token) {
+		return Jwts.parser()
+				.verifyWith(secretKey)
+				.build()
+				.parseSignedClaims(token)
+				.getPayload();
 	}
 
 	private String createToken(Map<String, Object> claims, String subject) {
 		Date now = new Date();
 		Date expiryDate = new Date(now.getTime() + expirationTime);
 
-		SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes());
-
 		return Jwts.builder()
 				.claims(claims)
 				.subject(subject)
 				.issuedAt(now)
 				.expiration(expiryDate)
-				.signWith(key, SignatureAlgorithm.HS256)
+				.signWith(secretKey)
 				.compact();
-	}
-
-	public String getEmailFromToken(String token) {
-		try {
-			SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes());
-			Claims claims = Jwts.parser()
-					.verifyWith(key)
-					.build()
-					.parseSignedClaims(token)
-					.getPayload();
-			return claims.getSubject();
-		} catch (JwtException | IllegalArgumentException e) {
-			throw new JwtException("Cannot extract email from JWT");
-		}
-	}
-
-	public String getRoleFromToken(String token) {
-		try {
-			SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes());
-			Claims claims = Jwts.parser()
-					.verifyWith(key)
-					.build()
-					.parseSignedClaims(token)
-					.getPayload();
-			return (String) claims.get("role");
-		} catch (JwtException | IllegalArgumentException e) {
-			throw new JwtException("Cannot extract role from JWT");
-		}
-	}
-
-	public boolean validateToken(String token) {
-		try {
-			SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes());
-			Jwts.parser()
-					.verifyWith(key)
-					.build()
-					.parseSignedClaims(token);
-			return true;
-		} catch (JwtException | IllegalArgumentException e) {
-			return false;
-		}
 	}
 }

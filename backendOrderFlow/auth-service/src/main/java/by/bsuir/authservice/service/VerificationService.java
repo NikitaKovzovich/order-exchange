@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -15,6 +16,8 @@ public class VerificationService {
 	private final VerificationDocumentRepository verificationDocumentRepository;
 	private final UserRepository userRepository;
 	private final CompanyRepository companyRepository;
+	private final NotificationService notificationService;
+	private final RabbitEventPublisher rabbitEventPublisher;
 
 	public List<VerificationRequest> getPendingRequests() {
 		return verificationRequestRepository.findByStatus(VerificationRequest.VerificationStatus.PENDING);
@@ -38,11 +41,24 @@ public class VerificationService {
 
 		User supplierUser = request.getUser();
 		supplierUser.setIsActive(true);
+		supplierUser.setStatus("ACTIVE");
 		userRepository.save(supplierUser);
 
 		Company company = request.getCompany();
 		company.setStatus(Company.CompanyStatus.ACTIVE);
+		company.setVerified(true);
 		companyRepository.save(company);
+		notificationService.createNotification(supplierUser.getId(),
+				"Регистрация одобрена",
+				"Ваша заявка на регистрацию одобрена. Добро пожаловать на платформу!",
+				Notification.NotificationType.VERIFICATION_APPROVED,
+				"VerificationRequest", requestId);
+		rabbitEventPublisher.publish("verificationapproved", Map.of(
+				"userId", supplierUser.getId(),
+				"companyId", company.getId(),
+				"companyName", company.getLegalName() != null ? company.getLegalName() : "",
+				"reviewerId", reviewerId
+		));
 	}
 
 	@Transactional
@@ -60,6 +76,19 @@ public class VerificationService {
 		Company company = request.getCompany();
 		company.setStatus(Company.CompanyStatus.REJECTED);
 		companyRepository.save(company);
+
+		User user = request.getUser();
+		notificationService.createNotification(user.getId(),
+				"Регистрация отклонена",
+				"К сожалению, ваша заявка на регистрацию была отклонена. Причина: " + rejectionReason,
+				Notification.NotificationType.VERIFICATION_REJECTED,
+				"VerificationRequest", requestId);
+		rabbitEventPublisher.publish("verificationrejected", Map.of(
+				"userId", user.getId(),
+				"companyId", company.getId(),
+				"companyName", company.getLegalName() != null ? company.getLegalName() : "",
+				"reason", rejectionReason
+		));
 	}
 
 	public List<VerificationDocument> getVerificationDocuments(Long requestId) {

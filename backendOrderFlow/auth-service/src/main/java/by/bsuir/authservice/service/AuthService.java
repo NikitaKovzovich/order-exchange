@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import by.bsuir.authservice.DTO.ProfileUpdateRequest;
 import by.bsuir.authservice.DTO.RegisterRequest;
 
 import java.time.LocalDateTime;
@@ -29,9 +31,25 @@ public class AuthService {
 	private final JwtProvider jwtProvider;
 	private final FileStorageService fileStorageService;
 	private final EventPublisher eventPublisher;
+	private final NotificationService notificationService;
+	private final RabbitEventPublisher rabbitEventPublisher;
 
 	@Transactional
 	public String register(RegisterRequest request) {
+		if (!request.getPassword().equals(request.getPasswordConfirm())) {
+			throw new IllegalArgumentException("Passwords do not match");
+		}
+		if (request.getPassword().length() < 8) {
+			throw new IllegalArgumentException("Password must be at least 8 characters");
+		}
+
+		if (request.getTaxId() == null || !request.getTaxId().matches("^\\d{9}$")) {
+			throw new IllegalArgumentException("Tax ID (UNP) must be exactly 9 digits");
+		}
+
+		if (request.getRegistrationDate() != null && request.getRegistrationDate().isAfter(java.time.LocalDate.now())) {
+			throw new IllegalArgumentException("Registration date cannot be in the future");
+		}
 
 		if (userRepository.existsByEmail(request.getEmail())) {
 			throw new IllegalArgumentException("User with this email already exists");
@@ -44,11 +62,11 @@ public class AuthService {
 				.passwordHash(passwordEncoder.encode(request.getPassword()))
 				.role(userRole)
 				.isActive(userRole == User.Role.ADMIN)
+				.status(userRole == User.Role.ADMIN ? "ACTIVE" : "PENDING_VERIFICATION")
 				.createdAt(LocalDateTime.now())
 				.build();
 
 		Company.LegalForm legalForm = Company.LegalForm.valueOf(request.getLegalForm());
-		String companyName = request.getName() != null ? request.getName() : request.getLegalName();
 
 		Company company = Company.builder()
 				.name(request.getName())
@@ -117,7 +135,29 @@ public class AuthService {
 				"status", verificationRequest.getStatus().name()
 			));
 
-		saveVerificationDocuments(verificationRequest, request);
+		saveVerificationDocuments(verificationRequest, company);
+
+		notificationService.createNotification(user.getId(),
+				"Регистрация отправлена",
+				"Ваша заявка на регистрацию отправлена и ожидает проверки администратором.",
+				Notification.NotificationType.REGISTRATION_SUBMITTED,
+				"VerificationRequest", verificationRequest.getId());
+
+		List<Long> adminIds = userRepository.findAllAdminUserIds();
+		notificationService.notifyAllAdmins(
+				"Новая заявка на регистрацию",
+				"Получена новая заявка на регистрацию от компании «" +
+						(company.getLegalName() != null ? company.getLegalName() : company.getName()) + "».",
+				Notification.NotificationType.REGISTRATION_SUBMITTED,
+				"VerificationRequest", verificationRequest.getId(), adminIds);
+
+		rabbitEventPublisher.publish("userregistered", Map.of(
+				"userId", user.getId(),
+				"email", user.getEmail(),
+				"role", user.getRole().name(),
+				"companyId", company.getId(),
+				"companyName", company.getLegalName() != null ? company.getLegalName() : ""
+		));
 
 		return jwtProvider.generateToken(user.getEmail(), userRole.name(), user.getId(), company.getId());
 	}
@@ -132,6 +172,32 @@ public class AuthService {
 					.company(company)
 					.documentType(CompanyDocument.DocumentType.LOGO)
 					.fileKey(fileName != null ? fileName : "logo")
+					.filePath(filePath)
+					.originalFilename(fileName)
+					.build());
+		}
+
+		if (request.getRegistrationCertificate() != null && !request.getRegistrationCertificate().isEmpty()) {
+			String filePath = fileStorageService.storeFile(request.getRegistrationCertificate(),
+					"company/" + company.getId() + "/certificate");
+			String fileName = request.getRegistrationCertificate().getOriginalFilename();
+			documents.add(CompanyDocument.builder()
+					.company(company)
+					.documentType(CompanyDocument.DocumentType.REGISTRATION_CERTIFICATE)
+					.fileKey(fileName != null ? fileName : "registration_certificate")
+					.filePath(filePath)
+					.originalFilename(fileName)
+					.build());
+		}
+
+		if (request.getCharter() != null && !request.getCharter().isEmpty()) {
+			String filePath = fileStorageService.storeFile(request.getCharter(),
+					"company/" + company.getId() + "/charter");
+			String fileName = request.getCharter().getOriginalFilename();
+			documents.add(CompanyDocument.builder()
+					.company(company)
+					.documentType(CompanyDocument.DocumentType.CHARTER)
+					.fileKey(fileName != null ? fileName : "charter")
 					.filePath(filePath)
 					.originalFilename(fileName)
 					.build());
@@ -163,43 +229,49 @@ public class AuthService {
 
 		if (!documents.isEmpty()) {
 			companyDocumentRepository.saveAll(documents);
+
+			List<Map<String, Object>> docsData = new ArrayList<>();
+			for (CompanyDocument doc : documents) {
+				docsData.add(Map.of(
+					"documentType", doc.getDocumentType().name(),
+					"filePath", doc.getFilePath() != null ? doc.getFilePath() : "",
+					"originalFilename", doc.getOriginalFilename() != null ? doc.getOriginalFilename() : ""
+				));
+			}
+			eventPublisher.publish("Company", company.getId().toString(), "CompanyDocumentsUploaded",
+				Map.of(
+					"companyId", company.getId(),
+					"documentsCount", documents.size(),
+					"documents", docsData
+				));
 		}
 	}
 
-	private void saveVerificationDocuments(VerificationRequest verificationRequest, RegisterRequest request) {
+	private void saveVerificationDocuments(VerificationRequest verificationRequest, Company company) {
+		List<CompanyDocument> companyDocs = companyDocumentRepository.findByCompanyId(company.getId());
+		if (companyDocs.isEmpty()) {
+			return;
+		}
+
 		List<VerificationDocument> documents = new ArrayList<>();
-
-		if (request.getRegistrationCertificate() != null && !request.getRegistrationCertificate().isEmpty()) {
-			String filePath = fileStorageService.storeFile(
-					request.getRegistrationCertificate(),
-					"verification/" + verificationRequest.getId() + "/certificate"
-			);
+		for (CompanyDocument cd : companyDocs) {
 			documents.add(VerificationDocument.builder()
 					.verificationRequest(verificationRequest)
-					.documentType("REGISTRATION_CERTIFICATE")
-					.documentPath(filePath)
-					.documentName(request.getRegistrationCertificate().getOriginalFilename())
+					.documentType(cd.getDocumentType().name())
+					.documentPath(cd.getFilePath())
+					.documentName(cd.getOriginalFilename() != null ? cd.getOriginalFilename() : cd.getFileKey())
 					.uploadedAt(LocalDateTime.now())
 					.build());
 		}
 
-		if (request.getCharter() != null && !request.getCharter().isEmpty()) {
-			String filePath = fileStorageService.storeFile(
-					request.getCharter(),
-					"verification/" + verificationRequest.getId() + "/charter"
-			);
-			documents.add(VerificationDocument.builder()
-					.verificationRequest(verificationRequest)
-					.documentType("CHARTER")
-					.documentPath(filePath)
-					.documentName(request.getCharter().getOriginalFilename())
-					.uploadedAt(LocalDateTime.now())
-					.build());
-		}
+		verificationDocumentRepository.saveAll(documents);
 
-		if (!documents.isEmpty()) {
-			verificationDocumentRepository.saveAll(documents);
-		}
+		eventPublisher.publish("VerificationRequest", verificationRequest.getId().toString(),
+			"VerificationDocumentsUploaded",
+			Map.of(
+				"verificationRequestId", verificationRequest.getId(),
+				"documentsCount", documents.size()
+			));
 	}
 
 	private void createSupplierAddresses(Company company, RegisterRequest request) {
@@ -399,8 +471,12 @@ public class AuthService {
 		User user = userRepository.findByEmail(email)
 				.orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
 
+		if ("BLOCKED".equals(user.getStatus())) {
+			throw new IllegalArgumentException("User account is blocked. Contact administrator.");
+		}
+
 		if (user.getIsActive() == null || !user.getIsActive()) {
-			throw new IllegalArgumentException("User account is not active");
+			throw new IllegalArgumentException("User account is not active. Awaiting verification.");
 		}
 
 		if (!passwordEncoder.matches(password, user.getPasswordHash())) {
@@ -426,5 +502,106 @@ public class AuthService {
 	public Company getCompanyById(Long companyId) {
 		return companyRepository.findById(companyId)
 				.orElseThrow(() -> new IllegalArgumentException("Company not found"));
+	}
+
+	@Transactional
+	public void updateProfile(Long userId, ProfileUpdateRequest request) {
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+		Company company = user.getCompany();
+		if (company == null) {
+			throw new IllegalArgumentException("User has no company");
+		}
+
+		if (request.getName() != null && !request.getName().isEmpty()) {
+			company.setNameAndBuildLegalName(request.getName());
+		}
+		if (request.getContactPhone() != null) {
+			company.setContactPhone(request.getContactPhone());
+		}
+		companyRepository.save(company);
+
+		if (request.getBankName() != null && request.getBic() != null && request.getAccountNumber() != null) {
+			BankAccount bankAccount = bankAccountRepository.findByCompanyId(company.getId())
+					.orElse(BankAccount.builder().company(company).build());
+			bankAccount.setBankName(request.getBankName());
+			bankAccount.setBic(request.getBic());
+			bankAccount.setAccountNumber(request.getAccountNumber());
+			bankAccountRepository.save(bankAccount);
+		}
+
+		if (request.getDirectorName() != null && !request.getDirectorName().isEmpty()) {
+			upsertResponsiblePerson(company, ResponsiblePerson.Position.director, request.getDirectorName());
+		}
+		if (request.getChiefAccountantName() != null && !request.getChiefAccountantName().isEmpty()) {
+			upsertResponsiblePerson(company, ResponsiblePerson.Position.chief_accountant, request.getChiefAccountantName());
+		}
+
+		if (request.getPaymentTerms() != null && user.getRole() == User.Role.SUPPLIER) {
+			try {
+				SupplierSettings.PaymentTerms terms = SupplierSettings.fromString(request.getPaymentTerms());
+				SupplierSettings settings = supplierSettingsRepository.findById(company.getId())
+						.orElse(SupplierSettings.builder().company(company).build());
+				settings.setPaymentTerms(terms);
+				supplierSettingsRepository.save(settings);
+			} catch (Exception ignored) {}
+		}
+
+		user.setUpdatedAt(LocalDateTime.now());
+		userRepository.save(user);
+
+		eventPublisher.publish("User", userId.toString(), "ProfileUpdated",
+				Map.of("userId", userId, "companyId", company.getId()));
+
+		notificationService.createNotification(userId,
+				"Профиль обновлён",
+				"Данные вашего профиля были успешно обновлены.",
+				Notification.NotificationType.PROFILE_UPDATED,
+				"User", userId);
+	}
+
+	@Transactional
+	public void updateCompanyLogo(Long userId, MultipartFile logo) {
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+		Company company = user.getCompany();
+		if (company == null) {
+			throw new IllegalArgumentException("User has no company");
+		}
+
+		List<CompanyDocument> existingLogos = companyDocumentRepository.findByCompanyId(company.getId())
+				.stream()
+				.filter(d -> d.getDocumentType() == CompanyDocument.DocumentType.LOGO)
+				.toList();
+		for (CompanyDocument existing : existingLogos) {
+			fileStorageService.deleteFile(existing.getFilePath());
+			companyDocumentRepository.delete(existing);
+		}
+
+		String filePath = fileStorageService.storeFile(logo, "company/" + company.getId() + "/logo");
+		String fileName = logo.getOriginalFilename();
+		CompanyDocument doc = CompanyDocument.builder()
+				.company(company)
+				.documentType(CompanyDocument.DocumentType.LOGO)
+				.fileKey(fileName != null ? fileName : "logo")
+				.filePath(filePath)
+				.originalFilename(fileName)
+				.build();
+		companyDocumentRepository.save(doc);
+
+		eventPublisher.publish("Company", company.getId().toString(), "CompanyLogoUpdated",
+				Map.of("companyId", company.getId(), "filePath", filePath));
+	}
+
+	private void upsertResponsiblePerson(Company company, ResponsiblePerson.Position position, String fullName) {
+		List<ResponsiblePerson> persons = responsiblePersonRepository.findByCompanyId(company.getId());
+		ResponsiblePerson person = persons.stream()
+				.filter(p -> p.getPosition() == position)
+				.findFirst()
+				.orElse(ResponsiblePerson.builder().company(company).position(position).build());
+		person.setFullName(fullName);
+		responsiblePersonRepository.save(person);
 	}
 }

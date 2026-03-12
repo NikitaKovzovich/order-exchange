@@ -121,4 +121,3 @@ class OrderEventListenerTest {
 		verify(chatService, never()).deactivateChannel(anyLong());
 	}
 }
-

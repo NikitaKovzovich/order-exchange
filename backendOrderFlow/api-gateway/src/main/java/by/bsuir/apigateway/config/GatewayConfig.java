@@ -1,5 +1,6 @@
 package by.bsuir.apigateway.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
@@ -7,6 +8,9 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class GatewayConfig {
+
+    @Value("${eureka.dashboard.url:http://localhost:8761}")
+    private String eurekaDashboardUrl;
 
     @Bean
     public RouteLocator routeLocator(RouteLocatorBuilder builder) {
@@ -21,8 +25,8 @@ public class GatewayConfig {
                 .route("admin-service", r -> r
                         .path("/api/admin/**")
                         .uri("lb://auth-service"))
-                .route("verification-service", r -> r
-                        .path("/api/verification/**")
+                .route("notification-service", r -> r
+                        .path("/api/notifications/**")
                         .uri("lb://auth-service"))
 
                 // Catalog Service Routes
@@ -78,7 +82,7 @@ public class GatewayConfig {
                 // Eureka Dashboard
                 .route("eureka", r -> r
                         .path("/eureka/**")
-                        .uri("http://localhost:8761"))
+                        .uri(eurekaDashboardUrl))
                 .build();
     }
 }

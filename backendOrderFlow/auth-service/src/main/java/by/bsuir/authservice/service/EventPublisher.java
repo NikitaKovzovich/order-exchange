@@ -6,8 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -20,33 +21,40 @@ public class EventPublisher {
 
 	private final EventRepository eventRepository;
 	private final ObjectMapper objectMapper;
+	private final PlatformTransactionManager transactionManager;
 
-	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public void publish(String aggregateType, String aggregateId, String eventType, Map<String, Object> payload) {
 		try {
-			Integer currentVersion = eventRepository.findMaxVersionByAggregateId(aggregateId);
-			int nextVersion = (currentVersion != null ? currentVersion : 0) + 1;
+			TransactionTemplate tx = new TransactionTemplate(transactionManager);
+			tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+			tx.executeWithoutResult(status -> {
+				Integer currentVersion = eventRepository.findMaxVersionByAggregateId(aggregateId);
+				int nextVersion = (currentVersion != null ? currentVersion : 0) + 1;
 
-			// Create mutable copy of payload to avoid UnsupportedOperationException with immutable maps
-			Map<String, Object> mutablePayload = payload != null ? new HashMap<>(payload) : new HashMap<>();
-			mutablePayload.put("timestamp", LocalDateTime.now().toString());
+				Map<String, Object> mutablePayload = payload != null ? new HashMap<>(payload) : new HashMap<>();
+				mutablePayload.put("timestamp", LocalDateTime.now().toString());
 
-			String payloadJson = objectMapper.writeValueAsString(mutablePayload);
+				String payloadJson;
+				try {
+					payloadJson = objectMapper.writeValueAsString(mutablePayload);
+				} catch (Exception e) {
+					throw new RuntimeException("Failed to serialize event payload", e);
+				}
 
-			Event event = Event.builder()
-					.aggregateId(aggregateId)
-					.aggregateType(aggregateType)
-					.version(nextVersion)
-					.eventType(eventType)
-					.payload(payloadJson)
-					.createdAt(LocalDateTime.now())
-					.build();
+				Event event = Event.builder()
+						.aggregateId(aggregateId)
+						.aggregateType(aggregateType)
+						.version(nextVersion)
+						.eventType(eventType)
+						.payload(payloadJson)
+						.createdAt(LocalDateTime.now())
+						.build();
 
-			eventRepository.save(event);
+				eventRepository.save(event);
 
-			log.info("✓ Event published: {} - {} v{} ({})",
-					aggregateType, aggregateId, nextVersion, eventType);
-
+				log.info("✓ Event published: {} - {} v{} ({})",
+						aggregateType, aggregateId, nextVersion, eventType);
+			});
 		} catch (Exception e) {
 			log.error("✗ Failed to publish event: {} - {} ({})",
 					aggregateType, aggregateId, eventType, e);

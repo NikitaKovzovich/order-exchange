@@ -17,17 +17,6 @@ public class GlobalJwtFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, org.springframework.cloud.gateway.filter.GatewayFilterChain chain) {
         String path = exchange.getRequest().getPath().value();
-        String method = exchange.getRequest().getMethod().name();
-
-        if ("OPTIONS".equals(method)) {
-            exchange.getResponse().getHeaders().add("Access-Control-Allow-Origin", "http://localhost:4200");
-            exchange.getResponse().getHeaders().add("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS,PATCH,HEAD");
-            exchange.getResponse().getHeaders().add("Access-Control-Allow-Headers", "*");
-            exchange.getResponse().getHeaders().add("Access-Control-Allow-Credentials", "true");
-            exchange.getResponse().getHeaders().add("Access-Control-Max-Age", "3600");
-            exchange.getResponse().setStatusCode(HttpStatus.OK);
-            return exchange.getResponse().setComplete();
-        }
 
         if (isPublicPath(path)) {
             return chain.filter(exchange);
@@ -77,20 +66,17 @@ public class GlobalJwtFilter implements GlobalFilter, Ordered {
 
     private boolean isPublicPath(String path) {
         if (path == null) return false;
-
-        String cleanPath = path.replaceAll("\\?.*", "");
-
-        return cleanPath.equals("/api/auth/login") ||
-               cleanPath.equals("/api/auth/register") ||
-               cleanPath.equals("/api/auth/validate") ||
-               cleanPath.startsWith("/api/auth/company") ||
-               cleanPath.startsWith("/api/addresses/company") ||
-               cleanPath.startsWith("/actuator") ||
-               cleanPath.startsWith("/eureka") ||
-               cleanPath.startsWith("/swagger-ui") ||
-               cleanPath.startsWith("/api-docs") ||
-               cleanPath.startsWith("/v3/api-docs") ||
-               cleanPath.contains("/api-docs");
+        return path.equals("/api/auth/login") ||
+               path.equals("/api/auth/register") ||
+               path.equals("/api/auth/validate") ||
+               path.startsWith("/api/auth/company") ||
+               path.startsWith("/api/addresses/company") ||
+               path.startsWith("/actuator") ||
+               path.startsWith("/eureka") ||
+               path.startsWith("/swagger-ui") ||
+               path.startsWith("/api-docs") ||
+               path.startsWith("/v3/api-docs") ||
+               path.contains("/api-docs");
     }
 
     @Override

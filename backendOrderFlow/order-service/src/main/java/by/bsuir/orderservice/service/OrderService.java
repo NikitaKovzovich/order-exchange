@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -218,21 +217,13 @@ public class OrderService {
 			throw new InvalidOperationException("uploadPaymentProof", "Order does not belong to this customer");
 		}
 
-		String currentStatus = order.getStatus().getCode();
-		if (!OrderStatus.Codes.AWAITING_PAYMENT.equals(currentStatus) &&
-				!OrderStatus.Codes.CONFIRMED.equals(currentStatus)) {
-			throw new InvalidOperationException("uploadPaymentProof",
-					"Payment proof can only be uploaded for orders awaiting payment");
-		}
-
 		order.setPaymentProofKey(request.documentKey());
 		order.setPaymentReference(request.paymentReference());
 		order.setPaymentNotes(request.notes());
-		order.setUpdatedAt(LocalDateTime.now());
 
 		OrderStatus pendingVerification = statusRepository.findByCode(OrderStatus.Codes.PENDING_PAYMENT_VERIFICATION)
 				.orElseThrow(() -> new ResourceNotFoundException("OrderStatus", "code", OrderStatus.Codes.PENDING_PAYMENT_VERIFICATION));
-		order.setStatus(pendingVerification);
+		order.uploadPaymentProof(pendingVerification);
 
 		order = orderRepository.save(order);
 		return mapToResponse(order);
@@ -280,12 +271,9 @@ public class OrderService {
 		discrepancy.calculateTotal();
 
 		OrderStatus awaitingCorrection = statusRepository.findByCode(OrderStatus.Codes.AWAITING_CORRECTION)
-				.orElse(null);
-		if (awaitingCorrection != null) {
-			order.setStatus(awaitingCorrection);
-			order.setUpdatedAt(LocalDateTime.now());
-			orderRepository.save(order);
-		}
+				.orElseThrow(() -> new ResourceNotFoundException("OrderStatus", "code", OrderStatus.Codes.AWAITING_CORRECTION));
+		order.reportDiscrepancy(awaitingCorrection);
+		orderRepository.save(order);
 
 		discrepancy = discrepancyRepository.save(discrepancy);
 

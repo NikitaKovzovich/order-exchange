@@ -218,8 +218,9 @@ public class Order {
 		this.totalAmount = items.stream()
 				.map(OrderItem::getTotalPrice)
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
-		// Примерный расчет НДС (20%)
-		this.vatAmount = totalAmount.multiply(BigDecimal.valueOf(0.2));
+		this.vatAmount = items.stream()
+				.map(item -> item.getLineVat() != null ? item.getLineVat() : BigDecimal.ZERO)
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
 	}
 
 	/**

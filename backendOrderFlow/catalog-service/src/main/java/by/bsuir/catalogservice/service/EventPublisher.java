@@ -23,7 +23,7 @@ public class EventPublisher {
 
 	@Autowired
 	public EventPublisher(EventRepository eventRepository, ObjectMapper objectMapper,
-						  @Autowired(required = false) RabbitTemplate rabbitTemplate) {
+						@Autowired(required = false) RabbitTemplate rabbitTemplate) {
 		this.eventRepository = eventRepository;
 		this.objectMapper = objectMapper;
 		this.rabbitTemplate = rabbitTemplate;

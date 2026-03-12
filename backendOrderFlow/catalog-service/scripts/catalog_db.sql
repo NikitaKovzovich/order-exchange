@@ -1,5 +1,9 @@
-CREATE DATABASE IF NOT EXISTS catalog_db;
+CREATE DATABASE IF NOT EXISTS catalog_db
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_unicode_ci;
 USE catalog_db;
+
+SET NAMES utf8mb4;
 
 CREATE TABLE category (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,

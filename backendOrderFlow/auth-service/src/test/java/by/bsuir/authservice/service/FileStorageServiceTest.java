@@ -4,19 +4,38 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class FileStorageServiceTest {
 
+	@InjectMocks
 	private FileStorageService fileStorageService;
+
+	@Mock
+	private RestTemplate restTemplate;
 
 	@BeforeEach
 	void setUp() {
-		fileStorageService = new FileStorageService();
-		ReflectionTestUtils.setField(fileStorageService, "uploadDir", "/test/uploads");
+		ReflectionTestUtils.setField(fileStorageService, "documentServiceUrl", "http://localhost:8085");
+		ReflectionTestUtils.setField(fileStorageService, "restTemplate", restTemplate);
 	}
 
 	@Nested
@@ -24,27 +43,9 @@ class FileStorageServiceTest {
 	class StoreFileTests {
 
 		@Test
-		@DisplayName("Should store file and return path")
-		void shouldStoreFileAndReturnPath() {
-			MockMultipartFile file = new MockMultipartFile(
-					"file",
-					"test-document.pdf",
-					"application/pdf",
-					"test content".getBytes()
-			);
-
-			String result = fileStorageService.storeFile(file, "company/1/documents");
-
-			assertThat(result).isNotNull();
-			assertThat(result).startsWith("company/1/documents/");
-			assertThat(result).endsWith(".pdf");
-		}
-
-		@Test
 		@DisplayName("Should return null for null file")
 		void shouldReturnNullForNullFile() {
 			String result = fileStorageService.storeFile(null, "subfolder");
-
 			assertThat(result).isNull();
 		}
 
@@ -52,83 +53,87 @@ class FileStorageServiceTest {
 		@DisplayName("Should return null for empty file")
 		void shouldReturnNullForEmptyFile() {
 			MockMultipartFile emptyFile = new MockMultipartFile(
-					"file",
-					"empty.pdf",
-					"application/pdf",
-					new byte[0]
-			);
-
+					"file", "empty.pdf", "application/pdf", new byte[0]);
 			String result = fileStorageService.storeFile(emptyFile, "subfolder");
-
 			assertThat(result).isNull();
 		}
 
 		@Test
-		@DisplayName("Should handle file without extension")
-		void shouldHandleFileWithoutExtension() {
+		@DisplayName("Should call document-service and return objectKey")
+		void shouldCallDocumentServiceAndReturnObjectKey() {
 			MockMultipartFile file = new MockMultipartFile(
-					"file",
-					"noextension",
-					"application/octet-stream",
-					"test content".getBytes()
-			);
+					"file", "test.pdf", "application/pdf", "content".getBytes());
 
-			String result = fileStorageService.storeFile(file, "company/1");
+			Map<String, Object> responseBody = Map.of(
+					"objectKey", "company/1/documents/abc-123.pdf",
+					"originalFilename", "test.pdf");
 
-			assertThat(result).isNotNull();
-			assertThat(result).startsWith("company/1/");
-			assertThat(result).doesNotContain(".");
+			when(restTemplate.exchange(
+					anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(Map.class)))
+					.thenReturn(new ResponseEntity<>(responseBody, HttpStatus.CREATED));
+
+			String result = fileStorageService.storeFile(file, "company/1/documents");
+
+			assertThat(result).isEqualTo("company/1/documents/abc-123.pdf");
+			verify(restTemplate).exchange(
+					contains("/api/documents/upload"),
+					eq(HttpMethod.POST),
+					any(HttpEntity.class),
+					eq(Map.class));
 		}
 
 		@Test
-		@DisplayName("Should handle file with null original filename")
-		void shouldHandleFileWithNullOriginalFilename() {
+		@DisplayName("Should throw exception when document-service fails")
+		void shouldThrowExceptionWhenDocumentServiceFails() {
 			MockMultipartFile file = new MockMultipartFile(
-					"file",
-					null,
-					"application/pdf",
-					"test content".getBytes()
-			);
+					"file", "test.pdf", "application/pdf", "content".getBytes());
 
-			String result = fileStorageService.storeFile(file, "subfolder");
+			when(restTemplate.exchange(
+					anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(Map.class)))
+					.thenThrow(new RuntimeException("Connection refused"));
 
-			assertThat(result).isNotNull();
-			assertThat(result).startsWith("subfolder/");
-		}
-
-		@Test
-		@DisplayName("Should generate unique file names")
-		void shouldGenerateUniqueFileNames() {
-			MockMultipartFile file1 = new MockMultipartFile(
-					"file",
-					"document.pdf",
-					"application/pdf",
-					"content1".getBytes()
-			);
-			MockMultipartFile file2 = new MockMultipartFile(
-					"file",
-					"document.pdf",
-					"application/pdf",
-					"content2".getBytes()
-			);
-
-			String result1 = fileStorageService.storeFile(file1, "uploads");
-			String result2 = fileStorageService.storeFile(file2, "uploads");
-
-			assertThat(result1).isNotEqualTo(result2);
+			assertThatThrownBy(() -> fileStorageService.storeFile(file, "subfolder"))
+					.isInstanceOf(RuntimeException.class)
+					.hasMessageContaining("Failed to store file");
 		}
 	}
 
 	@Nested
-	@DisplayName("Load File Tests")
-	class LoadFileTests {
+	@DisplayName("Get Presigned URL Tests")
+	class GetPresignedUrlTests {
 
 		@Test
-		@DisplayName("Should return full path for file")
-		void shouldReturnFullPathForFile() {
-			String result = fileStorageService.loadFile("company/1/document.pdf");
+		@DisplayName("Should return null for null objectKey")
+		void shouldReturnNullForNullKey() {
+			assertThat(fileStorageService.getPresignedUrl(null)).isNull();
+		}
 
-			assertThat(result).isEqualTo("/test/uploads/company/1/document.pdf");
+		@Test
+		@DisplayName("Should return null for empty objectKey")
+		void shouldReturnNullForEmptyKey() {
+			assertThat(fileStorageService.getPresignedUrl("")).isNull();
+		}
+
+		@Test
+		@DisplayName("Should return URL from document-service")
+		void shouldReturnUrlFromDocumentService() {
+			Map<String, Object> responseBody = Map.of("url", "http://minio:9000/bucket/key?signature=abc");
+
+			when(restTemplate.getForEntity(anyString(), eq(Map.class)))
+					.thenReturn(new ResponseEntity<>(responseBody, HttpStatus.OK));
+
+			String result = fileStorageService.getPresignedUrl("company/1/logo.png");
+			assertThat(result).isEqualTo("http://minio:9000/bucket/key?signature=abc");
+		}
+
+		@Test
+		@DisplayName("Should return null when document-service fails")
+		void shouldReturnNullWhenServiceFails() {
+			when(restTemplate.getForEntity(anyString(), eq(Map.class)))
+					.thenThrow(new RuntimeException("Connection refused"));
+
+			String result = fileStorageService.getPresignedUrl("some/key");
+			assertThat(result).isNull();
 		}
 	}
 
@@ -137,9 +142,32 @@ class FileStorageServiceTest {
 	class DeleteFileTests {
 
 		@Test
-		@DisplayName("Should not throw exception when deleting file")
-		void shouldNotThrowExceptionWhenDeletingFile() {
+		@DisplayName("Should not throw exception when deleting null key")
+		void shouldNotThrowForNullKey() {
+			fileStorageService.deleteFile(null);
+			verifyNoInteractions(restTemplate);
+		}
+
+		@Test
+		@DisplayName("Should not throw exception when deleting empty key")
+		void shouldNotThrowForEmptyKey() {
+			fileStorageService.deleteFile("");
+			verifyNoInteractions(restTemplate);
+		}
+
+		@Test
+		@DisplayName("Should call document-service delete")
+		void shouldCallDocumentServiceDelete() {
 			fileStorageService.deleteFile("some/path/file.pdf");
+			verify(restTemplate).delete(contains("/api/documents?objectKey=some/path/file.pdf"));
+		}
+
+		@Test
+		@DisplayName("Should not throw when document-service fails on delete")
+		void shouldNotThrowWhenDeleteFails() {
+			doThrow(new RuntimeException("fail")).when(restTemplate).delete(anyString());
+			fileStorageService.deleteFile("some/key");
+			// Should not throw
 		}
 	}
 }

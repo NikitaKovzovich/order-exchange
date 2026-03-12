@@ -7,4 +7,3 @@ public record DocumentTypeResponse(
 		String description
 ) {
 }
-

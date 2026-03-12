@@ -54,8 +54,8 @@ public class WebSecurityConfig {
 				.requestMatchers("/actuator/**").permitAll()
 				.requestMatchers("GET", "/api/addresses/**").permitAll()
 				.requestMatchers("/api/addresses/**").authenticated()
+				.requestMatchers("/api/notifications/**").authenticated()
 				.requestMatchers("/api/admin/**").authenticated()
-				.requestMatchers("/api/verification/**").authenticated()
 				.anyRequest().permitAll()
 			)
 			.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);

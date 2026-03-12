@@ -101,7 +101,7 @@ class AdminIntegrationTest {
 						.header("X-User-Email", adminEmail)
 						.header("X-User-Role", "ADMIN"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$").isArray());
+				.andExpect(jsonPath("$.content").isArray());
 	}
 
 	@Test
@@ -130,7 +130,7 @@ class AdminIntegrationTest {
 						.header("X-User-Email", adminEmail)
 						.header("X-User-Role", "ADMIN"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.message").value("Пользователь заблокирован"));
+				.andExpect(jsonPath("$.message").value("User blocked"));
 	}
 
 	@Test
@@ -143,7 +143,7 @@ class AdminIntegrationTest {
 						.header("X-User-Email", adminEmail)
 						.header("X-User-Role", "ADMIN"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.message").value("Пользователь разблокирован"));
+				.andExpect(jsonPath("$.message").value("User unblocked"));
 	}
 
 	@Test

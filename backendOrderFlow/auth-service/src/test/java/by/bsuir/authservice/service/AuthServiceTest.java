@@ -65,6 +65,12 @@ class AuthServiceTest {
 	@Mock
 	private EventPublisher eventPublisher;
 
+	@Mock
+	private NotificationService notificationService;
+
+	@Mock
+	private RabbitEventPublisher rabbitEventPublisher;
+
 	@InjectMocks
 	private AuthService authService;
 
@@ -139,7 +145,7 @@ class AuthServiceTest {
 
 			assertThatThrownBy(() -> authService.login("test@example.com", "password"))
 					.isInstanceOf(IllegalArgumentException.class)
-					.hasMessage("User account is not active");
+					.hasMessage("User account is not active. Awaiting verification.");
 		}
 
 		@Test
@@ -150,7 +156,7 @@ class AuthServiceTest {
 
 			assertThatThrownBy(() -> authService.login("test@example.com", "password"))
 					.isInstanceOf(IllegalArgumentException.class)
-					.hasMessage("User account is not active");
+					.hasMessage("User account is not active. Awaiting verification.");
 		}
 	}
 
@@ -221,7 +227,7 @@ class AuthServiceTest {
 					.passwordConfirm("password123")
 					.name("New Company")
 					.legalForm("LLC")
-					.taxId("9876543210")
+					.taxId("987654321")
 					.registrationDate(LocalDate.now())
 					.contactPhone("+375291234567")
 					.legalAddress("г. Минск, ул. Тестовая, 1")
@@ -259,6 +265,9 @@ class AuthServiceTest {
 		void shouldThrowExceptionForDuplicateEmail() {
 			RegisterRequest request = RegisterRequest.builder()
 					.email("existing@example.com")
+					.password("password123")
+					.passwordConfirm("password123")
+					.taxId("123456789")
 					.type("SUPPLIER")
 					.legalForm("LLC")
 					.build();
@@ -271,6 +280,75 @@ class AuthServiceTest {
 		}
 
 		@Test
+		@DisplayName("Should throw exception for password mismatch")
+		void shouldThrowExceptionForPasswordMismatch() {
+			RegisterRequest request = RegisterRequest.builder()
+					.type("SUPPLIER")
+					.email("test@example.com")
+					.password("password123")
+					.passwordConfirm("different123")
+					.taxId("123456789")
+					.legalForm("LLC")
+					.build();
+
+			assertThatThrownBy(() -> authService.register(request))
+					.isInstanceOf(IllegalArgumentException.class)
+					.hasMessage("Passwords do not match");
+		}
+
+		@Test
+		@DisplayName("Should throw exception for short password")
+		void shouldThrowExceptionForShortPassword() {
+			RegisterRequest request = RegisterRequest.builder()
+					.type("SUPPLIER")
+					.email("test@example.com")
+					.password("short")
+					.passwordConfirm("short")
+					.taxId("123456789")
+					.legalForm("LLC")
+					.build();
+
+			assertThatThrownBy(() -> authService.register(request))
+					.isInstanceOf(IllegalArgumentException.class)
+					.hasMessage("Password must be at least 8 characters");
+		}
+
+		@Test
+		@DisplayName("Should throw exception for invalid taxId")
+		void shouldThrowExceptionForInvalidTaxId() {
+			RegisterRequest request = RegisterRequest.builder()
+					.type("SUPPLIER")
+					.email("test@example.com")
+					.password("password123")
+					.passwordConfirm("password123")
+					.taxId("12345")
+					.legalForm("LLC")
+					.build();
+
+			assertThatThrownBy(() -> authService.register(request))
+					.isInstanceOf(IllegalArgumentException.class)
+					.hasMessage("Tax ID (UNP) must be exactly 9 digits");
+		}
+
+		@Test
+		@DisplayName("Should throw exception for future registration date")
+		void shouldThrowExceptionForFutureRegistrationDate() {
+			RegisterRequest request = RegisterRequest.builder()
+					.type("SUPPLIER")
+					.email("test@example.com")
+					.password("password123")
+					.passwordConfirm("password123")
+					.taxId("123456789")
+					.legalForm("LLC")
+					.registrationDate(LocalDate.now().plusYears(1))
+					.build();
+
+			assertThatThrownBy(() -> authService.register(request))
+					.isInstanceOf(IllegalArgumentException.class)
+					.hasMessage("Registration date cannot be in the future");
+		}
+
+		@Test
 		@DisplayName("Should register retail chain successfully")
 		void shouldRegisterRetailChainSuccessfully() {
 			RegisterRequest request = RegisterRequest.builder()
@@ -280,7 +358,7 @@ class AuthServiceTest {
 					.passwordConfirm("password123")
 					.legalName("Retail Chain LLC")
 					.legalForm("LLC")
-					.taxId("1111111111")
+					.taxId("111111111")
 					.registrationDate(LocalDate.now())
 					.contactPhone("+375291111111")
 					.legalAddress("г. Минск, ул. Ритейл, 10")
@@ -317,10 +395,11 @@ class AuthServiceTest {
 					.type("SUPPLIER")
 					.email("bank@example.com")
 					.password("password123")
+					.passwordConfirm("password123")
 					.name("Bank Company")
 					.legalName("Bank Company LLC")
 					.legalForm("LLC")
-					.taxId("2222222222")
+					.taxId("222222222")
 					.registrationDate(LocalDate.now())
 					.contactPhone("+375292222222")
 					.legalAddress("Address")
@@ -367,10 +446,11 @@ class AuthServiceTest {
 					.type("SUPPLIER")
 					.email("persons@example.com")
 					.password("password123")
+					.passwordConfirm("password123")
 					.name("Persons Company")
 					.legalName("Persons Company LLC")
 					.legalForm("LLC")
-					.taxId("3333333333")
+					.taxId("333333333")
 					.registrationDate(LocalDate.now())
 					.contactPhone("+375293333333")
 					.legalAddress("Address")
@@ -419,10 +499,11 @@ class AuthServiceTest {
 					.type("ADMIN")
 					.email("admin@example.com")
 					.password("adminpass")
+					.passwordConfirm("adminpass")
 					.name("Admin Company")
 					.legalName("Admin Company LLC")
 					.legalForm("LLC")
-					.taxId("4444444444")
+					.taxId("444444444")
 					.registrationDate(LocalDate.now())
 					.contactPhone("+375294444444")
 					.legalAddress("Admin Address")

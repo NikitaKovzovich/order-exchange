@@ -14,4 +14,7 @@ public class UserProfileResponse {
 	private String email;
 	private String role;
 	private Long companyId;
+	private String companyName;
+	private String status;
+	private Boolean isActive;
 }

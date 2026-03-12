@@ -27,6 +27,87 @@ public class DocumentService {
 	private final DocumentTypeRepository documentTypeRepository;
 	private final MinioService minioService;
 
+	// ===================== Inter-service methods =====================
+
+	/**
+	 * Simple upload for inter-service calls (no DocumentType required).
+	 * Stores file in MinIO and saves metadata with entity_type from serviceSource.
+	 */
+	@Transactional
+	public String uploadFileSimple(MultipartFile file, String folder, String serviceSource,
+								Long ownerId, String ownerType) {
+		try {
+			String fileKey = minioService.uploadFile(file, folder);
+
+			String mimeType = file.getContentType();
+			if (mimeType == null || mimeType.isEmpty()) {
+				mimeType = "application/octet-stream";
+			}
+
+			// Resolve document type or use a default one
+			DocumentType docType = documentTypeRepository.findByCode("GENERAL")
+					.orElseGet(() -> {
+						DocumentType dt = DocumentType.builder()
+								.code("GENERAL")
+								.name("General Document")
+								.description("Auto-created for inter-service uploads")
+								.build();
+						return documentTypeRepository.save(dt);
+					});
+
+			String entityType = ownerType != null ? ownerType : serviceSource;
+			Long entityId = ownerId != null ? ownerId : 0L;
+
+			Document document = Document.builder()
+					.documentType(docType)
+					.entityType(entityType)
+					.entityId(entityId)
+					.fileName(file.getOriginalFilename() != null ? file.getOriginalFilename() : "unknown")
+					.fileKey(fileKey)
+					.fileSize(file.getSize())
+					.mimeType(mimeType)
+					.uploadedBy(0L) // system upload
+					.build();
+
+			documentRepository.save(document);
+			log.info("Simple upload: {} -> {}", serviceSource, fileKey);
+
+			return fileKey;
+		} catch (Exception e) {
+			log.error("Failed simple upload from {}: {}", serviceSource, e.getMessage());
+			throw new RuntimeException("Upload failed: " + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Get presigned URL by fileKey (MinIO object key).
+	 */
+	public String getPresignedUrlByKey(String fileKey) {
+		try {
+			return minioService.getPresignedUrl(fileKey, 3600);
+		} catch (Exception e) {
+			log.error("Failed to get presigned URL for key {}: {}", fileKey, e.getMessage());
+			throw new RuntimeException("Failed to get download URL: " + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Delete document and file by fileKey (MinIO object key).
+	 */
+	@Transactional
+	public void deleteByFileKey(String fileKey) {
+		try {
+			documentRepository.findByFileKey(fileKey).ifPresent(documentRepository::delete);
+			minioService.deleteFile(fileKey);
+			log.info("Deleted by fileKey: {}", fileKey);
+		} catch (Exception e) {
+			log.error("Failed to delete by fileKey {}: {}", fileKey, e.getMessage());
+			throw new RuntimeException("Delete failed: " + e.getMessage(), e);
+		}
+	}
+
+	// ===================== Standard methods =====================
+
 	@Transactional
 	public DocumentResponse uploadDocument(MultipartFile file, UploadDocumentRequest request, Long userId) {
 		DocumentType documentType = documentTypeRepository.findByCode(request.documentTypeCode())

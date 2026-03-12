@@ -1,0 +1,8 @@
+# OrderFlow — Kubernetes Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: orderflow
+  labels:
+    app.kubernetes.io/part-of: orderflow
+

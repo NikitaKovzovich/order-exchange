@@ -1,5 +1,9 @@
-CREATE DATABASE IF NOT EXISTS order_db;
+CREATE DATABASE IF NOT EXISTS order_db
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_unicode_ci;
 USE order_db;
+
+SET NAMES utf8mb4;
 
 CREATE TABLE order_status (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
