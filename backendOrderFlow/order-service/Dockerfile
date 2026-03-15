@@ -1,13 +1,13 @@
-FROM gradle:8.5-jdk21-alpine AS build
+FROM eclipse-temurin:21-jdk-alpine AS build
 WORKDIR /app
-COPY build.gradle settings.gradle ./
+COPY gradlew gradlew
 COPY gradle gradle
+COPY build.gradle settings.gradle ./
 COPY src src
-RUN gradle build --no-daemon -x test
+RUN chmod +x gradlew && ./gradlew bootJar --no-daemon -x test -x spotbugsMain -x spotbugsTest -x spotlessJavaCheck
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-COPY --from=build /app/build/libs/*.jar app.jar
+COPY --from=build /app/build/libs/*-SNAPSHOT.jar app.jar
 EXPOSE 8083
 ENTRYPOINT ["java", "-jar", "app.jar"]
-

@@ -79,7 +79,7 @@ class ChatControllerTest {
 	@Test
 	@DisplayName("Should get user channels")
 	void shouldGetUserChannels() throws Exception {
-		when(chatService.getUserChannels(1L)).thenReturn(List.of(testChannelResponse));
+		when(chatService.getUserChannels(1L, null)).thenReturn(List.of(testChannelResponse));
 
 		mockMvc.perform(get("/api/chats")
 						.header("X-User-Id", "1"))

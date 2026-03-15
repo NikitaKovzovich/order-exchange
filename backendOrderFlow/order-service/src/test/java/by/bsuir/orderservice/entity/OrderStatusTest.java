@@ -16,10 +16,9 @@ class OrderStatusTest {
 
 		@ParameterizedTest
 		@CsvSource({
-				"CREATED, PENDING_CONFIRMATION, true",
-				"CREATED, CONFIRMED, false",
 				"PENDING_CONFIRMATION, CONFIRMED, true",
 				"PENDING_CONFIRMATION, REJECTED, true",
+				"PENDING_CONFIRMATION, CANCELLED, true",
 				"PENDING_CONFIRMATION, SHIPPED, false",
 				"CONFIRMED, AWAITING_PAYMENT, true",
 				"CONFIRMED, CANCELLED, true",
@@ -27,15 +26,16 @@ class OrderStatusTest {
 				"AWAITING_PAYMENT, PENDING_PAYMENT_VERIFICATION, true",
 				"AWAITING_PAYMENT, CANCELLED, true",
 				"PENDING_PAYMENT_VERIFICATION, PAID, true",
-				"PENDING_PAYMENT_VERIFICATION, AWAITING_PAYMENT, true",
+				"PENDING_PAYMENT_VERIFICATION, PAYMENT_PROBLEM, true",
+				"PAYMENT_PROBLEM, PENDING_PAYMENT_VERIFICATION, true",
+				"PAYMENT_PROBLEM, CANCELLED, true",
 				"PAID, AWAITING_SHIPMENT, true",
-				"PAID, SHIPPED, true",
 				"PAID, DELIVERED, false",
 				"AWAITING_SHIPMENT, SHIPPED, true",
 				"SHIPPED, DELIVERED, true",
 				"SHIPPED, AWAITING_CORRECTION, true",
 				"SHIPPED, CLOSED, false",
-				"AWAITING_CORRECTION, DELIVERED, true",
+				"AWAITING_CORRECTION, SHIPPED, true",
 				"DELIVERED, CLOSED, true",
 				"DELIVERED, SHIPPED, false",
 				"CLOSED, DELIVERED, false"
@@ -82,7 +82,7 @@ class OrderStatusTest {
 		@DisplayName("Should return display name for SHIPPED")
 		void shouldReturnDisplayNameForShipped() {
 			String displayName = OrderStatus.getDisplayName(OrderStatus.Codes.SHIPPED);
-			assertThat(displayName).isEqualTo("Отгружен");
+			assertThat(displayName).isEqualTo("В пути");
 		}
 
 		@Test
@@ -114,7 +114,6 @@ class OrderStatusTest {
 		@Test
 		@DisplayName("Should have all required status codes")
 		void shouldHaveAllRequiredStatusCodes() {
-			assertThat(OrderStatus.Codes.CREATED).isEqualTo("CREATED");
 			assertThat(OrderStatus.Codes.PENDING_CONFIRMATION).isEqualTo("PENDING_CONFIRMATION");
 			assertThat(OrderStatus.Codes.CONFIRMED).isEqualTo("CONFIRMED");
 			assertThat(OrderStatus.Codes.REJECTED).isEqualTo("REJECTED");

@@ -38,6 +38,7 @@ public record AnalyticsResponse(
 
 	public record TopSupplier(
 			Long supplierId,
+			String supplierName,
 			long orderCount,
 			BigDecimal totalRevenue
 	) {}

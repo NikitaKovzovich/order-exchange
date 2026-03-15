@@ -65,4 +65,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
 	List<Object[]> countRegistrationsPerDay(@Param("since") LocalDateTime since);
 	@Query("SELECT u FROM User u LEFT JOIN FETCH u.company WHERE u.id = :id")
 	Optional<User> findByIdWithCompany(@Param("id") Long id);
+
+	@Query("SELECT u.id FROM User u WHERE u.company.id = :companyId")
+	Long findUserIdByCompanyId(@Param("companyId") Long companyId);
+
+	@Query("SELECT u FROM User u LEFT JOIN FETCH u.company c " +
+		"WHERE u.role = 'SUPPLIER' AND u.status = 'ACTIVE' AND c IS NOT NULL")
+	List<User> findAllActiveSupplierCompanies();
 }

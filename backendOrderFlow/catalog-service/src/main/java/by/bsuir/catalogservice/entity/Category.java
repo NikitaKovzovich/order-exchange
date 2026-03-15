@@ -6,10 +6,10 @@ import lombok.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Категория товаров (Read Model для CQRS)
- * Поддерживает иерархическую структуру категорий
- */
+
+
+
+
 @Entity
 @Table(name = "category")
 @Getter
@@ -38,9 +38,9 @@ public class Category {
 	@Builder.Default
 	private List<Product> products = new ArrayList<>();
 
-	/**
-	 * Получить полный путь категории (для breadcrumbs)
-	 */
+
+
+
 	public String getFullPath() {
 		if (parent == null) {
 			return name;
@@ -48,16 +48,16 @@ public class Category {
 		return parent.getFullPath() + " > " + name;
 	}
 
-	/**
-	 * Проверить, является ли категория корневой
-	 */
+
+
+
 	public boolean isRoot() {
 		return parent == null;
 	}
 
-	/**
-	 * Проверить, является ли категория листом (без подкатегорий)
-	 */
+
+
+
 	public boolean isLeaf() {
 		return children == null || children.isEmpty();
 	}

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Header } from '../shared/header/header';
-import { ChatService } from '../../services/chat.service';
+import { SupportService } from '../../services/support.service';
 import { SupportTicket, TicketStatus } from '../../models/api.models';
 
 @Component({
@@ -15,13 +15,17 @@ import { SupportTicket, TicketStatus } from '../../models/api.models';
 })
 export class Support implements OnInit {
   searchQuery: string = '';
-  selectedStatus: string = 'all';
+  selectedStatus: string = '';
   isLoading: boolean = false;
+  errorMessage: string = '';
 
   tickets: SupportTicket[] = [];
-  filteredTickets: SupportTicket[] = [];
+  currentPage: number = 0;
+  totalPages: number = 0;
+  totalElements: number = 0;
+  readonly pageSize: number = 20;
 
-  constructor(private chatService: ChatService) {}
+  constructor(private supportService: SupportService) {}
 
   ngOnInit() {
     this.loadTickets();
@@ -29,33 +33,56 @@ export class Support implements OnInit {
 
   loadTickets() {
     this.isLoading = true;
-    this.chatService.getAllTickets().subscribe({
-      next: (tickets) => {
-        this.tickets = tickets;
-        this.applyFilters();
+    this.errorMessage = '';
+
+    this.supportService.getAdminTickets(this.selectedStatus || undefined, this.searchQuery || undefined, this.currentPage, this.pageSize).subscribe({
+      next: (page) => {
+        this.tickets = page.content;
+        this.currentPage = page.number;
+        this.totalPages = page.totalPages;
+        this.totalElements = page.totalElements;
         this.isLoading = false;
       },
       error: (error) => {
         console.error('Error loading tickets:', error);
+        this.errorMessage = error.error?.message || 'Не удалось загрузить обращения';
         this.isLoading = false;
       }
     });
   }
 
   applyFilters() {
-    this.filteredTickets = this.tickets.filter(ticket => {
-      const matchesSearch = !this.searchQuery ||
-        ticket.subject.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-        ticket.ticketNumber.toLowerCase().includes(this.searchQuery.toLowerCase());
+    this.currentPage = 0;
+    this.loadTickets();
+  }
 
-      const matchesStatus = this.selectedStatus === 'all' || ticket.status === this.selectedStatus;
+  clearFilters(): void {
+    this.searchQuery = '';
+    this.selectedStatus = '';
+    this.currentPage = 0;
+    this.loadTickets();
+  }
 
-      return matchesSearch && matchesStatus;
-    });
+  goToPreviousPage(): void {
+    if (this.currentPage === 0) {
+      return;
+    }
+
+    this.currentPage -= 1;
+    this.loadTickets();
+  }
+
+  goToNextPage(): void {
+    if (this.currentPage >= this.totalPages - 1) {
+      return;
+    }
+
+    this.currentPage += 1;
+    this.loadTickets();
   }
 
   assignTicket(ticketId: number) {
-    this.chatService.assignTicket(ticketId).subscribe({
+    this.supportService.assignTicket(ticketId).subscribe({
       next: () => this.loadTickets(),
       error: (error) => console.error('Error assigning ticket:', error)
     });
@@ -85,5 +112,17 @@ export class Support implements OnInit {
 
   formatDate(dateStr: string): string {
     return new Date(dateStr).toLocaleDateString('ru-RU');
+  }
+
+  get rangeStart(): number {
+    if (this.totalElements === 0) {
+      return 0;
+    }
+
+    return this.currentPage * this.pageSize + 1;
+  }
+
+  get rangeEnd(): number {
+    return Math.min((this.currentPage + 1) * this.pageSize, this.totalElements);
   }
 }

@@ -30,7 +30,7 @@ public class Event {
 	private String eventType;
 
 	@Lob
-	@Column(name = "payload", nullable = false)
+	@Column(name = "payload", nullable = false, columnDefinition = "MEDIUMTEXT")
 	private String payload;
 
 	@Column(name = "created_at", nullable = false)

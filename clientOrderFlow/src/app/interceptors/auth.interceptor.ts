@@ -16,30 +16,18 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const isPublicUrl = publicUrls.some(url => req.url.includes(url));
 
   const token = authService.getToken();
-  const currentUser = authService.getCurrentUser();
 
   if (token && !isPublicUrl) {
-    const headers: { [key: string]: string } = {
-      Authorization: `Bearer ${token}`
-    };
-
-    if (currentUser?.email) {
-      headers['X-User-Email'] = currentUser.email;
-    }
-
-    if (currentUser?.userId) {
-      headers['X-User-Id'] = currentUser.userId.toString();
-    }
-
-    if (currentUser?.role) {
-      headers['X-User-Role'] = currentUser.role;
-    }
-
-    if (currentUser?.companyId) {
-      headers['X-User-Company-Id'] = currentUser.companyId.toString();
-    }
-
-    req = req.clone({ setHeaders: headers });
+    req = req.clone({
+      setHeaders: {
+        Authorization: `Bearer ${token}`
+      },
+      headers: req.headers
+        .delete('X-User-Email')
+        .delete('X-User-Id')
+        .delete('X-User-Role')
+        .delete('X-User-Company-Id')
+    });
   }
 
   return next(req).pipe(

@@ -94,6 +94,57 @@ public class EventPublisher {
 		));
 	}
 
+	@Transactional
+	public void publishPaymentRejected(Order order, String reason) {
+		publish("PaymentRejected", order.getId().toString(), Map.of(
+				"orderId", order.getId(),
+				"orderNumber", order.getOrderNumber(),
+				"reason", reason != null ? reason : ""
+		));
+	}
+
+	@Transactional
+	public void publishOrderCancelled(Order order) {
+		publish("OrderCancelled", order.getId().toString(), Map.of(
+				"orderId", order.getId(),
+				"orderNumber", order.getOrderNumber()
+		));
+	}
+
+
+
+
+	public void publishStockReserveRequest(Long productId, int quantity, Long orderId) {
+		if (rabbitTemplate != null) {
+			Map<String, Object> payload = Map.of(
+					"productId", productId,
+					"quantity", quantity,
+					"orderId", orderId
+			);
+			rabbitTemplate.convertAndSend(EXCHANGE, "stockreserverequest", payload);
+			log.info("Published stock reserve request: productId={}, quantity={}, orderId={}", productId, quantity, orderId);
+		}
+	}
+
+
+
+
+	public void publishNotificationEvent(Long recipientId, String type, String title,
+									String message, Long orderId, String orderNumber) {
+		if (rabbitTemplate != null) {
+			Map<String, Object> payload = Map.of(
+					"recipientId", recipientId,
+					"type", type,
+					"title", title,
+					"message", message,
+					"orderId", orderId != null ? orderId : 0L,
+					"orderNumber", orderNumber != null ? orderNumber : ""
+			);
+			rabbitTemplate.convertAndSend(EXCHANGE, "order.notification", payload);
+			log.debug("Published notification event: type={}, recipient={}", type, recipientId);
+		}
+	}
+
 	private void publish(String eventType, String aggregateId, Map<String, Object> payload) {
 		try {
 			String payloadJson = objectMapper.writeValueAsString(payload);
@@ -111,7 +162,9 @@ public class EventPublisher {
 			eventRepository.save(event);
 
 			if (rabbitTemplate != null) {
-				rabbitTemplate.convertAndSend(EXCHANGE, eventType.toLowerCase(), payloadJson);
+
+
+				rabbitTemplate.convertAndSend(EXCHANGE, eventType.toLowerCase(), payload);
 			}
 			log.info("Published event: {} for order: {}", eventType, aggregateId);
 

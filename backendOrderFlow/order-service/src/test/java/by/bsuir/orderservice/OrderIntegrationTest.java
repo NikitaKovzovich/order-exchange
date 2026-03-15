@@ -52,6 +52,12 @@ class OrderIntegrationTest {
 	@MockBean
 	private RabbitTemplate rabbitTemplate;
 
+	@MockBean
+	private by.bsuir.orderservice.client.AuthServiceClient authServiceClient;
+
+	@MockBean
+	private by.bsuir.orderservice.client.DocumentServiceClient documentServiceClient;
+
 	private OrderStatus pendingStatus;
 	private OrderStatus confirmedStatus;
 
@@ -68,6 +74,13 @@ class OrderIntegrationTest {
 						.code(OrderStatus.Codes.CONFIRMED)
 						.name("Подтвержден")
 						.build()));
+
+
+		statusRepository.findByCode(OrderStatus.Codes.AWAITING_PAYMENT)
+				.orElseGet(() -> statusRepository.save(OrderStatus.builder()
+						.code(OrderStatus.Codes.AWAITING_PAYMENT)
+						.name("Ожидает оплаты")
+						.build()));
 	}
 
 	@Test
@@ -77,7 +90,7 @@ class OrderIntegrationTest {
 				100L,
 				"Test Delivery Address",
 				LocalDate.now().plusDays(7),
-				List.of(new OrderItemRequest(1L, 10, new BigDecimal("100.00"), new BigDecimal("20")))
+				List.of(new OrderItemRequest(1L, "Test Product", "SKU-001", 10, new BigDecimal("100.00"), new BigDecimal("20")))
 		);
 
 		String responseJson = mockMvc.perform(post("/api/orders")
@@ -162,10 +175,10 @@ class OrderIntegrationTest {
 		mockMvc.perform(post("/api/orders/" + order.getId() + "/confirm")
 						.header("X-User-Company-Id", "100"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.data.statusCode").value("CONFIRMED"));
+				.andExpect(jsonPath("$.data.statusCode").value("AWAITING_PAYMENT"));
 
 		Order updatedOrder = orderRepository.findById(order.getId()).orElseThrow();
-		assertThat(updatedOrder.getStatus().getCode()).isEqualTo(OrderStatus.Codes.CONFIRMED);
+		assertThat(updatedOrder.getStatus().getCode()).isEqualTo(OrderStatus.Codes.AWAITING_PAYMENT);
 	}
 
 	@Test

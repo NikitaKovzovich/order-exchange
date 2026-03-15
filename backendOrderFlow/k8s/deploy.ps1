@@ -6,6 +6,77 @@ param(
 )
 
 $ErrorActionPreference = "Continue"
+
+function Get-ValidatedIterationTargets {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+
+        [Parameter(Mandatory = $true)]
+        [object]$Items
+    )
+
+    if ($null -eq $Items) {
+        throw "Iteration target '$Name' is null."
+    }
+
+    if ($Items -is [string]) {
+        $normalizedItems = @($Items)
+    }
+    elseif ($Items -is [System.Collections.IEnumerable]) {
+        $normalizedItems = @($Items)
+    }
+    else {
+        throw "Iteration target '$Name' is not enumerable."
+    }
+
+    if ($normalizedItems.Count -eq 0) {
+        throw "Iteration target '$Name' is empty."
+    }
+
+    $invalidItems = @($normalizedItems | Where-Object { $_ -isnot [string] -or [string]::IsNullOrWhiteSpace($_) })
+    if ($invalidItems.Count -gt 0) {
+        throw "Iteration target '$Name' contains null, empty, or non-string values."
+    }
+
+    return $normalizedItems
+}
+
+function Assert-ServiceDirectoriesExist {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$BasePath,
+
+        [Parameter(Mandatory = $true)]
+        [string[]]$ServiceNames
+    )
+
+    $missingDirectories = @($ServiceNames | Where-Object { -not (Test-Path (Join-Path $BasePath $_) -PathType Container) })
+    if ($missingDirectories.Count -gt 0) {
+        throw "Missing service directories: $($missingDirectories -join ', ')"
+    }
+}
+
+function Assert-DockerImagesExist {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$ServiceNames
+    )
+
+    $missingImages = @()
+    foreach ($serviceName in $ServiceNames) {
+        $image = "orderflow/${serviceName}:latest"
+        docker image inspect $image *> $null
+        if ($LASTEXITCODE -ne 0) {
+            $missingImages += $image
+        }
+    }
+
+    if ($missingImages.Count -gt 0) {
+        throw "Missing local Docker images: $($missingImages -join ', ')"
+    }
+}
+
 $rootPath = Split-Path $PSScriptRoot -Parent
 if (-not $rootPath) { $rootPath = Get-Location }
 
@@ -18,6 +89,15 @@ $services = @(
     "chat-service",
     "document-service"
 )
+$services = Get-ValidatedIterationTargets -Name "services" -Items $services
+
+$currentContext = $null
+try {
+    $currentContext = (kubectl config current-context 2>$null).Trim()
+}
+catch {
+    $currentContext = $null
+}
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host " OrderFlow - Kubernetes Deployment" -ForegroundColor Cyan
@@ -27,6 +107,7 @@ Write-Host "========================================" -ForegroundColor Cyan
 if (-not $SkipBuild) {
     Write-Host ""
     Write-Host "[1/6] Building Docker images..." -ForegroundColor Yellow
+    Assert-ServiceDirectoriesExist -BasePath $rootPath -ServiceNames $services
 
     foreach ($svc in $services) {
         Write-Host "  Building orderflow/${svc}:latest..." -ForegroundColor Gray
@@ -42,6 +123,24 @@ if (-not $SkipBuild) {
 else {
     Write-Host ""
     Write-Host "[1/6] Skipping Docker build (--SkipBuild)" -ForegroundColor Gray
+}
+
+if ($currentContext -eq "minikube") {
+    Write-Host ""
+    Write-Host "[1.5/6] Loading images into minikube..." -ForegroundColor Yellow
+    Assert-DockerImagesExist -ServiceNames $services
+
+    foreach ($svc in $services) {
+        $image = "orderflow/${svc}:latest"
+        Write-Host "  Loading ${image} into minikube..." -ForegroundColor Gray
+        minikube image load $image
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "  FAILED to load ${image} into minikube" -ForegroundColor Red
+            exit 1
+        }
+    }
+
+    Write-Host "  All images loaded into minikube!" -ForegroundColor Green
 }
 
 # --- Step 2: Namespace ---
@@ -61,9 +160,11 @@ Write-Host "[4/6] Deploying databases..." -ForegroundColor Yellow
 kubectl apply -f (Join-Path $PSScriptRoot "databases.yaml")
 Write-Host "  Waiting for databases to be ready..."
 
+$databaseWaitTimeout = "600s"
 $dbLabels = @("auth-mysql", "catalog-mysql", "order-mysql", "chat-mysql", "document-mysql")
+$dbLabels = Get-ValidatedIterationTargets -Name "dbLabels" -Items $dbLabels
 foreach ($db in $dbLabels) {
-    kubectl wait --namespace=orderflow --for=condition=ready pod -l app=$db --timeout=120s
+    kubectl wait --namespace=orderflow --for=condition=ready pod -l app=$db --timeout=$databaseWaitTimeout
 }
 
 # --- Step 5: Infrastructure ---

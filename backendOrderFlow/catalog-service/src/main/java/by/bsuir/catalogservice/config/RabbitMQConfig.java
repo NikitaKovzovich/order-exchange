@@ -13,12 +13,25 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnProperty(name = "spring.rabbitmq.enabled", havingValue = "true", matchIfMissing = true)
 public class RabbitMQConfig {
 	public static final String CATALOG_EXCHANGE = "catalog.exchange";
+	public static final String ORDER_EXCHANGE = "order.events";
 	public static final String INVENTORY_RESERVED_QUEUE = "inventory.reserved.queue";
 	public static final String INVENTORY_RELEASED_QUEUE = "inventory.released.queue";
+	public static final String STOCK_RESERVE_QUEUE = "stock.reserve.queue";
+	public static final String RPC_EXCHANGE = "rpc.exchange";
+
+	@Bean
+	public DirectExchange rpcExchange() {
+		return new DirectExchange(RPC_EXCHANGE);
+	}
 
 	@Bean
 	public TopicExchange catalogExchange() {
 		return new TopicExchange(CATALOG_EXCHANGE);
+	}
+
+	@Bean
+	public TopicExchange orderExchange() {
+		return new TopicExchange(ORDER_EXCHANGE);
 	}
 
 	@Bean
@@ -32,6 +45,11 @@ public class RabbitMQConfig {
 	}
 
 	@Bean
+	public Queue stockReserveQueue() {
+		return QueueBuilder.durable(STOCK_RESERVE_QUEUE).build();
+	}
+
+	@Bean
 	public Binding inventoryReservedBinding(Queue inventoryReservedQueue, TopicExchange catalogExchange) {
 		return BindingBuilder.bind(inventoryReservedQueue).to(catalogExchange).with("inventory.reserved");
 	}
@@ -39,6 +57,11 @@ public class RabbitMQConfig {
 	@Bean
 	public Binding inventoryReleasedBinding(Queue inventoryReleasedQueue, TopicExchange catalogExchange) {
 		return BindingBuilder.bind(inventoryReleasedQueue).to(catalogExchange).with("inventory.released");
+	}
+
+	@Bean
+	public Binding stockReserveBinding() {
+		return BindingBuilder.bind(stockReserveQueue()).to(orderExchange()).with("stockreserverequest");
 	}
 
 	@Bean
@@ -50,6 +73,7 @@ public class RabbitMQConfig {
 	public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		template.setMessageConverter(jsonMessageConverter());
+		template.setReplyTimeout(30000);
 		return template;
 	}
 }

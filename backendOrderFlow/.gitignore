@@ -7,6 +7,8 @@ build/
 .idea
 .docs
 .specification
+specification
+e2e/artifacts/
 
 ### STS ###
 .apt_generated
@@ -38,3 +40,10 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Environment ###
+.env
+**/.env
+node_modules/
+**/node_modules/
+

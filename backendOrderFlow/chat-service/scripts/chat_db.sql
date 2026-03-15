@@ -54,10 +54,18 @@ CREATE TABLE ticket_message (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     ticket_id BIGINT NOT NULL,
     sender_id BIGINT NOT NULL,
-    is_admin BOOLEAN DEFAULT FALSE,
+    is_admin_reply BOOLEAN DEFAULT FALSE,
     message_text TEXT NOT NULL,
     attachment_key VARCHAR(1024),
+    is_internal_note BOOLEAN DEFAULT FALSE,
     sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (ticket_id) REFERENCES support_ticket(id),
     INDEX idx_ticket_id (ticket_id)
+);
+
+CREATE TABLE ticket_message_attachment (
+    ticket_message_id BIGINT NOT NULL,
+    attachment_key VARCHAR(1024) NOT NULL,
+    FOREIGN KEY (ticket_message_id) REFERENCES ticket_message(id),
+    INDEX idx_ticket_message_attachment_msg (ticket_message_id)
 );

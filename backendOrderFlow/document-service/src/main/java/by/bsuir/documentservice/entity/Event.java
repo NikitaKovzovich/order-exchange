@@ -5,10 +5,10 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-/**
- * Событие (Event Sourcing)
- * Хранит все изменения состояния как неизменяемые события
- */
+
+
+
+
 @Entity
 @Table(name = "events", indexes = {
 	@Index(name = "idx_aggregate_id", columnList = "aggregate_id"),
@@ -47,7 +47,7 @@ public class Event {
 	@Column(name = "user_id")
 	private Long userId;
 
-	// ========== Типы событий документов ==========
+
 
 	public static class EventTypes {
 		public static final String DOCUMENT_UPLOADED = "DocumentUploaded";
@@ -59,7 +59,7 @@ public class Event {
 		public static final String DISCREPANCY_ACT_GENERATED = "DiscrepancyActGenerated";
 	}
 
-	// ========== Типы агрегатов ==========
+
 
 	public static class AggregateTypes {
 		public static final String DOCUMENT = "Document";

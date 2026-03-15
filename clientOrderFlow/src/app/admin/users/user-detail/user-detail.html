@@ -2,147 +2,284 @@
   <admin-header [title]="'Управление пользователем'"></admin-header>
 
   <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
-    <div *ngIf="user" class="bg-white p-6 rounded-lg shadow-sm mb-6">
-      <div class="flex flex-wrap justify-between items-center">
-        <div>
-          <div class="flex items-center space-x-4">
-            <div class="h-16 w-16 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-500 text-lg">Лого</div>
-            <div>
-              <h2 class="text-2xl font-bold text-gray-800">{{ user.name }}</h2>
-              <div class="mt-1">
-                <span [ngClass]="user.role === 'supplier' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'"
-                      class="text-sm font-medium px-3 py-1 rounded-full">
-                  {{ user.role === 'supplier' ? 'Поставщик' : 'Торговая сеть' }}
-                </span>
+    <div
+      *ngIf="notification"
+      class="mb-6 rounded-lg border px-4 py-3"
+      [ngClass]="{
+        'border-green-200 bg-green-50 text-green-800': notification.type === 'success',
+        'border-red-200 bg-red-50 text-red-800': notification.type === 'error',
+        'border-blue-200 bg-blue-50 text-blue-800': notification.type === 'info',
+        'border-amber-200 bg-amber-50 text-amber-800': notification.type === 'warning'
+      }">
+      <div class="flex items-start justify-between gap-4">
+        <p class="text-sm font-medium">{{ notification.message }}</p>
+        <button type="button" class="text-current opacity-70 hover:opacity-100" (click)="clearNotification()">✕</button>
+      </div>
+    </div>
+
+    <div *ngIf="isLoading" class="rounded-lg bg-white p-10 text-center text-gray-500 shadow-sm">
+      Загрузка профиля пользователя...
+    </div>
+
+    <div *ngIf="errorMessage" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+      {{ errorMessage }}
+    </div>
+
+    <div *ngIf="user && !isLoading" class="space-y-6">
+      <div class="rounded-lg bg-white p-6 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <a routerLink="/admin/users" class="mb-3 inline-flex items-center text-sm text-indigo-600 hover:text-indigo-800">
+              ← Назад к списку пользователей
+            </a>
+
+            <h2 class="text-2xl font-bold text-gray-800">{{ companyName }}</h2>
+            <div class="mt-3 flex flex-wrap items-center gap-2">
+              <span [ngClass]="roleClass" class="rounded-full px-3 py-1 text-sm font-medium">
+                {{ roleLabel }}
+              </span>
+              <span [ngClass]="statusClass" class="rounded-full px-3 py-1 text-sm font-medium">
+                {{ statusLabel }}
+              </span>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            <button
+              type="button"
+              (click)="openEditModal()"
+              [disabled]="isProcessing"
+              class="rounded-lg border border-gray-300 bg-white px-4 py-2 font-semibold text-gray-800 hover:bg-gray-50 disabled:opacity-50">
+              Редактировать
+            </button>
+
+            <button
+              *ngIf="user.status !== 'BLOCKED' && user.status !== 'DELETED'"
+              type="button"
+              (click)="showBlockModal = true"
+              [disabled]="isProcessing"
+              class="rounded-lg bg-yellow-500 px-4 py-2 font-semibold text-white hover:bg-yellow-600 disabled:opacity-50">
+              Заблокировать
+            </button>
+
+            <button
+              *ngIf="user.status === 'BLOCKED'"
+              type="button"
+              (click)="unblockUser()"
+              [disabled]="isProcessing"
+              class="rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700 disabled:opacity-50">
+              Разблокировать
+            </button>
+
+            <button
+              *ngIf="user.status !== 'DELETED'"
+              type="button"
+              (click)="showDeleteModal = true"
+              [disabled]="isProcessing"
+              class="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 disabled:opacity-50">
+              Удалить
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div class="space-y-6 lg:col-span-2">
+          <div class="rounded-lg bg-white p-6 shadow-sm">
+            <h3 class="mb-6 border-b pb-4 text-lg font-semibold text-gray-800">Профиль компании</h3>
+
+            <dl class="grid grid-cols-1 gap-x-8 gap-y-6 text-sm md:grid-cols-2">
+              <div class="md:col-span-2">
+                <dt class="font-medium text-gray-500">Полное юридическое наименование</dt>
+                <dd class="mt-1 font-semibold text-gray-900">{{ companyFullName }}</dd>
+              </div>
+
+              <div>
+                <dt class="font-medium text-gray-500">УНП</dt>
+                <dd class="mt-1 text-gray-900">{{ user.companyProfile?.taxId || user.company.taxId || '—' }}</dd>
+              </div>
+
+              <div>
+                <dt class="font-medium text-gray-500">Дата регистрации</dt>
+                <dd class="mt-1 text-gray-900">{{ formatDate(user.companyProfile?.registrationDate || user.createdAt || null) }}</dd>
+              </div>
+
+              <div class="md:col-span-2">
+                <dt class="font-medium text-gray-500">Юридический адрес</dt>
+                <dd class="mt-1 text-gray-900">{{ address }}</dd>
+              </div>
+
+              <div>
+                <dt class="font-medium text-gray-500">Контактный Email</dt>
+                <dd class="mt-1 text-gray-900">{{ user.email }}</dd>
+              </div>
+
+              <div>
+                <dt class="font-medium text-gray-500">Контактный телефон</dt>
+                <dd class="mt-1 text-gray-900">{{ contactPhone }}</dd>
+              </div>
+
+              <div *ngIf="user.companyProfile?.paymentTerms">
+                <dt class="font-medium text-gray-500">Условия оплаты</dt>
+                <dd class="mt-1 text-gray-900">{{ user.companyProfile?.paymentTerms }}</dd>
+              </div>
+
+              <div *ngIf="user.companyProfile?.directorName">
+                <dt class="font-medium text-gray-500">Директор</dt>
+                <dd class="mt-1 text-gray-900">{{ user.companyProfile?.directorName }}</dd>
+              </div>
+
+              <div *ngIf="user.companyProfile?.chiefAccountantName">
+                <dt class="font-medium text-gray-500">Главный бухгалтер</dt>
+                <dd class="mt-1 text-gray-900">{{ user.companyProfile?.chiefAccountantName }}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div *ngIf="(user.companyProfile?.documents?.length || 0) > 0" class="rounded-lg bg-white p-6 shadow-sm">
+            <h3 class="mb-4 text-lg font-semibold text-gray-800">Документы компании</h3>
+            <div class="space-y-3">
+              <div *ngFor="let document of user.companyProfile?.documents" class="flex items-center justify-between rounded-md border p-3">
+                <div class="min-w-0">
+                  <div class="truncate font-medium text-gray-900">{{ document.originalFilename }}</div>
+                  <div class="text-xs text-gray-500">{{ document.documentType }}</div>
+                </div>
+                <a
+                  [href]="document.downloadUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-sm font-medium text-indigo-600 hover:underline">
+                  Открыть
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="userEvents.length > 0" class="rounded-lg bg-white p-6 shadow-sm">
+            <h3 class="mb-4 text-lg font-semibold text-gray-800">Последние события</h3>
+            <div class="space-y-4">
+              <div *ngFor="let event of userEvents" class="border-l-2 border-indigo-200 pl-4">
+                <div class="font-medium text-gray-900">{{ event.eventType || 'Событие' }}</div>
+                <div class="mt-1 text-xs text-gray-500">{{ formatDateTime(event.createdAt) }}</div>
+                <div *ngIf="event.aggregateType || event.aggregateId" class="mt-1 text-xs text-gray-500">
+                  {{ event.aggregateType || 'Entity' }} #{{ event.aggregateId || '—' }}
+                </div>
               </div>
             </div>
           </div>
         </div>
-        <div class="mt-4 sm:mt-0 flex space-x-2">
-          <button class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 flex items-center">
-            <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-            </svg>
-            Редактировать
-          </button>
-          <button
-            (click)="showBlockModal = true"
-            class="bg-yellow-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-yellow-600 flex items-center">
-            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M10 1.944A8.056 8.056 0 001.944 10 8.056 8.056 0 0010 18.056 8.056 8.056 0 0018.056 10 8.056 8.056 0 0010 1.944zM2.5 10a7.5 7.5 0 1115 0 7.5 7.5 0 01-15 0z" clip-rule="evenodd" />
-              <path fill-rule="evenodd" d="M4.646 4.646a.5.5 0 01.708 0L10 9.293l4.646-4.647a.5.5 0 01.708.708L10.707 10l4.647 4.646a.5.5 0 01-.708.708L10 10.707l-4.646 4.647a.5.5 0 01-.708-.708L9.293 10 4.646 5.354a.5.5 0 010-.708z" clip-rule="evenodd" />
-            </svg>
-            Заблокировать
-          </button>
-          <button
-            (click)="showDeleteModal = true"
-            class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 flex items-center">
-            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-            </svg>
-            Удалить
-          </button>
-        </div>
-      </div>
-    </div>
 
-    <div *ngIf="user" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div class="lg:col-span-2 space-y-6">
-        <!-- Main Info -->
-        <div class="bg-white p-6 rounded-lg shadow-sm">
-          <h3 class="text-lg font-semibold text-gray-800 mb-6 border-b pb-4">Профиль компании</h3>
-          <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 text-sm">
-            <div class="col-span-2">
-              <dt class="font-medium text-gray-500">Полное юридическое наименование</dt>
-              <dd class="mt-1 text-gray-900 font-semibold">{{ user.fullName }}</dd>
-            </div>
-            <div>
-              <dt class="font-medium text-gray-500">УНП</dt>
-              <dd class="mt-1 text-gray-900">{{ user.taxId }}</dd>
-            </div>
-            <div>
-              <dt class="font-medium text-gray-500">Дата регистрации</dt>
-              <dd class="mt-1 text-gray-900">{{ user.registeredAt }}</dd>
-            </div>
-            <div class="col-span-2">
-              <dt class="font-medium text-gray-500">Юридический адрес</dt>
-              <dd class="mt-1 text-gray-900">{{ user.address }}</dd>
-            </div>
-            <div>
-              <dt class="font-medium text-gray-500">Контактный Email</dt>
-              <dd class="mt-1 text-gray-900">{{ user.email }}</dd>
-            </div>
-            <div>
-              <dt class="font-medium text-gray-500">Контактный телефон</dt>
-              <dd class="mt-1 text-gray-900">{{ user.phone }}</dd>
-            </div>
-          </dl>
+        <div class="rounded-lg bg-white p-6 shadow-sm">
+          <h3 class="mb-4 text-lg font-semibold text-gray-800">Статистика</h3>
+          <ul class="space-y-4 text-sm">
+            <li class="flex justify-between">
+              <span class="text-gray-600">Всего заказов:</span>
+              <span class="font-semibold text-gray-800">{{ user.orderStats?.totalOrders ?? 0 }}</span>
+            </li>
+            <li class="flex justify-between">
+              <span class="text-gray-600">Общий оборот:</span>
+              <span class="font-semibold text-gray-800">{{ formatAmount(user.orderStats?.totalRevenue) }} BYN</span>
+            </li>
+            <li class="flex justify-between">
+              <span class="text-gray-600">Дата последнего заказа:</span>
+              <span class="font-semibold text-gray-800">{{ formatDate(user.orderStats?.lastOrderDate) }}</span>
+            </li>
+            <li class="flex justify-between">
+              <span class="text-gray-600">Статус аккаунта:</span>
+              <span [ngClass]="statusClass" class="rounded-full px-2 py-1 text-xs font-semibold">{{ statusLabel }}</span>
+            </li>
+          </ul>
         </div>
-      </div>
-
-      <!-- Stats -->
-      <div class="bg-white p-6 rounded-lg shadow-sm">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4">Статистика</h3>
-        <ul class="space-y-4 text-sm">
-          <li class="flex justify-between">
-            <span class="text-gray-600">Всего заказов:</span>
-            <span class="font-semibold text-gray-800">{{ user.stats.totalOrders }}</span>
-          </li>
-          <li class="flex justify-between">
-            <span class="text-gray-600">Общий оборот:</span>
-            <span class="font-semibold text-gray-800">{{ user.stats.totalRevenue }} BYN</span>
-          </li>
-          <li class="flex justify-between">
-            <span class="text-gray-600">Кол-во клиентов:</span>
-            <span class="font-semibold text-gray-800">{{ user.stats.totalClients }}</span>
-          </li>
-          <li class="flex justify-between">
-            <span class="text-gray-600">Дата последнего заказа:</span>
-            <span class="font-semibold text-gray-800">{{ user.stats.lastOrderDate }}</span>
-          </li>
-        </ul>
       </div>
     </div>
   </main>
 
-  <!-- Block Modal -->
-  <div *ngIf="showBlockModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" (click)="showBlockModal = false">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-md m-4" (click)="$event.stopPropagation()">
+  <div *ngIf="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" (click)="closeEditModal()">
+    <div class="m-4 w-full max-w-2xl rounded-lg bg-white shadow-xl" (click)="$event.stopPropagation()">
       <div class="p-6">
-        <div class="flex items-center">
-          <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
-            <svg class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
+        <h3 class="text-lg font-bold text-gray-800">Редактирование пользователя</h3>
+
+        <div class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Email</label>
+            <input [(ngModel)]="editForm.email" type="email" class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2">
           </div>
-          <h3 class="ml-4 text-lg font-bold text-gray-800">Заблокировать пользователя?</h3>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Название компании</label>
+            <input [(ngModel)]="editForm.name" type="text" class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Контактный телефон</label>
+            <input [(ngModel)]="editForm.contactPhone" type="text" class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Условия оплаты</label>
+            <input [(ngModel)]="editForm.paymentTerms" type="text" class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Банк</label>
+            <input [(ngModel)]="editForm.bankName" type="text" class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700">БИК</label>
+            <input [(ngModel)]="editForm.bic" type="text" class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Номер счёта</label>
+            <input [(ngModel)]="editForm.accountNumber" type="text" class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Директор</label>
+            <input [(ngModel)]="editForm.directorName" type="text" class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2">
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700">Главный бухгалтер</label>
+            <input [(ngModel)]="editForm.chiefAccountantName" type="text" class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2">
+          </div>
         </div>
-        <p class="text-sm text-gray-600 mt-4">Вы уверены, что хотите временно заблокировать пользователя "{{ user?.name }}"? Пользователь не сможет войти в систему до тех пор, пока вы его не разблокируете.</p>
       </div>
-      <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
-        <button (click)="showBlockModal = false" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Отмена</button>
-        <button (click)="blockUser()" class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 font-semibold">Заблокировать</button>
+
+      <div class="flex justify-end space-x-3 bg-gray-50 px-6 py-4">
+        <button type="button" (click)="closeEditModal()" class="rounded-lg bg-gray-200 px-4 py-2 text-gray-800 hover:bg-gray-300">Отмена</button>
+        <button type="button" (click)="saveUser()" [disabled]="isProcessing" class="rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-700 disabled:opacity-50">Сохранить</button>
       </div>
     </div>
   </div>
 
-  <!-- Delete Modal -->
-  <div *ngIf="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" (click)="showDeleteModal = false">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-md m-4" (click)="$event.stopPropagation()">
+  <div *ngIf="showBlockModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" (click)="showBlockModal = false">
+    <div class="m-4 w-full max-w-md rounded-lg bg-white shadow-xl" (click)="$event.stopPropagation()">
       <div class="p-6">
-        <div class="flex items-center">
-          <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-            <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </div>
-          <h3 class="ml-4 text-lg font-bold text-gray-800">Удалить пользователя?</h3>
-        </div>
-        <p class="text-sm text-gray-600 mt-4">Вы уверены, что хотите **полностью** удалить пользователя "{{ user?.name }}"? Все связанные с ним данные, включая заказы и документы, будут безвозвратно удалены. **Это действие нельзя отменить.**</p>
+        <h3 class="text-lg font-bold text-gray-800">Заблокировать пользователя?</h3>
+        <p class="mt-3 text-sm text-gray-600">
+          Вы уверены, что хотите временно заблокировать пользователя «{{ companyName }}»?
+        </p>
       </div>
-      <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
-        <button (click)="showDeleteModal = false" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Отмена</button>
-        <button (click)="deleteUser()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold">Да, удалить</button>
+      <div class="flex justify-end space-x-3 bg-gray-50 px-6 py-4">
+        <button type="button" (click)="showBlockModal = false" class="rounded-lg bg-gray-200 px-4 py-2 text-gray-800 hover:bg-gray-300">Отмена</button>
+        <button type="button" (click)="blockUser()" [disabled]="isProcessing" class="rounded-lg bg-yellow-500 px-4 py-2 font-semibold text-white hover:bg-yellow-600 disabled:opacity-50">Заблокировать</button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" (click)="showDeleteModal = false">
+    <div class="m-4 w-full max-w-md rounded-lg bg-white shadow-xl" (click)="$event.stopPropagation()">
+      <div class="p-6">
+        <h3 class="text-lg font-bold text-gray-800">Удалить пользователя?</h3>
+        <p class="mt-3 text-sm text-gray-600">
+          Вы уверены, что хотите удалить пользователя «{{ companyName }}»? Аккаунт будет помечен как удалённый и деактивирован.
+        </p>
+      </div>
+      <div class="flex justify-end space-x-3 bg-gray-50 px-6 py-4">
+        <button type="button" (click)="showDeleteModal = false" class="rounded-lg bg-gray-200 px-4 py-2 text-gray-800 hover:bg-gray-300">Отмена</button>
+        <button type="button" (click)="deleteUser()" [disabled]="isProcessing" class="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 disabled:opacity-50">Да, удалить</button>
       </div>
     </div>
   </div>

@@ -4,7 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { OrderService } from '../../../services/order.service';
 import { DocumentService } from '../../../services/document.service';
-import { Order, OrderStatus } from '../../../models/api.models';
+import { DiscrepancyReport, GeneratedDocument, Order, OrderDocument, OrderHistoryEntry, OrderStatus } from '../../../models/api.models';
 
 @Component({
   selector: 'app-order-detail',
@@ -18,7 +18,14 @@ export class OrderDetail implements OnInit {
   order: Order | null = null;
   isLoading: boolean = false;
   showRejectModal: boolean = false;
+  showRejectPaymentModal: boolean = false;
   rejectionReason: string = '';
+  paymentRejectionReason: string = '';
+  actionErrorMessage: string = '';
+  orderHistory: OrderHistoryEntry[] = [];
+  orderDocuments: OrderDocument[] = [];
+  generatedDocuments: GeneratedDocument[] = [];
+  discrepancies: DiscrepancyReport[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -40,6 +47,7 @@ export class OrderDetail implements OnInit {
     this.orderService.getOrderById(this.orderId).subscribe({
       next: (order) => {
         this.order = order;
+        this.loadRelatedData();
         this.isLoading = false;
       },
       error: (error) => {
@@ -90,26 +98,43 @@ export class OrderDetail implements OnInit {
   confirmOrder() {
     if (!this.order) return;
     this.orderService.confirmOrder(this.orderId).subscribe({
-      next: (order) => {
-        this.order = order;
-      },
+      next: () => this.loadOrder(),
       error: (error) => console.error('Error confirming order:', error)
     });
   }
 
   openRejectModal() {
+    this.actionErrorMessage = '';
     this.showRejectModal = true;
   }
 
   closeRejectModal() {
     this.showRejectModal = false;
     this.rejectionReason = '';
+    this.actionErrorMessage = '';
+  }
+
+  openRejectPaymentModal() {
+    this.actionErrorMessage = '';
+    this.showRejectPaymentModal = true;
+  }
+
+  closeRejectPaymentModal() {
+    this.showRejectPaymentModal = false;
+    this.paymentRejectionReason = '';
+    this.actionErrorMessage = '';
   }
 
   rejectOrder() {
-    if (!this.rejectionReason.trim()) return;
+    if (!this.rejectionReason.trim()) {
+      this.actionErrorMessage = 'Укажите причину отклонения заказа.';
+      return;
+    }
+
+    this.actionErrorMessage = '';
     this.orderService.rejectOrder(this.orderId, { reason: this.rejectionReason }).subscribe({
       next: () => {
+        this.closeRejectModal();
         this.router.navigate(['/supplier/orders']);
       },
       error: (error) => console.error('Error rejecting order:', error)
@@ -119,19 +144,23 @@ export class OrderDetail implements OnInit {
   verifyPayment() {
     if (!this.order) return;
     this.orderService.confirmPayment(this.orderId).subscribe({
-      next: (order) => {
-        this.order = order;
-      },
+      next: () => this.loadOrder(),
       error: (error) => console.error('Error verifying payment:', error)
     });
   }
 
   rejectPayment() {
-    const reason = prompt('Укажите причину отклонения оплаты:');
-    if (!reason) return;
+    const reason = this.paymentRejectionReason.trim();
+    if (!reason) {
+      this.actionErrorMessage = 'Укажите причину отклонения оплаты.';
+      return;
+    }
+
+    this.actionErrorMessage = '';
     this.orderService.rejectPayment(this.orderId, reason).subscribe({
-      next: (order) => {
-        this.order = order;
+      next: () => {
+        this.closeRejectPaymentModal();
+        this.loadOrder();
       },
       error: (error) => console.error('Error rejecting payment:', error)
     });
@@ -140,36 +169,117 @@ export class OrderDetail implements OnInit {
   markAsShipped() {
     if (!this.order) return;
     this.orderService.shipOrder(this.orderId).subscribe({
-      next: (order) => {
-        this.order = order;
-      },
+      next: () => this.loadOrder(),
       error: (error) => console.error('Error shipping order:', error)
     });
   }
 
+  closeOrder() {
+    if (!this.order) return;
+    this.orderService.closeOrder(this.orderId).subscribe({
+      next: () => this.loadOrder(),
+      error: error => console.error('Error closing order:', error)
+    });
+  }
+
+  correctOrder() {
+    if (!this.order) return;
+    this.orderService.correctOrder(this.orderId).subscribe({
+      next: () => this.loadOrder(),
+      error: error => console.error('Error correcting order:', error)
+    });
+  }
+
   generateTTN() {
-    this.documentService.generateTTN(this.orderId).subscribe({
-      next: (doc) => {
-        this.documentService.downloadDocument(doc.id).subscribe({
-          next: (blob) => {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = doc.fileName;
-            a.click();
-            window.URL.revokeObjectURL(url);
-          }
-        });
+    this.orderService.generateTtn(this.orderId).subscribe({
+      next: () => {
+        this.loadOrder();
       },
       error: (error) => console.error('Error generating TTN:', error)
     });
   }
 
+  downloadOrderDocument(orderDocument: OrderDocument): void {
+    this.documentService.downloadDocument(orderDocument.id).subscribe({
+      next: blob => {
+        const url = window.URL.createObjectURL(blob);
+        const anchor = window.document.createElement('a');
+        anchor.href = url;
+        anchor.download = orderDocument.originalFilename || orderDocument.fileName || `document-${orderDocument.id}`;
+        anchor.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: error => console.error('Error downloading order document:', error)
+    });
+  }
+
+  downloadGeneratedDocument(document: GeneratedDocument): void {
+    this.documentService.downloadGeneratedDocument(document.id).subscribe({
+      next: blob => {
+        const url = window.URL.createObjectURL(blob);
+        const anchor = window.document.createElement('a');
+        anchor.href = url;
+        anchor.download = `${document.templateType.toLowerCase()}_${document.documentNumber}.pdf`;
+        anchor.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: error => console.error('Error downloading generated document:', error)
+    });
+  }
+
+  getHistoryDescription(entry: OrderHistoryEntry): string {
+    return entry.eventDescription || entry.description || 'Изменение статуса заказа';
+  }
+
+  getHistoryTimestamp(entry: OrderHistoryEntry): string {
+    return entry.timestamp || entry.createdAt || '';
+  }
+
+  get generatedDocumentsForOrder(): GeneratedDocument[] {
+    return this.generatedDocuments.filter(document => document.orderId === this.orderId);
+  }
+
   formatDate(dateStr: string): string {
+    if (!dateStr) return '—';
     return new Date(dateStr).toLocaleDateString('ru-RU');
+  }
+
+  formatDateTime(dateStr: string): string {
+    if (!dateStr) return '—';
+    return new Date(dateStr).toLocaleString('ru-RU');
   }
 
   formatAmount(amount: number): string {
     return amount.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  private loadRelatedData(): void {
+    this.orderService.getOrderHistory(this.orderId).subscribe({
+      next: history => {
+        this.orderHistory = history;
+      },
+      error: error => console.error('Error loading order history:', error)
+    });
+
+    this.orderService.getOrderDocuments(this.orderId).subscribe({
+      next: documents => {
+        this.orderDocuments = documents;
+      },
+      error: error => console.error('Error loading order documents:', error)
+    });
+
+    this.documentService.getGeneratedDocumentsByOrder(this.orderId).subscribe({
+      next: documents => {
+        this.generatedDocuments = documents;
+      },
+      error: error => console.error('Error loading generated documents:', error)
+    });
+
+    this.orderService.getOrderDiscrepancies(this.orderId).subscribe({
+      next: discrepancies => {
+        this.discrepancies = discrepancies;
+      },
+      error: error => console.error('Error loading discrepancies:', error)
+    });
   }
 }

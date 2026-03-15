@@ -17,9 +17,9 @@ import org.springframework.web.bind.annotation.*;
 import java.io.InputStream;
 import java.util.List;
 
-/**
- * Контроллер для работы со сгенерированными документами (ТТН, Акт о расхождении)
- */
+
+
+
 @RestController
 @RequestMapping("/api/generated-documents")
 @RequiredArgsConstructor
@@ -35,6 +35,16 @@ public class GeneratedDocumentController {
 			@Parameter(description = "ID пользователя") @RequestHeader("X-User-Id") Long userId) {
 
 		GeneratedDocumentResponse response = pdfGenerationService.generateTTN(request, userId);
+		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
+	}
+
+	@PostMapping("/invoice")
+	@Operation(summary = "Сгенерировать Счёт на оплату", description = "Генерация счёта на оплату по заказу")
+	public ResponseEntity<ApiResponse<GeneratedDocumentResponse>> generateInvoice(
+			@Valid @RequestBody InvoiceGenerationRequest request,
+			@Parameter(description = "ID пользователя") @RequestHeader("X-User-Id") Long userId) {
+
+		GeneratedDocumentResponse response = pdfGenerationService.generateInvoice(request, userId);
 		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
 	}
 
@@ -81,7 +91,7 @@ public class GeneratedDocumentController {
 	@Operation(summary = "Получить ссылку на скачивание")
 	public ResponseEntity<ApiResponse<String>> getDownloadUrl(@PathVariable Long id) {
 		GeneratedDocumentResponse doc = pdfGenerationService.getDocument(id);
-		// Используем сервис для получения presigned URL
+
 		String url = "/api/generated-documents/" + id + "/download";
 		return ResponseEntity.ok(ApiResponse.success(url));
 	}

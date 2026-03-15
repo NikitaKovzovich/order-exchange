@@ -16,6 +16,7 @@ public record ProductResponse(
 	String vatRateDescription,
 	BigDecimal vatPercentage,
 	BigDecimal weight,
+	String packageDimensions,
 	String countryOfOrigin,
 	LocalDate productionDate,
 	LocalDate expiryDate,

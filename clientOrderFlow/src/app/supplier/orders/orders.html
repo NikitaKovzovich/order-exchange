@@ -2,7 +2,7 @@
   <div class="bg-white p-5 rounded-lg shadow-sm flex items-center justify-between">
     <div>
       <p class="text-sm text-gray-500">Новые заказы</p>
-      <p class="text-3xl font-bold text-gray-800">{{ orderStats.new }}</p>
+      <p class="text-3xl font-bold text-gray-800">{{ orderStats.pendingConfirmation }}</p>
     </div>
     <div class="bg-blue-100 p-3 rounded-full">
       <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -13,7 +13,7 @@
   <div class="bg-white p-5 rounded-lg shadow-sm flex items-center justify-between">
     <div>
       <p class="text-sm text-gray-500">Ожидают отгрузки</p>
-      <p class="text-3xl font-bold text-gray-800">{{ orderStats.shipping }}</p>
+      <p class="text-3xl font-bold text-gray-800">{{ orderStats.awaitingShipment }}</p>
     </div>
     <div class="bg-yellow-100 p-3 rounded-full">
       <svg class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -36,7 +36,7 @@
   <div class="bg-white p-5 rounded-lg shadow-sm flex items-center justify-between">
     <div>
       <p class="text-sm text-gray-500">Проблемы с оплатой</p>
-      <p class="text-3xl font-bold text-red-600">{{ orderStats.problems }}</p>
+      <p class="text-3xl font-bold text-red-600">{{ orderStats.paymentProblems }}</p>
     </div>
     <div class="bg-red-100 p-3 rounded-full">
       <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -48,18 +48,17 @@
 
 <div class="bg-white p-4 rounded-lg shadow-sm mb-6">
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-    <input type="text" [(ngModel)]="filters.orderId" placeholder="Поиск по № заказа" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
-    <input type="text" [(ngModel)]="filters.client" placeholder="Поиск по клиенту" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
-    <select [(ngModel)]="filters.status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white">
+    <input type="text" [(ngModel)]="filters.search" placeholder="Поиск по № заказа" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
+    <input type="date" [(ngModel)]="filters.dateFrom" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-500">
+    <input type="date" [(ngModel)]="filters.dateTo" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-500">
+    <select [(ngModel)]="filters.status" (change)="onStatusFilterChange()" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white">
       <option value="">Все статусы</option>
-      <option value="pending">Ожидает подтверждения</option>
-      <option value="paid">Оплачен</option>
-      <option value="shipping">Ожидает отгрузки</option>
-      <option value="in-transit">В пути</option>
-      <option value="delivered">Доставлен</option>
+      <option *ngFor="let option of statusOptions" [ngValue]="option.value">{{ option.label }}</option>
     </select>
-    <input type="date" [(ngModel)]="filters.date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-500">
-    <button (click)="applyFilters()" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700">Применить</button>
+  </div>
+  <div class="flex flex-wrap gap-3 mt-4">
+    <button (click)="applyFilters()" class="bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700">Применить</button>
+    <button (click)="clearFilters()" class="border border-gray-300 bg-gray-100 py-2 px-4 rounded-md hover:bg-gray-200">Сбросить</button>
   </div>
 </div>
 
@@ -77,7 +76,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let order of filteredOrders"
+        <tr *ngFor="let order of orders"
             [class.bg-red-50]="order.statusCode === 'PAYMENT_PROBLEM'"
             [class.border-red-200]="order.statusCode === 'PAYMENT_PROBLEM'"
             class="bg-white border-b hover:bg-gray-50">
@@ -98,5 +97,13 @@
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <div class="flex items-center justify-between px-6 py-4 border-t bg-gray-50" *ngIf="totalPages > 0">
+    <div class="text-sm text-gray-500">Страница {{ currentPage + 1 }} из {{ totalPages }}</div>
+    <div class="flex gap-2">
+      <button (click)="goToPreviousPage()" [disabled]="currentPage === 0" class="px-4 py-2 border rounded-md bg-white disabled:opacity-50">Назад</button>
+      <button (click)="goToNextPage()" [disabled]="currentPage >= totalPages - 1" class="px-4 py-2 border rounded-md bg-white disabled:opacity-50">Вперёд</button>
+    </div>
   </div>
 </div>

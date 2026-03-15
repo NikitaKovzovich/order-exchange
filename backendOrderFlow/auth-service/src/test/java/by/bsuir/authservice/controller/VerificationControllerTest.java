@@ -113,11 +113,11 @@ class VerificationControllerTest {
 
 			mockMvc.perform(get("/api/admin/verification"))
 					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.content").isArray())
-					.andExpect(jsonPath("$.content.length()").value(1))
-					.andExpect(jsonPath("$.content[0].id").value(1))
-					.andExpect(jsonPath("$.content[0].companyName").value("ООО Test Company"))
-					.andExpect(jsonPath("$.content[0].status").value("PENDING"));
+					.andExpect(jsonPath("$.data.content").isArray())
+					.andExpect(jsonPath("$.data.content.length()").value(1))
+					.andExpect(jsonPath("$.data.content[0].id").value(1))
+					.andExpect(jsonPath("$.data.content[0].companyName").value("ООО Test Company"))
+					.andExpect(jsonPath("$.data.content[0].status").value("PENDING"));
 		}
 
 		@Test
@@ -130,8 +130,8 @@ class VerificationControllerTest {
 			mockMvc.perform(get("/api/admin/verification")
 							.param("status", "PENDING"))
 					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.content").isArray())
-					.andExpect(jsonPath("$.content.length()").value(1));
+					.andExpect(jsonPath("$.data.content").isArray())
+					.andExpect(jsonPath("$.data.content.length()").value(1));
 		}
 
 		@Test
@@ -142,8 +142,8 @@ class VerificationControllerTest {
 
 			mockMvc.perform(get("/api/admin/verification"))
 					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.content").isArray())
-					.andExpect(jsonPath("$.content.length()").value(0));
+					.andExpect(jsonPath("$.data.content").isArray())
+					.andExpect(jsonPath("$.data.content.length()").value(0));
 		}
 	}
 

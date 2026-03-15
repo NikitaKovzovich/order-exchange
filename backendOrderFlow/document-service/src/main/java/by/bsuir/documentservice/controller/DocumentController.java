@@ -29,12 +29,12 @@ public class DocumentController {
 
 	private final DocumentService documentService;
 
-	// ===================== Service-to-Service endpoints =====================
 
-	/**
-	 * Lightweight upload endpoint used by other microservices (auth-service, order-service).
-	 * Does NOT require X-User-Id or documentTypeCode — auto-detects from folder/serviceSource.
-	 */
+
+
+
+
+
 	@PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@Operation(summary = "Upload file (inter-service)")
 	public ResponseEntity<Map<String, Object>> uploadSimple(
@@ -58,9 +58,9 @@ public class DocumentController {
 		}
 	}
 
-	/**
-	 * Get presigned download URL by objectKey (used by auth-service).
-	 */
+
+
+
 	@GetMapping("/url")
 	@Operation(summary = "Get presigned URL by objectKey")
 	public ResponseEntity<Map<String, String>> getPresignedUrlByKey(
@@ -69,9 +69,9 @@ public class DocumentController {
 		return ResponseEntity.ok(Map.of("url", url, "objectKey", objectKey));
 	}
 
-	/**
-	 * Delete document by objectKey (used by auth-service).
-	 */
+
+
+
 	@DeleteMapping
 	@Operation(summary = "Delete document by objectKey")
 	public ResponseEntity<Void> deleteByObjectKey(@RequestParam("objectKey") String objectKey) {
@@ -79,7 +79,7 @@ public class DocumentController {
 		return ResponseEntity.noContent().build();
 	}
 
-	// ===================== Standard endpoints =====================
+
 
 	@GetMapping("/types")
 	@Operation(summary = "Получить список типов документов")

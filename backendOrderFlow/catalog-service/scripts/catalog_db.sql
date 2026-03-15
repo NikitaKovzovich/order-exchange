@@ -52,8 +52,10 @@ CREATE TABLE product (
 CREATE TABLE product_image (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     product_id BIGINT NOT NULL,
-    image_url VARCHAR(500) NOT NULL,
+    image_data MEDIUMBLOB NOT NULL,
     is_primary BOOLEAN DEFAULT FALSE,
+    mime_type VARCHAR(50) NULL,
+    file_name VARCHAR(255) NULL,
     FOREIGN KEY (product_id) REFERENCES product(id) ON DELETE CASCADE
 );
 
@@ -81,3 +83,25 @@ CREATE TABLE events (
 INSERT INTO unit_of_measure (name) VALUES ('шт'), ('кг'), ('л'), ('м'), ('уп');
 INSERT INTO vat_rate (rate_percentage, description) VALUES (0, 'Без НДС'), (10, 'НДС 10%'), (20, 'НДС 20%');
 INSERT INTO category (name, parent_id) VALUES ('Электроника', NULL), ('Продукты', NULL), ('Одежда', NULL);
+
+-- ============================================================
+-- Партнёрства (#1)
+-- ============================================================
+CREATE TABLE partnership (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    supplier_id BIGINT NOT NULL,
+    customer_id BIGINT NOT NULL,
+    status ENUM('PENDING', 'ACTIVE', 'REJECTED') NOT NULL DEFAULT 'PENDING',
+    contract_number VARCHAR(100) NULL,
+    contract_date DATE NULL,
+    contract_end_date DATE NULL,
+    customer_company_name VARCHAR(255) NULL,
+    customer_unp VARCHAR(20) NULL,
+    supplier_company_name VARCHAR(255) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY uk_supplier_customer (supplier_id, customer_id),
+    INDEX idx_partnership_supplier (supplier_id),
+    INDEX idx_partnership_customer (customer_id)
+);
+

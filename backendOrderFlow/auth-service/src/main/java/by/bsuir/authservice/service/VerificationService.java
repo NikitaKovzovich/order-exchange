@@ -18,6 +18,7 @@ public class VerificationService {
 	private final CompanyRepository companyRepository;
 	private final NotificationService notificationService;
 	private final RabbitEventPublisher rabbitEventPublisher;
+	private final EmailService emailService;
 
 	public List<VerificationRequest> getPendingRequests() {
 		return verificationRequestRepository.findByStatus(VerificationRequest.VerificationStatus.PENDING);
@@ -53,6 +54,12 @@ public class VerificationService {
 				"Ваша заявка на регистрацию одобрена. Добро пожаловать на платформу!",
 				Notification.NotificationType.VERIFICATION_APPROVED,
 				"VerificationRequest", requestId);
+
+
+		emailService.sendVerificationApprovedEmail(
+				supplierUser.getEmail(),
+				company.getLegalName() != null ? company.getLegalName() : "компания");
+
 		rabbitEventPublisher.publish("verificationapproved", Map.of(
 				"userId", supplierUser.getId(),
 				"companyId", company.getId(),
@@ -83,6 +90,13 @@ public class VerificationService {
 				"К сожалению, ваша заявка на регистрацию была отклонена. Причина: " + rejectionReason,
 				Notification.NotificationType.VERIFICATION_REJECTED,
 				"VerificationRequest", requestId);
+
+
+		emailService.sendVerificationRejectedEmail(
+				user.getEmail(),
+				company.getLegalName() != null ? company.getLegalName() : "компания",
+				rejectionReason);
+
 		rabbitEventPublisher.publish("verificationrejected", Map.of(
 				"userId", user.getId(),
 				"companyId", company.getId(),

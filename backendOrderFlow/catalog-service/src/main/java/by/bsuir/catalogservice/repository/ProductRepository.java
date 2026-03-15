@@ -17,6 +17,15 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 	List<Product> findBySupplierId(Long supplierId);
 	Page<Product> findBySupplierId(Long supplierId, Pageable pageable);
 
+	@Query("SELECT p FROM Product p WHERE p.supplierId = :supplierId " +
+		"AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')) " +
+		"OR LOWER(COALESCE(p.description, '')) LIKE LOWER(CONCAT('%', :search, '%')) " +
+		"OR LOWER(p.sku) LIKE LOWER(CONCAT('%', :search, '%')))")
+	Page<Product> searchSupplierProducts(
+			@Param("supplierId") Long supplierId,
+			@Param("search") String search,
+			Pageable pageable);
+
 	List<Product> findBySupplierIdAndStatus(Long supplierId, Product.ProductStatus status);
 	Page<Product> findByStatus(Product.ProductStatus status, Pageable pageable);
 
@@ -40,8 +49,52 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 			@Param("search") String search,
 			Pageable pageable);
 
+
+
+
+	@Query("SELECT p FROM Product p WHERE p.status = 'PUBLISHED' " +
+		"AND p.supplierId IN :supplierIds " +
+		"AND (:categoryId IS NULL OR p.category.id = :categoryId) " +
+		"AND (:supplierId IS NULL OR p.supplierId = :supplierId) " +
+		"AND (:minPrice IS NULL OR p.pricePerUnit >= :minPrice) " +
+		"AND (:maxPrice IS NULL OR p.pricePerUnit <= :maxPrice) " +
+		"AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))")
+	Page<Product> searchProductsByPartners(
+			@Param("supplierIds") List<Long> supplierIds,
+			@Param("categoryId") Long categoryId,
+			@Param("supplierId") Long supplierId,
+			@Param("minPrice") BigDecimal minPrice,
+			@Param("maxPrice") BigDecimal maxPrice,
+			@Param("search") String search,
+			Pageable pageable);
+
 	long countBySupplierId(Long supplierId);
 	long countBySupplierIdAndStatus(Long supplierId, Product.ProductStatus status);
 	long countByCategoryId(Long categoryId);
 	boolean existsByCategoryId(Long categoryId);
+
+
+
+
+	boolean existsByUnitId(Long unitId);
+
+
+
+
+	boolean existsByVatRateId(Long vatRateId);
+
+
+
+
+	@Query("SELECT p FROM Product p " +
+		"WHERE (:supplierId IS NULL OR p.supplierId = :supplierId) " +
+		"AND (:categoryId IS NULL OR p.category.id = :categoryId) " +
+		"AND (:status IS NULL OR p.status = :status) " +
+		"AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))")
+	Page<Product> findAllForAdmin(
+			@Param("supplierId") Long supplierId,
+			@Param("categoryId") Long categoryId,
+			@Param("status") Product.ProductStatus status,
+			@Param("search") String search,
+			Pageable pageable);
 }

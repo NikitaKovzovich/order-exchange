@@ -9,11 +9,11 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Заказ (Read Model для CQRS)
- * Основная сущность домена заказов
- * Обновляется асинхронно на основе событий
- */
+
+
+
+
+
 @Entity
 @Table(name = "orders", indexes = {
 	@Index(name = "idx_supplier_id", columnList = "supplier_id"),
@@ -89,101 +89,123 @@ public class Order {
 	@Column(name = "payment_notes")
 	private String paymentNotes;
 
-	// ========== Бизнес-методы для CQRS ==========
+	@Column(name = "contract_number", length = 100)
+	private String contractNumber;
 
-	/**
-	 * Подтвердить заказ (поставщик)
-	 */
+	@Column(name = "contract_date")
+	private LocalDate contractDate;
+
+	@Column(name = "contract_end_date")
+	private LocalDate contractEndDate;
+
+	@Column(name = "ttn_generated")
+	@Builder.Default
+	private Boolean ttnGenerated = false;
+
+
+
+
+
+
 	public void confirm(OrderStatus confirmedStatus) {
 		validateTransition(OrderStatus.Codes.CONFIRMED);
 		this.status = confirmedStatus;
 		this.updatedAt = LocalDateTime.now();
 	}
 
-	/**
-	 * Отклонить заказ (поставщик)
-	 */
+
+
+
 	public void reject(OrderStatus rejectedStatus, String reason) {
 		validateTransition(OrderStatus.Codes.REJECTED);
 		this.status = rejectedStatus;
 		this.updatedAt = LocalDateTime.now();
 	}
 
-	/**
-	 * Перевести в ожидание оплаты
-	 */
+
+
+
 	public void awaitPayment(OrderStatus awaitingPaymentStatus) {
 		validateTransition(OrderStatus.Codes.AWAITING_PAYMENT);
 		this.status = awaitingPaymentStatus;
 		this.updatedAt = LocalDateTime.now();
 	}
 
-	/**
-	 * Загрузить платежное поручение
-	 */
+
+
+
 	public void uploadPaymentProof(OrderStatus pendingVerificationStatus) {
 		validateTransition(OrderStatus.Codes.PENDING_PAYMENT_VERIFICATION);
 		this.status = pendingVerificationStatus;
 		this.updatedAt = LocalDateTime.now();
 	}
 
-	/**
-	 * Подтвердить оплату
-	 */
+
+
+
 	public void confirmPayment(OrderStatus paidStatus) {
 		validateTransition(OrderStatus.Codes.PAID);
 		this.status = paidStatus;
 		this.updatedAt = LocalDateTime.now();
 	}
 
-	/**
-	 * Отгрузить заказ
-	 */
+
+
+
+	public void rejectPayment(OrderStatus paymentProblemStatus) {
+		validateTransition(OrderStatus.Codes.PAYMENT_PROBLEM);
+		this.status = paymentProblemStatus;
+		this.updatedAt = LocalDateTime.now();
+	}
+
+
+
+
 	public void ship(OrderStatus shippedStatus) {
 		validateTransition(OrderStatus.Codes.SHIPPED);
 		this.status = shippedStatus;
 		this.updatedAt = LocalDateTime.now();
 	}
 
-	/**
-	 * Подтвердить получение
-	 */
+
+
+
 	public void deliver(OrderStatus deliveredStatus) {
 		validateTransition(OrderStatus.Codes.DELIVERED);
 		this.status = deliveredStatus;
 		this.updatedAt = LocalDateTime.now();
 	}
 
-	/**
-	 * Сообщить о расхождении
-	 */
+
+
+
 	public void reportDiscrepancy(OrderStatus awaitingCorrectionStatus) {
 		validateTransition(OrderStatus.Codes.AWAITING_CORRECTION);
 		this.status = awaitingCorrectionStatus;
 		this.updatedAt = LocalDateTime.now();
 	}
 
-	/**
-	 * Закрыть заказ
-	 */
+
+
+
 	public void close(OrderStatus closedStatus) {
 		validateTransition(OrderStatus.Codes.CLOSED);
 		this.status = closedStatus;
 		this.updatedAt = LocalDateTime.now();
 	}
 
-	/**
-	 * Отменить заказ
-	 */
+
+
+
 	public void cancel(OrderStatus cancelledStatus) {
 		validateTransition(OrderStatus.Codes.CANCELLED);
 		this.status = cancelledStatus;
 		this.updatedAt = LocalDateTime.now();
 	}
 
-	/**
-	 * Проверить возможность перехода статуса
-	 */
+
+
+
 	private void validateTransition(String targetStatus) {
 		String currentStatus = this.status != null ? this.status.getCode() : null;
 		if (currentStatus != null && !OrderStatus.canTransition(currentStatus, targetStatus)) {
@@ -193,27 +215,27 @@ public class Order {
 		}
 	}
 
-	/**
-	 * Добавить позицию в заказ
-	 */
+
+
+
 	public void addItem(OrderItem item) {
 		items.add(item);
 		item.setOrder(this);
 		recalculateTotals();
 	}
 
-	/**
-	 * Удалить позицию из заказа
-	 */
+
+
+
 	public void removeItem(OrderItem item) {
 		items.remove(item);
 		item.setOrder(null);
 		recalculateTotals();
 	}
 
-	/**
-	 * Пересчитать суммы заказа
-	 */
+
+
+
 	public void recalculateTotals() {
 		this.totalAmount = items.stream()
 				.map(OrderItem::getTotalPrice)
@@ -223,30 +245,30 @@ public class Order {
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
 	}
 
-	/**
-	 * Получить количество позиций
-	 */
+
+
+
 	public int getItemsCount() {
 		return items.size();
 	}
 
-	/**
-	 * Проверить, принадлежит ли заказ поставщику
-	 */
+
+
+
 	public boolean belongsToSupplier(Long supplierId) {
 		return this.supplierId.equals(supplierId);
 	}
 
-	/**
-	 * Проверить, принадлежит ли заказ покупателю
-	 */
+
+
+
 	public boolean belongsToCustomer(Long customerId) {
 		return this.customerId.equals(customerId);
 	}
 
-	/**
-	 * Сгенерировать номер заказа
-	 */
+
+
+
 	public static String generateOrderNumber(Long supplierId) {
 		return "ORD-" + supplierId + "-" + System.currentTimeMillis();
 	}

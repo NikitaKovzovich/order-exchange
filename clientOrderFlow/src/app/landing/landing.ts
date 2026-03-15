@@ -13,6 +13,8 @@ import { Router } from '@angular/router';
 export class Landing {
   showLoginModal = false;
   showRegisterModal = false;
+  loginErrorMessage = '';
+  registerErrorMessage = '';
 
   loginEmail = '';
   loginPassword = '';
@@ -28,6 +30,7 @@ export class Landing {
   constructor(private router: Router) {}
 
   openLoginModal() {
+    this.loginErrorMessage = '';
     this.router.navigate(['/login']);
   }
 
@@ -36,6 +39,7 @@ export class Landing {
   }
 
   openRegisterModal() {
+    this.registerErrorMessage = '';
     // Перенаправляем на страницу регистрации поставщика (там есть выбор типа)
     this.router.navigate(['/supplier/auth/registration']);
   }
@@ -67,7 +71,7 @@ export class Landing {
       }
       this.closeLoginModal();
     } else {
-      alert('Пожалуйста, заполните все поля');
+      this.loginErrorMessage = 'Пожалуйста, заполните все поля.';
     }
   }
 
@@ -80,19 +84,21 @@ export class Landing {
 
     if (!this.registerEmail || !this.registerPassword || !this.registerConfirmPassword ||
         !this.registerCompanyName || !this.registerUserType) {
-      alert('Пожалуйста, заполните все поля');
+      this.registerErrorMessage = 'Пожалуйста, заполните все поля.';
       return;
     }
 
     if (this.registerPassword !== this.registerConfirmPassword) {
-      alert('Пароли не совпадают');
+      this.registerErrorMessage = 'Пароли не совпадают.';
       return;
     }
 
     if (!this.registerAcceptTerms) {
-      alert('Необходимо принять условия использования');
+      this.registerErrorMessage = 'Необходимо принять условия использования.';
       return;
     }
+
+    this.registerErrorMessage = '';
 
     if (this.registerUserType === 'supplier') {
       this.router.navigate(['/supplier/dashboard']);

@@ -5,8 +5,9 @@ import { map } from 'rxjs/operators';
 import {
   ApiResponse,
   Document,
-  DocumentType,
-  EntityType
+  DocumentTypeInfo,
+  EntityType,
+  GeneratedDocument
 } from '../models/api.models';
 
 @Injectable({
@@ -14,13 +15,20 @@ import {
 })
 export class DocumentService {
   private readonly API_URL = '/api/documents';
+  private readonly GENERATED_API_URL = '/api/generated-documents';
 
   constructor(private http: HttpClient) {}
 
-  uploadDocument(file: File, documentType: DocumentType, entityType: EntityType, entityId: number): Observable<Document> {
+  getDocumentTypes(): Observable<DocumentTypeInfo[]> {
+    return this.http.get<ApiResponse<DocumentTypeInfo[]>>(`${this.API_URL}/types`).pipe(
+      map(response => response.data || [])
+    );
+  }
+
+  uploadDocument(file: File, documentTypeCode: string, entityType: EntityType, entityId: number): Observable<Document> {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('documentType', documentType);
+    formData.append('documentTypeCode', documentTypeCode);
     formData.append('entityType', entityType);
     formData.append('entityId', entityId.toString());
 
@@ -41,6 +49,12 @@ export class DocumentService {
     });
   }
 
+  getDocumentUrl(id: number): Observable<string> {
+    return this.http.get<ApiResponse<string>>(`${this.API_URL}/${id}/url`).pipe(
+      map(response => response.data || '')
+    );
+  }
+
   getEntityDocuments(entityType: EntityType, entityId: number): Observable<Document[]> {
     return this.http.get<ApiResponse<Document[]>>(`${this.API_URL}/entity/${entityType}/${entityId}`).pipe(
       map(response => response.data || [])
@@ -51,14 +65,44 @@ export class DocumentService {
     return this.http.delete<void>(`${this.API_URL}/${id}`);
   }
 
-  generateTTN(orderId: number): Observable<Document> {
-    return this.http.post<ApiResponse<Document>>(`${this.API_URL}/generate/ttn`, { orderId }).pipe(
+  getGeneratedDocumentsByOrder(orderId: number): Observable<GeneratedDocument[]> {
+    return this.http.get<ApiResponse<GeneratedDocument[]>>(`${this.GENERATED_API_URL}/order/${orderId}`).pipe(
+      map(response => response.data || [])
+    );
+  }
+
+  getGeneratedDocument(id: number): Observable<GeneratedDocument> {
+    return this.http.get<ApiResponse<GeneratedDocument>>(`${this.GENERATED_API_URL}/${id}`).pipe(
       map(response => response.data!)
     );
   }
 
-  generateDiscrepancyAct(discrepancyReportId: number): Observable<Document> {
-    return this.http.post<ApiResponse<Document>>(`${this.API_URL}/generate/discrepancy-act`, { discrepancyReportId }).pipe(
+  getGeneratedDocumentUrl(id: number): Observable<string> {
+    return this.http.get<ApiResponse<string>>(`${this.GENERATED_API_URL}/${id}/url`).pipe(
+      map(response => response.data || '')
+    );
+  }
+
+  downloadGeneratedDocument(id: number): Observable<Blob> {
+    return this.http.get(`${this.GENERATED_API_URL}/${id}/download`, {
+      responseType: 'blob'
+    });
+  }
+
+  generateTTN(orderId: number): Observable<GeneratedDocument> {
+    return this.http.post<ApiResponse<GeneratedDocument>>(`${this.GENERATED_API_URL}/ttn`, { orderId }).pipe(
+      map(response => response.data!)
+    );
+  }
+
+  generateInvoice(orderId: number): Observable<GeneratedDocument> {
+    return this.http.post<ApiResponse<GeneratedDocument>>(`${this.GENERATED_API_URL}/invoice`, { orderId }).pipe(
+      map(response => response.data!)
+    );
+  }
+
+  generateDiscrepancyAct(discrepancyReportId: number): Observable<GeneratedDocument> {
+    return this.http.post<ApiResponse<GeneratedDocument>>(`${this.GENERATED_API_URL}/discrepancy-act`, { discrepancyReportId }).pipe(
       map(response => response.data!)
     );
   }

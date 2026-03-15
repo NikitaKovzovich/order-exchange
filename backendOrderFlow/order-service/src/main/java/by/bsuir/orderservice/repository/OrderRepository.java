@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,6 +37,38 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 			@Param("customerId") Long customerId,
 			@Param("statusCodes") Iterable<String> statusCodes,
 			Pageable pageable);
+
+
+	@Query("SELECT o FROM Order o WHERE o.supplierId = :supplierId AND LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))")
+	Page<Order> findBySupplierIdAndOrderNumberContaining(
+			@Param("supplierId") Long supplierId,
+			@Param("search") String search,
+			Pageable pageable);
+
+	@Query("SELECT o FROM Order o WHERE o.customerId = :customerId AND LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))")
+	Page<Order> findByCustomerIdAndOrderNumberContaining(
+			@Param("customerId") Long customerId,
+			@Param("search") String search,
+			Pageable pageable);
+
+
+	@Query("SELECT o FROM Order o WHERE o.supplierId = :supplierId AND o.createdAt >= :dateFrom AND o.createdAt < :dateTo")
+	Page<Order> findBySupplierIdAndCreatedAtBetween(
+			@Param("supplierId") Long supplierId,
+			@Param("dateFrom") LocalDateTime dateFrom,
+			@Param("dateTo") LocalDateTime dateTo,
+			Pageable pageable);
+
+	@Query("SELECT o FROM Order o WHERE o.customerId = :customerId AND o.createdAt >= :dateFrom AND o.createdAt < :dateTo")
+	Page<Order> findByCustomerIdAndCreatedAtBetween(
+			@Param("customerId") Long customerId,
+			@Param("dateFrom") LocalDateTime dateFrom,
+			@Param("dateTo") LocalDateTime dateTo,
+			Pageable pageable);
+
+
+	@Query("SELECT o FROM Order o WHERE o.customerId = :customerId AND o.status.code IN ('DELIVERED', 'CLOSED')")
+	List<Order> findDeliveredOrClosedByCustomerId(@Param("customerId") Long customerId);
 
 	boolean existsByOrderNumber(String orderNumber);
 

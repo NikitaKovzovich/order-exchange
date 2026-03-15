@@ -3,10 +3,10 @@ package by.bsuir.documentservice.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-/**
- * Тип документа (Read Model)
- * Справочная таблица
- */
+
+
+
+
 @Entity
 @Table(name = "document_type")
 @Getter
@@ -29,9 +29,9 @@ public class DocumentType {
 	@Column(columnDefinition = "TEXT")
 	private String description;
 
-	/**
-	 * Коды типов документов
-	 */
+
+
+
 	public static class Codes {
 		public static final String INVOICE = "INVOICE";
 		public static final String PAYMENT_PROOF = "PAYMENT_PROOF";

@@ -141,18 +141,22 @@ public class AuthController {
 	@PostMapping("/login")
 	@Operation(summary = "Login user")
 	public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
-		String token = authService.login(request.getEmail(), request.getPassword());
-		User user = authService.getUserByEmail(request.getEmail());
+		try {
+			String token = authService.login(request.getEmail(), request.getPassword());
+			User user = authService.getUserByEmail(request.getEmail());
 
-		AuthResponse response = AuthResponse.builder()
-				.token(token)
-				.email(user.getEmail())
-				.role(user.getRole().name())
-				.userId(user.getId())
-				.companyId(user.getCompany() != null ? user.getCompany().getId() : null)
-				.build();
+			AuthResponse response = AuthResponse.builder()
+					.token(token)
+					.email(user.getEmail())
+					.role(user.getRole().name())
+					.userId(user.getId())
+					.companyId(user.getCompany() != null ? user.getCompany().getId() : null)
+					.build();
 
-		return ResponseEntity.ok(response);
+			return ResponseEntity.ok(response);
+		} catch (IllegalArgumentException ex) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}
 	}
 
 	@GetMapping("/profile")

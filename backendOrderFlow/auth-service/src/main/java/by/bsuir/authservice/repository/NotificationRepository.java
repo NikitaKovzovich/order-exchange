@@ -21,4 +21,3 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 	int markAllAsReadByUserId(@Param("userId") Long userId);
 	Page<Notification> findAllByOrderByCreatedAtDesc(Pageable pageable);
 }
-

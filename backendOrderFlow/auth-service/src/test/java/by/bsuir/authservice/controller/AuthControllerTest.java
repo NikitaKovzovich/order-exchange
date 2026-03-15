@@ -113,8 +113,8 @@ class AuthControllerTest {
 		}
 
 		@Test
-		@DisplayName("Should return 400 for invalid credentials")
-		void shouldReturn400ForInvalidCredentials() throws Exception {
+		@DisplayName("Should return 401 for invalid credentials")
+		void shouldReturn401ForInvalidCredentials() throws Exception {
 			LoginRequest request = new LoginRequest("test@example.com", "wrongpassword");
 
 			when(authService.login("test@example.com", "wrongpassword"))
@@ -123,7 +123,7 @@ class AuthControllerTest {
 			mockMvc.perform(post("/api/auth/login")
 							.contentType(MediaType.APPLICATION_JSON)
 							.content(objectMapper.writeValueAsString(request)))
-					.andExpect(status().isBadRequest());
+					.andExpect(status().isUnauthorized());
 		}
 	}
 

@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -22,6 +23,14 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, Lo
 
 	@Query("SELECT t FROM SupportTicket t WHERE t.status NOT IN ('RESOLVED', 'CLOSED')")
 	Page<SupportTicket> findAllOpen(Pageable pageable);
+
+	@Query("SELECT t FROM SupportTicket t " +
+			"WHERE (:status IS NULL OR t.status = :status) " +
+			"AND (:search IS NULL OR LOWER(t.subject) LIKE LOWER(CONCAT('%', :search, '%')) OR STR(t.id) LIKE CONCAT('%', :search, '%'))")
+	Page<SupportTicket> searchAdminTickets(
+			@Param("status") SupportTicket.TicketStatus status,
+			@Param("search") String search,
+			Pageable pageable);
 
 	@Query("SELECT t FROM SupportTicket t WHERE t.assignedAdminId IS NULL AND t.status = 'NEW'")
 	List<SupportTicket> findUnassigned();

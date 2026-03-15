@@ -41,8 +41,9 @@ public class DiscrepancyItem {
 	@Column(name = "discrepancy_amount", precision = 12, scale = 2)
 	private BigDecimal discrepancyAmount;
 
+	@Enumerated(EnumType.STRING)
 	@Column
-	private String reason;
+	private DiscrepancyReason reason;
 
 	public void calculate() {
 		this.discrepancyQuantity = this.expectedQuantity - this.actualQuantity;

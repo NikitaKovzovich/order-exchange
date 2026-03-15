@@ -1,0 +1,101 @@
+<div class="min-h-screen bg-gray-100 p-6 print:bg-white print:p-0">
+  <div class="mx-auto max-w-5xl space-y-6">
+	<div class="flex items-center justify-between print:hidden">
+	  <button (click)="goBack()" class="text-sm text-indigo-600 hover:text-indigo-800">← Вернуться к заказу</button>
+	  <button (click)="printUPD()" class="rounded-md border px-4 py-2 text-sm hover:bg-gray-50">Печать</button>
+	</div>
+
+	<div *ngIf="isLoading" class="rounded-lg bg-white p-8 text-center text-gray-500 shadow-sm">
+	  Загрузка УПД и отгрузочных документов...
+	</div>
+
+	<div *ngIf="errorMessage" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+	  {{ errorMessage }}
+	</div>
+
+	<div *ngIf="notification" class="rounded-lg border px-4 py-3"
+		 [ngClass]="{
+		   'border-green-200 bg-green-50 text-green-700': notification.type === 'success',
+		   'border-red-200 bg-red-50 text-red-700': notification.type === 'error',
+		   'border-blue-200 bg-blue-50 text-blue-700': notification.type === 'info',
+		   'border-yellow-200 bg-yellow-50 text-yellow-700': notification.type === 'warning'
+		 }">
+	  {{ notification.message }}
+	</div>
+
+	<div *ngIf="order && !isLoading" class="space-y-6">
+	  <section class="rounded-lg bg-white p-6 shadow-sm">
+		<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+		  <div>
+			<h1 class="text-2xl font-bold text-gray-900">Отгрузочные документы по заказу {{ order.orderNumber }}</h1>
+			<p class="mt-2 text-sm text-gray-600">Покупатель: {{ order.customerName || ('Клиент #' + order.customerId) }}</p>
+			<p class="text-sm text-gray-600">Адрес доставки: {{ order.deliveryAddress }}</p>
+		  </div>
+		  <div class="text-sm text-gray-600 md:text-right">
+			<p>Дата заказа: {{ formatDate(order.createdAt) }}</p>
+			<p>Желаемая доставка: {{ formatDate(order.desiredDeliveryDate) }}</p>
+			<p class="mt-2 text-base font-semibold text-gray-900">Сумма: {{ formatAmount(order.totalAmount) }} BYN</p>
+		  </div>
+		</div>
+	  </section>
+
+	  <section class="rounded-lg bg-white p-6 shadow-sm print:hidden">
+		<h2 class="mb-4 text-lg font-semibold text-gray-900">Рабочая область документов</h2>
+		<div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+		  <div class="text-sm text-gray-600">
+			<p>Текущий статус заказа: <span class="font-semibold text-gray-900">{{ order.statusName || order.statusCode }}</span></p>
+			<p class="mt-1" *ngIf="canGenerateTtn">Для этого статуса можно сформировать ТТН.</p>
+			<p class="mt-1" *ngIf="canGenerateCorrection">Для этого статуса можно сформировать корректировочный документ.</p>
+			<p class="mt-1" *ngIf="!canGenerateTtn && !canGenerateCorrection">Для текущего статуса доступны просмотр и скачивание уже сформированных документов.</p>
+		  </div>
+
+		  <div class="flex flex-wrap gap-3">
+			<button *ngIf="canGenerateTtn"
+					(click)="generateTtn()"
+					[disabled]="isProcessing"
+					class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
+			  {{ isProcessing ? 'Формирование...' : 'Сформировать ТТН' }}
+			</button>
+			<button *ngIf="canGenerateCorrection"
+					(click)="generateCorrection()"
+					[disabled]="isProcessing"
+					class="rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-50">
+			  {{ isProcessing ? 'Формирование...' : 'Сформировать корректировку' }}
+			</button>
+		  </div>
+		</div>
+	  </section>
+
+	  <section class="rounded-lg bg-white p-6 shadow-sm">
+		<h2 class="mb-4 text-lg font-semibold text-gray-900">Доступные отгрузочные документы</h2>
+
+		<div *ngIf="generatedShippingDocuments.length === 0 && shippingDocuments.length === 0" class="rounded-md border border-dashed border-gray-300 p-6 text-sm text-gray-500">
+		  Для этого заказа пока не найдено УПД, ТТН или связанных отгрузочных документов.
+		</div>
+
+		<div *ngIf="generatedShippingDocuments.length > 0" class="mb-6 space-y-3">
+		  <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Сгенерированные документы</h3>
+		  <div *ngFor="let document of generatedShippingDocuments" class="flex items-center justify-between rounded-md border p-4">
+			<div>
+			  <div class="font-medium text-gray-900">{{ document.templateDisplayName || document.templateType }}</div>
+			  <div class="text-xs text-gray-500">№ {{ document.documentNumber }} · {{ formatDate(document.documentDate) }}</div>
+			</div>
+			<button (click)="downloadGeneratedDocument(document)" class="text-sm font-medium text-indigo-600 hover:text-indigo-800">Скачать PDF</button>
+		  </div>
+		</div>
+
+		<div *ngIf="shippingDocuments.length > 0" class="space-y-3">
+		  <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Документы заказа</h3>
+		  <div *ngFor="let document of shippingDocuments" class="flex items-center justify-between rounded-md border p-4">
+			<div>
+			  <div class="font-medium text-gray-900">{{ document.documentTypeName || document.documentName || document.originalFilename || ('Документ #' + document.id) }}</div>
+			  <div class="text-xs text-gray-500">{{ formatDate(document.createdAt || document.uploadedAt) }}</div>
+			</div>
+			<button (click)="downloadOrderDocument(document)" class="text-sm font-medium text-indigo-600 hover:text-indigo-800">Скачать</button>
+		  </div>
+		</div>
+	  </section>
+	</div>
+  </div>
+</div>
+

@@ -51,7 +51,7 @@ public class Company {
 		return this.legalForm;
 	}
 
-	
+
 	public String getLegalFormText() {
 		return switch (this.legalForm) {
 			case IE -> "ИП";
@@ -64,7 +64,7 @@ public class Company {
 		};
 	}
 
-	
+
 	public String buildLegalName() {
 		if (this.name == null || this.name.isEmpty()) {
 			return this.legalName;
@@ -72,7 +72,7 @@ public class Company {
 		return getLegalFormText() + " \"" + this.name + "\"";
 	}
 
-	
+
 	public void setNameAndBuildLegalName(String name) {
 		this.name = name;
 		this.legalName = buildLegalName();

@@ -1,54 +1,116 @@
 <div class="bg-white p-6 rounded-lg shadow mb-6">
   <div class="flex justify-between items-center mb-4">
     <h2 class="text-2xl font-bold">Мои заказы</h2>
-    <button class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+    <button [routerLink]="['/retail/catalog']" type="button" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
       Новый заказ
     </button>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    <input type="text" [(ngModel)]="filters.orderId" (input)="applyFilters()" placeholder="Номер заказа" class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-    <input type="text" [(ngModel)]="filters.supplier" (input)="applyFilters()" placeholder="Поставщик" class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-    <select [(ngModel)]="filters.status" (change)="applyFilters()" class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="bg-gray-50 rounded-lg p-4">
+      <p class="text-sm text-gray-500">Всего заказов</p>
+      <p class="text-2xl font-bold text-gray-800">{{ orderStats.totalOrders }}</p>
+    </div>
+    <div class="bg-gray-50 rounded-lg p-4">
+      <p class="text-sm text-gray-500">Требуют оплаты</p>
+      <p class="text-2xl font-bold text-orange-600">{{ orderStats.requirePayment }}</p>
+    </div>
+    <div class="bg-gray-50 rounded-lg p-4">
+      <p class="text-sm text-gray-500">Ожидают приёмки</p>
+      <p class="text-2xl font-bold text-cyan-600">{{ orderStats.awaitingDelivery }}</p>
+    </div>
+    <div class="bg-gray-50 rounded-lg p-4">
+      <p class="text-sm text-gray-500">Проблемные / отклонённые</p>
+      <p class="text-2xl font-bold text-red-600">{{ orderStats.rejected }}</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <input type="text" [(ngModel)]="filters.search" placeholder="Номер заказа" class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+    <input type="date" [(ngModel)]="filters.dateFrom" class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+    <input type="date" [(ngModel)]="filters.dateTo" class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+    <select [(ngModel)]="filters.status" (change)="onStatusFilterChange()" class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
       <option value="">Все статусы</option>
-      <option value="pending">Ожидает подтверждения</option>
-      <option value="paid">Оплачен</option>
-      <option value="in-transit">В пути</option>
-      <option value="delivered">Доставлен</option>
+      <option *ngFor="let option of statusOptions" [ngValue]="option.value">{{ option.label }}</option>
     </select>
+  </div>
+  <div class="flex gap-3 mt-4">
+    <button (click)="applyFilters()" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Применить</button>
+    <button (click)="clearFilters()" class="border border-gray-300 bg-gray-100 px-4 py-2 rounded-md hover:bg-gray-200">Сбросить</button>
+  </div>
+</div>
+
+<div
+  *ngIf="notification"
+  class="mb-6 rounded-lg border px-4 py-3"
+  [ngClass]="{
+    'border-green-200 bg-green-50 text-green-800': notification.type === 'success',
+    'border-red-200 bg-red-50 text-red-800': notification.type === 'error',
+    'border-blue-200 bg-blue-50 text-blue-800': notification.type === 'info',
+    'border-amber-200 bg-amber-50 text-amber-800': notification.type === 'warning'
+  }">
+  <div class="flex items-start justify-between gap-4">
+    <p class="text-sm font-medium">{{ notification.message }}</p>
+    <button type="button" class="text-current opacity-70 hover:opacity-100" (click)="clearNotification()">✕</button>
   </div>
 </div>
 
 <div class="bg-white rounded-lg shadow overflow-hidden">
-  <table class="w-full">
-    <thead class="bg-gray-50">
-      <tr>
-        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Номер заказа</th>
-        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Поставщик</th>
-        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата</th>
-        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Сумма</th>
-        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
-        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
-      </tr>
-    </thead>
-    <tbody class="bg-white divide-y divide-gray-200">
-      <tr *ngFor="let order of filteredOrders" class="hover:bg-gray-50">
-        <td class="px-6 py-4 whitespace-nowrap">
-          <span class="text-indigo-600 font-semibold">{{ order.orderNumber }}</span>
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap">{{ order.supplierName || 'Поставщик #' + order.supplierId }}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ formatDate(order.createdAt) }}</td>
-        <td class="px-6 py-4 whitespace-nowrap font-semibold">{{ formatAmount(order.totalAmount) }} BYN</td>
-        <td class="px-6 py-4 whitespace-nowrap">
-          <span class="px-2 py-1 text-xs rounded-full" [ngClass]="getStatusClass(order.statusCode)">
-            {{ getStatusLabel(order.statusCode) }}
-          </span>
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm">
-          <a [routerLink]="['/retail/orders', order.id]" class="text-indigo-600 hover:underline mr-3">Детали</a>
-          <button class="text-gray-600 hover:underline">Скачать</button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[760px]">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Номер заказа</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Поставщик</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Сумма</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        <tr *ngIf="isLoading">
+          <td colspan="6" class="px-6 py-10 text-center text-gray-500">Загрузка заказов...</td>
+        </tr>
+
+        <tr *ngIf="!isLoading && orders.length === 0">
+          <td colspan="6" class="px-6 py-10 text-center text-gray-500">
+            По выбранным фильтрам заказы не найдены.
+          </td>
+        </tr>
+
+        <tr *ngFor="let order of orders" class="hover:bg-gray-50">
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="text-indigo-600 font-semibold">{{ order.orderNumber }}</span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">{{ order.supplierName || 'Поставщик #' + order.supplierId }}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ formatDate(order.createdAt) }}</td>
+          <td class="px-6 py-4 whitespace-nowrap font-semibold">{{ formatAmount(order.totalAmount) }} BYN</td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="px-2 py-1 text-xs font-semibold rounded-full" [ngClass]="getStatusClass(order.statusCode)">
+              {{ getStatusLabel(order.statusCode) }}
+            </span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm">
+            <a [routerLink]="['/retail/orders', order.id]" class="text-indigo-600 hover:underline mr-3">Детали</a>
+            <button
+              type="button"
+              (click)="downloadOrderDocuments(order)"
+              [disabled]="isDownloading(order.id)"
+              class="text-gray-600 hover:underline disabled:text-gray-400 disabled:no-underline">
+              {{ isDownloading(order.id) ? 'Подготовка архива...' : 'Скачать все' }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="flex items-center justify-between px-6 py-4 border-t bg-gray-50" *ngIf="totalPages > 0">
+    <div class="text-sm text-gray-500">Страница {{ currentPage + 1 }} из {{ totalPages }}</div>
+    <div class="flex gap-2">
+      <button (click)="goToPreviousPage()" [disabled]="currentPage === 0" class="px-4 py-2 border rounded-md bg-white disabled:opacity-50">Назад</button>
+      <button (click)="goToNextPage()" [disabled]="currentPage >= totalPages - 1" class="px-4 py-2 border rounded-md bg-white disabled:opacity-50">Вперёд</button>
+    </div>
+  </div>
 </div>

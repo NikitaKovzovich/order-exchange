@@ -15,7 +15,7 @@ public class GatewayConfig {
     @Bean
     public RouteLocator routeLocator(RouteLocatorBuilder builder) {
         return builder.routes()
-                // Auth Service Routes
+                
                 .route("auth-service", r -> r
                         .path("/api/auth/**")
                         .uri("lb://auth-service"))
@@ -29,7 +29,7 @@ public class GatewayConfig {
                         .path("/api/notifications/**")
                         .uri("lb://auth-service"))
 
-                // Catalog Service Routes
+                
                 .route("catalog-service-products", r -> r
                         .path("/api/products/**")
                         .uri("lb://catalog-service"))
@@ -46,7 +46,7 @@ public class GatewayConfig {
                         .path("/api/vat-rates/**")
                         .uri("lb://catalog-service"))
 
-                // Order Service Routes
+                
                 .route("order-service-orders", r -> r
                         .path("/api/orders/**")
                         .uri("lb://order-service"))
@@ -57,7 +57,7 @@ public class GatewayConfig {
                         .path("/api/analytics/**")
                         .uri("lb://order-service"))
 
-                // Chat Service Routes
+                
                 .route("chat-service-websocket", r -> r
                         .path("/ws/**")
                         .uri("lb://chat-service"))
@@ -68,18 +68,25 @@ public class GatewayConfig {
                         .path("/api/support/**")
                         .uri("lb://chat-service"))
 
-                // Document Service Routes
+                
                 .route("document-service", r -> r
                         .path("/api/documents/**")
                         .uri("lb://document-service"))
                 .route("document-service-generated", r -> r
                         .path("/api/generated-documents/**")
                         .uri("lb://document-service"))
-                .route("document-service-invoices", r -> r
-                        .path("/api/invoices/**")
-                        .uri("lb://document-service"))
 
-                // Eureka Dashboard
+                
+                .route("catalog-service-partnerships", r -> r
+                        .path("/api/partnerships/**")
+                        .uri("lb://catalog-service"))
+
+                
+                .route("order-service-acceptance-journal", r -> r
+                        .path("/api/acceptance-journal/**")
+                        .uri("lb://order-service"))
+
+                
                 .route("eureka", r -> r
                         .path("/eureka/**")
                         .uri(eurekaDashboardUrl))

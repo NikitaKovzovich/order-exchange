@@ -1,14 +1,10 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { LoginResponse } from '../models/api.models';
+import { ApiClientService } from './api-client.service';
 
-export interface RegistrationResponse {
-  token: string;
-  email: string;
-  role: 'ADMIN' | 'SUPPLIER' | 'RETAIL_CHAIN';
-  userId: number;
-  companyId: number;
+export interface RegistrationResponse extends LoginResponse {
   message?: string;
 }
 
@@ -16,12 +12,12 @@ export interface RegistrationResponse {
   providedIn: 'root'
 })
 export class RegistrationService {
-  private readonly API_URL = '/api/auth';
+  private readonly API_URL = 'auth';
 
-  constructor(private http: HttpClient) {}
+  constructor(private apiClient: ApiClientService) {}
 
   registerSupplier(formData: FormData): Observable<RegistrationResponse> {
-    return this.http.post<RegistrationResponse>(`${this.API_URL}/register`, formData).pipe(
+    return this.apiClient.post<RegistrationResponse>(`${this.API_URL}/register`, formData).pipe(
       catchError(error => {
         console.error('Supplier registration error:', error);
         return throwError(() => error);
@@ -30,7 +26,7 @@ export class RegistrationService {
   }
 
   registerRetail(formData: FormData): Observable<RegistrationResponse> {
-    return this.http.post<RegistrationResponse>(`${this.API_URL}/register`, formData).pipe(
+    return this.apiClient.post<RegistrationResponse>(`${this.API_URL}/register`, formData).pipe(
       catchError(error => {
         console.error('Retail registration error:', error);
         return throwError(() => error);

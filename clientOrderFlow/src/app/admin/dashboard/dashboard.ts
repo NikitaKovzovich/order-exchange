@@ -1,11 +1,12 @@
 import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { Chart } from 'chart.js';
+import { forkJoin } from 'rxjs';
 import { Header } from '../shared/header/header';
-import { AdminService, PendingVerificationRequest } from '../../services/admin.service';
-import { ChatService } from '../../services/chat.service';
-import { SupportTicket } from '../../models/api.models';
+import { AdminService, RecentRegistrationItem, RecentSupportTicketItem, RegistrationActivityPoint } from '../../services/admin.service';
+
+type ChartModule = typeof import('chart.js/auto');
+type ChartInstance = { destroy(): void };
 
 interface StatCard {
   title: string;
@@ -27,23 +28,24 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('usersChart') usersChart?: ElementRef<HTMLCanvasElement>;
 
   stats: StatCard[] = [];
-  registrationRequests: PendingVerificationRequest[] = [];
-  supportTickets: SupportTicket[] = [];
+  registrationRequests: RecentRegistrationItem[] = [];
+  supportTickets: RecentSupportTicketItem[] = [];
   isLoading: boolean = false;
+  registrationActivity: Array<{ date: string; count: number }> = [];
 
-  private chartInstance?: Chart;
+  private chartInstance?: ChartInstance;
+  private chartModulePromise?: Promise<ChartModule>;
 
-  constructor(
-    private adminService: AdminService,
-    private chatService: ChatService
-  ) {}
+  constructor(private adminService: AdminService) {}
 
   ngOnInit() {
     this.loadDashboardData();
   }
 
   ngAfterViewInit() {
-    setTimeout(() => this.initUsersChart(), 100);
+    setTimeout(() => {
+      void this.initUsersChart();
+    }, 100);
   }
 
   ngOnDestroy() {
@@ -53,82 +55,119 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   loadDashboardData() {
     this.isLoading = true;
 
-    this.adminService.getDashboardStats().subscribe({
-      next: (data) => {
+    forkJoin({
+      dashboard: this.adminService.getDashboardStats(),
+      ordersStats: this.adminService.getOrdersStats(),
+      verificationRate: this.adminService.getVerificationRate(),
+      recentRegistrations: this.adminService.getRecentRegistrations(),
+      recentSupportTickets: this.adminService.getRecentSupportTickets(),
+      registrationActivity: this.adminService.getRegistrationActivity()
+    }).subscribe({
+      next: ({ dashboard, ordersStats, verificationRate, recentRegistrations, recentSupportTickets, registrationActivity }) => {
         this.stats = [
           {
             title: 'Всего пользователей',
-            value: data.totalUsers.toLocaleString('ru-RU'),
-            change: '',
+            value: dashboard.totalUsers.toLocaleString('ru-RU'),
+            change: `+${dashboard.usersWeekGrowth || 0} за неделю`,
             icon: 'users',
             trend: 'up',
             colorClass: 'bg-blue-100 text-blue-600'
           },
           {
-            title: 'Активных заказов',
-            value: data.activeOrders.toLocaleString('ru-RU'),
-            change: '',
+            title: 'Заказов за период',
+            value: Number(ordersStats['totalOrdersThisMonth'] ?? 0).toLocaleString('ru-RU'),
+            change: `${ordersStats['orderGrowthPercent'] ?? 0}%`,
             icon: 'orders',
-            trend: 'up',
+            trend: Number(ordersStats['orderGrowthPercent'] ?? 0) >= 0 ? 'up' : 'down',
             colorClass: 'bg-green-100 text-green-600'
           },
           {
             title: 'Ожидают верификации',
-            value: data.pendingVerifications,
+            value: dashboard.pendingVerifications,
             change: '',
             icon: 'verification',
-            trend: data.pendingVerifications > 0 ? 'up' : 'down',
+            trend: dashboard.pendingVerifications > 0 ? 'up' : 'down',
             colorClass: 'bg-yellow-100 text-yellow-600'
+          },
+          {
+            title: 'Новые тикеты',
+            value: recentSupportTickets.length,
+            change: 'последние обращения',
+            icon: 'support',
+            trend: recentSupportTickets.length > 0 ? 'up' : 'down',
+            colorClass: 'bg-red-100 text-red-600'
+          },
+          {
+            title: 'Выручка за период',
+            value: `${Number(ordersStats['totalRevenue'] ?? 0).toLocaleString('ru-RU')} BYN`,
+            change: `${ordersStats['revenueGrowthPercent'] ?? 0}%`,
+            icon: 'revenue',
+            trend: Number(ordersStats['revenueGrowthPercent'] ?? 0) >= 0 ? 'up' : 'down',
+            colorClass: 'bg-green-100 text-green-600'
+          },
+          {
+            title: 'Approval rate',
+            value: `${verificationRate['approvalRate'] ?? 0}%`,
+            change: `approved: ${verificationRate['approved'] ?? 0}`,
+            icon: 'verification',
+            trend: Number(verificationRate['approvalRate'] ?? 0) >= 50 ? 'up' : 'down',
+            colorClass: 'bg-indigo-100 text-indigo-600'
           }
         ];
-      },
-      error: (error) => console.error('Error loading stats:', error)
-    });
-
-    this.adminService.getPendingVerificationRequests().subscribe({
-      next: (requests) => {
-        this.registrationRequests = requests.slice(0, 5);
+        this.registrationRequests = recentRegistrations.slice(0, 5);
+        this.supportTickets = recentSupportTickets.slice(0, 5);
+        this.registrationActivity = registrationActivity.map((point: RegistrationActivityPoint) => ({
+          date: point.date,
+          count: Number(point.count)
+        }));
+        void this.initUsersChart();
         this.isLoading = false;
       },
-      error: (error) => {
-        console.error('Error loading verification requests:', error);
+      error: (error: unknown) => {
+        console.error('Error loading dashboard data:', error);
         this.isLoading = false;
       }
     });
+  }
 
-    this.chatService.getAllTickets().subscribe({
-      next: (tickets) => {
-        this.supportTickets = tickets.filter(t => t.status !== 'CLOSED').slice(0, 5);
+  private async initUsersChart(): Promise<void> {
+    const ctx = this.usersChart?.nativeElement.getContext('2d');
+    if (!ctx) {
+      return;
+    }
+
+    const { default: Chart } = await this.loadChartModule();
+
+    this.chartInstance?.destroy();
+    this.chartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: this.registrationActivity.map(point => new Date(point.date).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })),
+        datasets: [{
+          label: 'Новые пользователи',
+          data: this.registrationActivity.map(point => point.count),
+          backgroundColor: 'rgba(79, 70, 229, 0.1)',
+          borderColor: 'rgba(79, 70, 229, 1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4
+        }]
       },
-      error: (error) => console.error('Error loading tickets:', error)
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true } },
+        plugins: { legend: { display: false } }
+      }
     });
   }
 
-  private initUsersChart() {
-    const ctx = this.usersChart?.nativeElement.getContext('2d');
-    if (ctx) {
-      this.chartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: ['Неделя 1', 'Неделя 2', 'Неделя 3', 'Неделя 4'],
-          datasets: [{
-            label: 'Новые пользователи',
-            data: [5, 12, 8, 25],
-            backgroundColor: 'rgba(79, 70, 229, 0.1)',
-            borderColor: 'rgba(79, 70, 229, 1)',
-            borderWidth: 2,
-            fill: true,
-            tension: 0.4
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: { y: { beginAtZero: true } },
-          plugins: { legend: { display: false } }
-        }
-      });
+  private loadChartModule(): Promise<ChartModule> {
+    if (!this.chartModulePromise) {
+      this.chartModulePromise = import('chart.js/auto');
     }
+
+    return this.chartModulePromise;
   }
 
   getRoleClass(role: string): string {
@@ -143,7 +182,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     const classes: { [key: string]: string } = {
       'OPEN': 'bg-red-100 text-red-800',
       'IN_PROGRESS': 'bg-yellow-100 text-yellow-800',
-      'RESOLVED': 'bg-gray-100 text-gray-800'
+      'RESOLVED': 'bg-gray-100 text-gray-800',
+      'CLOSED': 'bg-gray-100 text-gray-800'
     };
     return classes[status] || 'bg-gray-100 text-gray-800';
   }

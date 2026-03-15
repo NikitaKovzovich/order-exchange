@@ -28,6 +28,7 @@ public record SupplierAnalyticsResponse(
 			long paymentProblem,
 			long awaitingShipment,
 			long shipped,
+			long awaitingCorrection,
 			long delivered,
 			long closed
 	) {}

@@ -8,14 +8,14 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Товар (Read Model для CQRS)
- * Основная сущность каталога
- *
- * Жизненный цикл статусов:
- * DRAFT -> PUBLISHED -> ARCHIVED
- * PUBLISHED -> DRAFT (при редактировании)
- */
+
+
+
+
+
+
+
+
 @Entity
 @Table(name = "product", indexes = {
 	@Index(name = "idx_supplier_id", columnList = "supplier_id"),
@@ -87,21 +87,21 @@ public class Product {
 	@OneToOne(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
 	private Inventory inventory;
 
-	/**
-	 * Статусы товара
-	 */
+
+
+
 	public enum ProductStatus {
-		DRAFT,      // Черновик - виден только поставщику
-		PUBLISHED,  // Опубликован - виден в каталоге
-		ARCHIVED    // Архивирован - снят с продажи
+		DRAFT,
+		PUBLISHED,
+		ARCHIVED
 	}
 
-	// ========== Бизнес-методы для CQRS ==========
 
-	/**
-	 * Опубликовать товар
-	 * @throws IllegalStateException если товар уже опубликован или архивирован
-	 */
+
+
+
+
+
 	public void publish() {
 		if (status == ProductStatus.ARCHIVED) {
 			throw new IllegalStateException("Cannot publish archived product");
@@ -109,9 +109,9 @@ public class Product {
 		this.status = ProductStatus.PUBLISHED;
 	}
 
-	/**
-	 * Перевести в черновик (для редактирования)
-	 */
+
+
+
 	public void toDraft() {
 		if (status == ProductStatus.ARCHIVED) {
 			throw new IllegalStateException("Cannot move archived product to draft");
@@ -119,56 +119,63 @@ public class Product {
 		this.status = ProductStatus.DRAFT;
 	}
 
-	/**
-	 * Архивировать товар
-	 */
+
+
+
 	public void archive() {
 		this.status = ProductStatus.ARCHIVED;
 	}
 
-	/**
-	 * Проверить доступность для заказа
-	 */
+
+
+
+	public void showByAdmin() {
+		this.status = ProductStatus.PUBLISHED;
+	}
+
+
+
+
 	public boolean isAvailable() {
 		return status == ProductStatus.PUBLISHED &&
 			inventory != null &&
 			inventory.getQuantityAvailable() > 0;
 	}
 
-	/**
-	 * Получить доступное количество
-	 */
+
+
+
 	public int getAvailableQuantity() {
 		return inventory != null ? inventory.getQuantityAvailable() : 0;
 	}
 
-	/**
-	 * Рассчитать цену с НДС
-	 */
+
+
+
 	public BigDecimal getPriceWithVat() {
 		if (vatRate == null) return pricePerUnit;
 		return vatRate.calculatePriceWithVat(pricePerUnit);
 	}
 
-	/**
-	 * Проверить срок годности
-	 */
+
+
+
 	public boolean isExpired() {
 		return expiryDate != null && expiryDate.isBefore(LocalDate.now());
 	}
 
-	/**
-	 * Проверить, истекает ли срок годности скоро (в течение 30 дней)
-	 */
+
+
+
 	public boolean isExpiringSoon() {
 		if (expiryDate == null) return false;
 		LocalDate warningDate = LocalDate.now().plusDays(30);
 		return expiryDate.isBefore(warningDate) && !isExpired();
 	}
 
-	/**
-	 * Получить основное изображение
-	 */
+
+
+
 	public ProductImage getPrimaryImage() {
 		return images.stream()
 				.filter(ProductImage::getIsPrimary)

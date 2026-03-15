@@ -57,6 +57,14 @@ public class EventPublisher {
 				Map.of("productId", product.getId()));
 	}
 
+	public void publishProductDeleted(Product product) {
+		publish("Product", product.getId().toString(), "PRODUCT_DELETED",
+				Map.of("productId", product.getId(),
+					"supplierId", product.getSupplierId(),
+					"sku", product.getSku(),
+					"name", product.getName()));
+	}
+
 	public void publishInventoryUpdated(Inventory inventory, String reason) {
 		publish("Inventory", inventory.getProductId().toString(), Event.EventTypes.INVENTORY_UPDATED,
 				Map.of("productId", inventory.getProductId(),

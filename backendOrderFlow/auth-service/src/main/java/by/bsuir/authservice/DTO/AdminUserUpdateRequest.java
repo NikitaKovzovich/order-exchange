@@ -21,4 +21,3 @@ public class AdminUserUpdateRequest {
 	private String chiefAccountantName;
 	private String paymentTerms;
 }
-

@@ -41,8 +41,9 @@ public class ChatController {
 	@GetMapping
 	@Operation(summary = "Получить список чатов пользователя")
 	public ResponseEntity<ApiResponse<List<ChatChannelResponse>>> getUserChannels(
-			@Parameter(description = "ID пользователя") @RequestHeader("X-User-Id") Long userId) {
-		List<ChatChannelResponse> response = chatService.getUserChannels(userId);
+			@Parameter(description = "ID пользователя") @RequestHeader("X-User-Id") Long userId,
+			@RequestParam(required = false) @Parameter(description = "Search by channel name or order ID") String search) {
+		List<ChatChannelResponse> response = chatService.getUserChannels(userId, search);
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 

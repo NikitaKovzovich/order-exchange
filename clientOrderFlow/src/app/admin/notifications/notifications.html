@@ -2,33 +2,50 @@
   <admin-header [title]="'Уведомления'"></admin-header>
 
   <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
+    <div class="mb-4 rounded-lg bg-white px-4 py-3 text-sm text-gray-600 shadow-sm">
+      <span *ngIf="unreadCount > 0"><span class="font-semibold text-indigo-600">{{ unreadCount }}</span> непрочитанных уведомлений</span>
+      <span *ngIf="unreadCount === 0">Все уведомления прочитаны</span>
+    </div>
+
     <div class="mb-4 flex justify-end">
       <button (click)="markAllAsRead()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
         Отметить все как прочитанные
       </button>
     </div>
-    <div class="space-y-3">
-      <div *ngFor="let notification of notifications"
-           (click)="markAsRead(notification)"
-           [class.bg-indigo-50]="!notification.read"
-           class="bg-white rounded-lg shadow p-4 cursor-pointer hover:shadow-md transition-shadow">
+
+    <div *ngIf="isLoading" class="mb-4 rounded-lg bg-white p-8 text-center text-gray-500 shadow-sm">
+      Загрузка уведомлений...
+    </div>
+
+    <div *ngIf="!isLoading && notifications.length === 0" class="mb-4 rounded-lg bg-white p-8 text-center text-gray-500 shadow-sm">
+      Уведомлений пока нет.
+    </div>
+
+    <div class="space-y-3" *ngIf="!isLoading && notifications.length > 0">
+      <div
+        *ngFor="let notification of notifications"
+        (click)="markAsRead(notification)"
+        [class.bg-indigo-50]="!notification.isRead"
+        class="cursor-pointer rounded-lg bg-white p-4 shadow transition-shadow hover:shadow-md"
+      >
         <div class="flex items-start">
           <div class="flex-shrink-0">
-            <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
-              <svg class="h-5 w-5 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-              </svg>
+            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100">
+              <span class="text-lg text-indigo-600">•</span>
             </div>
           </div>
+
           <div class="ml-4 flex-1">
             <div class="flex items-center justify-between">
               <h4 class="text-sm font-semibold text-gray-900">{{ notification.title }}</h4>
-              <span *ngIf="!notification.read" class="h-2 w-2 bg-indigo-600 rounded-full"></span>
+              <span *ngIf="!notification.isRead" class="h-2 w-2 rounded-full bg-indigo-600"></span>
             </div>
-            <p class="text-sm text-gray-600 mt-1">{{ notification.message }}</p>
-            <p class="text-xs text-gray-400 mt-2">{{ notification.createdAt }}</p>
+
+            <p class="mt-1 text-sm text-gray-600">{{ notification.message }}</p>
+            <p class="mt-2 text-xs text-gray-400">{{ notification.createdAt }}</p>
           </div>
         </div>
       </div>
     </div>
   </main>
+</div>

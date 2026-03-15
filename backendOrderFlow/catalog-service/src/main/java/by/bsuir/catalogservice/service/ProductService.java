@@ -23,27 +23,55 @@ public class ProductService {
 	private final UnitOfMeasureRepository unitRepository;
 	private final VatRateRepository vatRateRepository;
 	private final InventoryRepository inventoryRepository;
+	private final PartnershipRepository partnershipRepository;
 	private final EventPublisher eventPublisher;
 
-	public PageResponse<ProductResponse> getSupplierProducts(Long supplierId, int page, int size) {
+	public PageResponse<ProductResponse> getSupplierProducts(Long supplierId, String search, int page, int size) {
 		Pageable pageable = PageRequest.of(page, size, Sort.by("name"));
-		Page<Product> products = productRepository.findBySupplierId(supplierId, pageable);
+		String normalizedSearch = search != null && !search.trim().isEmpty() ? search.trim() : null;
+		Page<Product> products = normalizedSearch == null
+				? productRepository.findBySupplierId(supplierId, pageable)
+				: productRepository.searchSupplierProducts(supplierId, normalizedSearch, pageable);
 		return toPageResponse(products);
 	}
 
+
 	public PageResponse<ProductResponse> searchProducts(ProductSearchRequest request) {
+		return searchProducts(request, null);
+	}
+
+
+	public PageResponse<ProductResponse> searchProducts(ProductSearchRequest request, Long customerCompanyId) {
 		Sort sort = request.sortDir().equalsIgnoreCase("desc")
 				? Sort.by(request.sortBy()).descending()
 				: Sort.by(request.sortBy()).ascending();
 		Pageable pageable = PageRequest.of(request.page(), request.size(), sort);
 
-		Page<Product> products = productRepository.searchProducts(
-				request.categoryId(),
-				request.supplierId(),
-				request.minPrice(),
-				request.maxPrice(),
-				request.search(),
-				pageable);
+		Page<Product> products;
+
+		if (customerCompanyId != null) {
+			List<Long> activeSupplierIds = partnershipRepository.findActiveSupplierIdsByCustomerId(customerCompanyId);
+			if (activeSupplierIds.isEmpty()) {
+
+				return new PageResponse<>(List.of(), 0, request.size(), 0, 0, true, true);
+			}
+			products = productRepository.searchProductsByPartners(
+					activeSupplierIds,
+					request.categoryId(),
+					request.supplierId(),
+					request.minPrice(),
+					request.maxPrice(),
+					request.search(),
+					pageable);
+		} else {
+			products = productRepository.searchProducts(
+					request.categoryId(),
+					request.supplierId(),
+					request.minPrice(),
+					request.maxPrice(),
+					request.search(),
+					pageable);
+		}
 
 		return toPageResponse(products);
 	}
@@ -77,6 +105,7 @@ public class ProductService {
 				.unit(unit)
 				.vatRate(vatRate)
 				.weight(request.weight())
+				.packageDimensions(request.packageDimensions())
 				.countryOfOrigin(request.countryOfOrigin())
 				.productionDate(request.productionDate())
 				.expiryDate(request.expiryDate())
@@ -106,7 +135,7 @@ public class ProductService {
 		}
 
 		if (!product.getSku().equals(request.sku()) &&
-			productRepository.existsBySupplierIdAndSku(supplierId, request.sku())) {
+				productRepository.existsBySupplierIdAndSku(supplierId, request.sku())) {
 			throw new DuplicateResourceException("Product", "sku", request.sku());
 		}
 
@@ -125,6 +154,7 @@ public class ProductService {
 		product.setUnit(unit);
 		product.setVatRate(vatRate);
 		product.setWeight(request.weight());
+		product.setPackageDimensions(request.packageDimensions());
 		product.setCountryOfOrigin(request.countryOfOrigin());
 		product.setProductionDate(request.productionDate());
 		product.setExpiryDate(request.expiryDate());
@@ -178,6 +208,64 @@ public class ProductService {
 		return mapToResponse(product);
 	}
 
+	@Transactional
+	public void deleteProduct(Long id, Long supplierId) {
+		Product product = productRepository.findById(id)
+				.orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
+
+		if (!product.getSupplierId().equals(supplierId)) {
+			throw new InvalidOperationException("delete", "Product does not belong to this supplier");
+		}
+
+		productRepository.delete(product);
+		eventPublisher.publishProductDeleted(product);
+	}
+
+
+	@Transactional
+	public ProductResponse adminHideProduct(Long id) {
+		Product product = productRepository.findById(id)
+				.orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
+		product.archive();
+		product = productRepository.save(product);
+		return mapToResponse(product);
+	}
+
+
+	@Transactional
+	public ProductResponse adminShowProduct(Long id) {
+		Product product = productRepository.findById(id)
+				.orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
+		product.showByAdmin();
+		product = productRepository.save(product);
+		return mapToResponse(product);
+	}
+
+
+	@Transactional
+	public void adminDeleteProduct(Long id) {
+		Product product = productRepository.findById(id)
+				.orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
+		productRepository.delete(product);
+	}
+
+
+	@Transactional
+	public int publishCatalog(Long supplierId) {
+		List<Product> drafts = productRepository.findBySupplierIdAndStatus(supplierId, Product.ProductStatus.DRAFT);
+		for (Product product : drafts) {
+			product.publish();
+		}
+		productRepository.saveAll(drafts);
+		return drafts.size();
+	}
+
+
+	@Transactional
+	public int updateCatalog(Long supplierId) {
+		return publishCatalog(supplierId);
+	}
+
 	private ProductResponse mapToResponse(Product product) {
 		int availableQty = 0;
 		if (product.getInventory() != null) {
@@ -203,6 +291,7 @@ public class ProductService {
 				product.getVatRate().getDescription(),
 				product.getVatRate().getRatePercentage(),
 				product.getWeight(),
+				product.getPackageDimensions(),
 				product.getCountryOfOrigin(),
 				product.getProductionDate(),
 				product.getExpiryDate(),
@@ -227,5 +316,21 @@ public class ProductService {
 				page.isFirst(),
 				page.isLast()
 		);
+	}
+
+
+	public PageResponse<ProductResponse> getAdminProducts(Long supplierId, Long categoryId, String status, String search, int page, int size) {
+		Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+		Product.ProductStatus statusEnum = null;
+		if (status != null && !status.isBlank()) {
+			try {
+				statusEnum = Product.ProductStatus.valueOf(status.toUpperCase());
+			} catch (IllegalArgumentException e) {
+
+			}
+		}
+		String searchTerm = (search != null && !search.isBlank()) ? search : null;
+		Page<Product> products = productRepository.findAllForAdmin(supplierId, categoryId, statusEnum, searchTerm, pageable);
+		return toPageResponse(products);
 	}
 }

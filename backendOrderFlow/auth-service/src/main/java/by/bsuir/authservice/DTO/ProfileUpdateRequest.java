@@ -19,4 +19,3 @@ public class ProfileUpdateRequest {
 	private String chiefAccountantName;
 	private String paymentTerms;
 }
-

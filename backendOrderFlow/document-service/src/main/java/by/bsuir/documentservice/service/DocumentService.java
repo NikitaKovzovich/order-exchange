@@ -27,12 +27,12 @@ public class DocumentService {
 	private final DocumentTypeRepository documentTypeRepository;
 	private final MinioService minioService;
 
-	// ===================== Inter-service methods =====================
 
-	/**
-	 * Simple upload for inter-service calls (no DocumentType required).
-	 * Stores file in MinIO and saves metadata with entity_type from serviceSource.
-	 */
+
+
+
+
+
 	@Transactional
 	public String uploadFileSimple(MultipartFile file, String folder, String serviceSource,
 								Long ownerId, String ownerType) {
@@ -44,7 +44,7 @@ public class DocumentService {
 				mimeType = "application/octet-stream";
 			}
 
-			// Resolve document type or use a default one
+
 			DocumentType docType = documentTypeRepository.findByCode("GENERAL")
 					.orElseGet(() -> {
 						DocumentType dt = DocumentType.builder()
@@ -66,7 +66,7 @@ public class DocumentService {
 					.fileKey(fileKey)
 					.fileSize(file.getSize())
 					.mimeType(mimeType)
-					.uploadedBy(0L) // system upload
+					.uploadedBy(0L)
 					.build();
 
 			documentRepository.save(document);
@@ -79,9 +79,9 @@ public class DocumentService {
 		}
 	}
 
-	/**
-	 * Get presigned URL by fileKey (MinIO object key).
-	 */
+
+
+
 	public String getPresignedUrlByKey(String fileKey) {
 		try {
 			return minioService.getPresignedUrl(fileKey, 3600);
@@ -91,9 +91,9 @@ public class DocumentService {
 		}
 	}
 
-	/**
-	 * Delete document and file by fileKey (MinIO object key).
-	 */
+
+
+
 	@Transactional
 	public void deleteByFileKey(String fileKey) {
 		try {
@@ -106,7 +106,7 @@ public class DocumentService {
 		}
 	}
 
-	// ===================== Standard methods =====================
+
 
 	@Transactional
 	public DocumentResponse uploadDocument(MultipartFile file, UploadDocumentRequest request, Long userId) {

@@ -57,7 +57,7 @@ class AdminIntegrationTest {
 
 	@BeforeEach
 	void setUp() {
-		// Generate unique identifiers for each test run
+
 		uniqueId = UUID.randomUUID().toString().substring(0, 8);
 		String uniqueTaxId = uniqueId + "12345";
 		adminEmail = "admin" + uniqueId + "@test.com";

@@ -31,6 +31,8 @@ public record ProductRequest(
 	@DecimalMin(value = "0", message = "Weight must be non-negative")
 	BigDecimal weight,
 
+	String packageDimensions,
+
 	String countryOfOrigin,
 	LocalDate productionDate,
 	LocalDate expiryDate,

@@ -3,9 +3,8 @@
   <p class="text-gray-600 mt-2">Управление партнерскими отношениями с поставщиками</p>
 </div>
 
-<!-- Поиск и фильтры -->
 <div class="bg-white p-6 rounded-lg shadow mb-6">
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <div class="md:col-span-2">
       <label class="block text-sm font-medium text-gray-700 mb-2">Поиск по названию</label>
       <input
@@ -15,25 +14,12 @@
         placeholder="Введите название поставщика..."
         class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
     </div>
-
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-2">Категория</label>
-      <select
-        [(ngModel)]="selectedCategory"
-        (change)="applyFilters()"
-        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
-        <option *ngFor="let category of categories" [value]="category">{{ category }}</option>
-      </select>
-    </div>
-
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-2">Рейтинг</label>
-      <select
-        [(ngModel)]="selectedRating"
-        (change)="applyFilters()"
-        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
-        <option *ngFor="let rating of ratings" [value]="rating">{{ rating }}</option>
-      </select>
+    <div class="flex items-end">
+      <button
+        (click)="applyFilters()"
+        class="w-full px-4 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+        Найти
+      </button>
     </div>
   </div>
 
@@ -47,56 +33,68 @@
   </div>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<div *ngIf="errorMessage" class="bg-red-50 text-red-700 border border-red-200 rounded-lg px-4 py-3 mb-6">
+  {{ errorMessage }}
+</div>
+
+<div *ngIf="isLoading" class="bg-white p-10 rounded-lg shadow text-center text-gray-500">
+  Загрузка поставщиков...
+</div>
+
+<div *ngIf="!isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
   <div *ngFor="let supplier of filteredSuppliers" class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6">
     <div class="flex items-start justify-between mb-4">
       <div class="flex items-center">
         <div class="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg">
-          {{ supplier.name.charAt(0) }}
+          {{ supplier.companyName.charAt(0) }}
         </div>
         <div class="ml-3">
-          <h3 class="text-lg font-semibold">{{ supplier.name }}</h3>
-          <p class="text-sm text-gray-500">{{ supplier.category }}</p>
+          <h3 class="text-lg font-semibold">{{ supplier.companyName }}</h3>
+          <p class="text-sm text-gray-500">УНП: {{ supplier.taxId }}</p>
         </div>
       </div>
     </div>
 
     <div class="space-y-2 mb-4">
-      <div class="flex items-center text-sm">
-        <svg class="h-4 w-4 text-yellow-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-        </svg>
-        <span class="font-semibold">{{ supplier.rating }}</span>
-        <span class="text-gray-500 ml-2">рейтинг</span>
-      </div>
-      <div class="flex items-center text-sm text-gray-600">
-        <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-        </svg>
-        {{ supplier.products }} товаров
+      <div>
+        <span [ngClass]="getStatusClass(supplier.partnershipStatus)" class="inline-flex text-xs font-semibold px-2.5 py-1 rounded-full">
+          {{ getStatusLabel(supplier.partnershipStatus) }}
+        </span>
       </div>
       <div class="flex items-center text-sm text-gray-600">
         <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
         </svg>
-        {{ supplier.contact }}
+        {{ supplier.contactPhone }}
       </div>
     </div>
 
     <div class="flex space-x-2">
-      <a
-        [href]="'/retail/suppliers/' + supplier.id + '/catalog'"
+      <button
+        *ngIf="supplier.partnershipStatus === 'NEW'"
+        (click)="requestPartnership(supplier)"
+        [disabled]="isSubmitting[supplier.companyId]"
+        class="flex-1 bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 disabled:bg-indigo-300 text-sm text-center block">
+        {{ isSubmitting[supplier.companyId] ? 'Отправка...' : 'Отправить запрос' }}
+      </button>
+      <button
+        *ngIf="supplier.partnershipStatus === 'ACTIVE'"
+        (click)="openSupplierCatalog(supplier)"
         class="flex-1 bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 text-sm text-center block">
-        Каталог
-      </a>
-      <button class="flex-1 border border-gray-300 text-gray-700 py-2 rounded-md hover:bg-gray-50 text-sm">
-        Контакты
+        Перейти в каталог
+      </button>
+      <button
+        *ngIf="supplier.partnershipStatus === 'PENDING'"
+        type="button"
+        disabled
+        class="flex-1 border border-yellow-300 bg-yellow-50 text-yellow-700 py-2 rounded-md text-sm">
+        Запрос отправлен
       </button>
     </div>
   </div>
 </div>
 
-<div *ngIf="filteredSuppliers.length === 0" class="bg-white p-12 rounded-lg shadow text-center">
+<div *ngIf="!isLoading && filteredSuppliers.length === 0" class="bg-white p-12 rounded-lg shadow text-center">
   <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
   </svg>

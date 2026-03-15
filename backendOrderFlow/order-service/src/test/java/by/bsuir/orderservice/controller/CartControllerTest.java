@@ -139,11 +139,13 @@ class CartControllerTest {
 		CheckoutRequest request = new CheckoutRequest("Test Address", LocalDate.now().plusDays(3), null);
 
 		OrderResponse orderResponse = new OrderResponse(
-				1L, "ORD-12345678", 10L, 1L,
+				1L, "ORD-12345678", 10L, "Компания #10", 1L, "Компания #1",
 				"PENDING_CONFIRMATION", "Ожидает подтверждения",
 				"Test Address", LocalDate.now().plusDays(3),
 				new BigDecimal("500.00"), new BigDecimal("100.00"),
-				List.of(), LocalDateTime.now(), null
+				null, null, null, false,
+				List.of(), List.of(), List.of(), List.of(),
+				LocalDateTime.now(), null
 		);
 
 		CheckoutResponse checkoutResponse = new CheckoutResponse(

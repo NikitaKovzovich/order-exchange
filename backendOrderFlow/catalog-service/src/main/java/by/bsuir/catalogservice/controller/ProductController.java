@@ -27,6 +27,7 @@ public class ProductController {
 		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Products found successfully")
 	})
 	public ResponseEntity<ApiResponse<PageResponse<ProductResponse>>> searchProducts(
+			@RequestHeader(value = "X-User-Company-Id", required = false) @Parameter(hidden = true) Long customerCompanyId,
 			@RequestParam(required = false) @Parameter(description = "Filter by category ID") Long categoryId,
 			@RequestParam(required = false) @Parameter(description = "Filter by supplier ID") Long supplierId,
 			@RequestParam(required = false) @Parameter(description = "Minimum price filter") BigDecimal minPrice,
@@ -49,7 +50,7 @@ public class ProductController {
 				sortDir
 		);
 
-		PageResponse<ProductResponse> products = productService.searchProducts(request);
+		PageResponse<ProductResponse> products = productService.searchProducts(request, customerCompanyId);
 		return ResponseEntity.ok(ApiResponse.success(products));
 	}
 
@@ -72,9 +73,10 @@ public class ProductController {
 	})
 	public ResponseEntity<ApiResponse<PageResponse<ProductResponse>>> getSupplierProducts(
 			@RequestHeader("X-User-Company-Id") @Parameter(hidden = true) Long supplierId,
+			@RequestParam(required = false) @Parameter(description = "Search by product name, SKU or description") String search,
 			@RequestParam(defaultValue = "0") @Parameter(description = "Page number") int page,
 			@RequestParam(defaultValue = "20") @Parameter(description = "Page size") int size) {
-		PageResponse<ProductResponse> products = productService.getSupplierProducts(supplierId, page, size);
+		PageResponse<ProductResponse> products = productService.getSupplierProducts(supplierId, search, page, size);
 		return ResponseEntity.ok(ApiResponse.success(products));
 	}
 
@@ -152,5 +154,97 @@ public class ProductController {
 			@RequestHeader("X-User-Company-Id") @Parameter(hidden = true) Long supplierId) {
 		ProductResponse product = productService.toDraft(id, supplierId);
 		return ResponseEntity.ok(ApiResponse.success(product, "Product moved to draft"));
+	}
+
+	@DeleteMapping("/{id}")
+	@Operation(summary = "Delete a product", description = "Permanently delete a product. Supplier only.")
+	@ApiResponses(value = {
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Product deleted successfully"),
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Product does not belong to supplier"),
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Product not found")
+	})
+	public ResponseEntity<ApiResponse<Void>> deleteProduct(
+			@PathVariable @Parameter(description = "Product ID") Long id,
+			@RequestHeader("X-User-Company-Id") @Parameter(hidden = true) Long supplierId) {
+		productService.deleteProduct(id, supplierId);
+		return ResponseEntity.ok(ApiResponse.success(null, "Product deleted successfully"));
+	}
+
+	@PostMapping("/publish-catalog")
+	@Operation(summary = "Publish all draft products", description = "Publish all DRAFT products for this supplier. (#16)")
+	@ApiResponses(value = {
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Catalog published")
+	})
+	public ResponseEntity<ApiResponse<Integer>> publishCatalog(
+			@RequestHeader("X-User-Company-Id") @Parameter(hidden = true) Long supplierId) {
+		int count = productService.publishCatalog(supplierId);
+		return ResponseEntity.ok(ApiResponse.success(count, count + " products published"));
+	}
+
+	@PostMapping("/update-catalog")
+	@Operation(summary = "Publish new draft products", description = "Publish only new DRAFT products (added after last publish). (#16)")
+	@ApiResponses(value = {
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Catalog updated")
+	})
+	public ResponseEntity<ApiResponse<Integer>> updateCatalog(
+			@RequestHeader("X-User-Company-Id") @Parameter(hidden = true) Long supplierId) {
+		int count = productService.updateCatalog(supplierId);
+		return ResponseEntity.ok(ApiResponse.success(count, count + " new products published"));
+	}
+
+
+
+	@PostMapping("/{id}/hide")
+	@Operation(summary = "Hide product (admin)", description = "Admin hides product → ARCHIVED (#18)")
+	public ResponseEntity<ApiResponse<ProductResponse>> adminHideProduct(
+			@PathVariable @Parameter(description = "Product ID") Long id,
+			@RequestHeader("X-User-Role") @Parameter(hidden = true) String role) {
+		if (!"ADMIN".equalsIgnoreCase(role)) {
+			return ResponseEntity.status(403).body(ApiResponse.error("Admin role required"));
+		}
+		ProductResponse product = productService.adminHideProduct(id);
+		return ResponseEntity.ok(ApiResponse.success(product, "Product hidden by admin"));
+	}
+
+	@PostMapping("/{id}/show")
+	@Operation(summary = "Show product (admin)", description = "Admin shows product → PUBLISHED (#18)")
+	public ResponseEntity<ApiResponse<ProductResponse>> adminShowProduct(
+			@PathVariable @Parameter(description = "Product ID") Long id,
+			@RequestHeader("X-User-Role") @Parameter(hidden = true) String role) {
+		if (!"ADMIN".equalsIgnoreCase(role)) {
+			return ResponseEntity.status(403).body(ApiResponse.error("Admin role required"));
+		}
+		ProductResponse product = productService.adminShowProduct(id);
+		return ResponseEntity.ok(ApiResponse.success(product, "Product shown by admin"));
+	}
+
+	@DeleteMapping("/{id}/admin")
+	@Operation(summary = "Delete product (admin)", description = "Admin deletes product without supplier check (#18)")
+	public ResponseEntity<ApiResponse<Void>> adminDeleteProduct(
+			@PathVariable @Parameter(description = "Product ID") Long id,
+			@RequestHeader("X-User-Role") @Parameter(hidden = true) String role) {
+		if (!"ADMIN".equalsIgnoreCase(role)) {
+			return ResponseEntity.status(403).body(ApiResponse.error("Admin role required"));
+		}
+		productService.adminDeleteProduct(id);
+		return ResponseEntity.ok(ApiResponse.success(null, "Product deleted by admin"));
+	}
+
+	@GetMapping("/admin/all")
+	@Operation(summary = "Get all products for admin moderation (#P6)",
+			description = "Returns all products across all suppliers with optional filters")
+	public ResponseEntity<ApiResponse<PageResponse<ProductResponse>>> getAdminProducts(
+			@RequestHeader("X-User-Role") @Parameter(hidden = true) String role,
+			@RequestParam(required = false) @Parameter(description = "Filter by supplier ID") Long supplierId,
+			@RequestParam(required = false) @Parameter(description = "Filter by category ID") Long categoryId,
+			@RequestParam(required = false) @Parameter(description = "Filter by status") String status,
+			@RequestParam(required = false) @Parameter(description = "Search by name") String search,
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "20") int size) {
+		if (!"ADMIN".equalsIgnoreCase(role)) {
+			return ResponseEntity.status(403).body(ApiResponse.error("Admin role required"));
+		}
+		PageResponse<ProductResponse> products = productService.getAdminProducts(supplierId, categoryId, status, search, page, size);
+		return ResponseEntity.ok(ApiResponse.success(products));
 	}
 }

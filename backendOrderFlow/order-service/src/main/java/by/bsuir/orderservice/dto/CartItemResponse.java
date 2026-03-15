@@ -3,9 +3,9 @@ package by.bsuir.orderservice.dto;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/**
- * Ответ с информацией о позиции корзины
- */
+
+
+
 public record CartItemResponse(
 	Long id,
 	Long productId,

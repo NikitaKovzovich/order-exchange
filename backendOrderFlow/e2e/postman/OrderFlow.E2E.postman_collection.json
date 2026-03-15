@@ -1,0 +1,1377 @@
+{
+  "info": {
+    "_postman_id": "orderflow-e2e-business-flows-2026-03-14",
+    "name": "OrderFlow — E2E Business Flows",
+    "description": "E2E-коллекция по основным бизнес-флоу ТЗ для ролей ADMIN / SUPPLIER / RETAIL_CHAIN. Запускать сверху вниз через Postman Runner или Newman через `run-e2e.ps1`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get('runId')) {",
+          "    const runId = Date.now().toString();",
+          "    const supplierTail = ('7' + runId.slice(-8)).slice(-9);",
+          "    const retailTail = ('8' + runId.slice(-8)).slice(-9);",
+          "    pm.collectionVariables.set('runId', runId);",
+          "    pm.collectionVariables.set('newSupplierEmail', 'e2e-supplier-' + runId + '@example.test');",
+          "    pm.collectionVariables.set('newRetailEmail', 'e2e-retail-' + runId + '@example.test');",
+          "    pm.collectionVariables.set('newSupplierTaxId', supplierTail);",
+          "    pm.collectionVariables.set('newRetailTaxId', retailTail);",
+          "    pm.collectionVariables.set('generatedProductSku', 'E2E-MILK-' + runId);",
+          "    pm.collectionVariables.set('generatedProductName', 'E2E Молоко ' + runId);",
+          "    pm.collectionVariables.set('generatedContractNumber', 'E2E-CONTRACT-' + runId);",
+          "    pm.collectionVariables.set('generatedSupportSubject', 'E2E Support ' + runId);",
+          "    pm.collectionVariables.set('generatedSupportMessage', 'Автотестовый тикет ' + runId);",
+          "    pm.collectionVariables.set('paymentReference', 'PAY-' + runId);",
+          "    pm.collectionVariables.set('legacyPaymentKey', 'legacy-payment-key-' + runId);",
+          "}",
+          "pm.collectionVariables.set('lastRequestName', pm.info.requestName || '');",
+          "pm.collectionVariables.set('lastRequestMethod', pm.request.method);",
+          "pm.collectionVariables.set('lastRequestUrl', pm.request.url.toString());"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.collectionVariables.set('lastResponseCode', String(pm.response.code));",
+          "pm.collectionVariables.set('lastResponseBody', pm.response.text());",
+          "pm.collectionVariables.set('lastResponseHeaders', JSON.stringify(pm.response.headers.toObject()));"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    { "key": "runId", "value": "" },
+    { "key": "newSupplierEmail", "value": "" },
+    { "key": "newRetailEmail", "value": "" },
+    { "key": "newSupplierTaxId", "value": "" },
+    { "key": "newRetailTaxId", "value": "" },
+    { "key": "generatedProductSku", "value": "" },
+    { "key": "generatedProductName", "value": "" },
+    { "key": "generatedContractNumber", "value": "" },
+    { "key": "generatedSupportSubject", "value": "" },
+    { "key": "generatedSupportMessage", "value": "" },
+    { "key": "paymentReference", "value": "" },
+    { "key": "legacyPaymentKey", "value": "" },
+    { "key": "new_supplier_user_id", "value": "" },
+    { "key": "new_supplier_company_id", "value": "" },
+    { "key": "new_retail_user_id", "value": "" },
+    { "key": "new_retail_company_id", "value": "" },
+    { "key": "supplier_token", "value": "" },
+    { "key": "customer_token", "value": "" },
+    { "key": "admin_token", "value": "" },
+    { "key": "supplier_user_id", "value": "" },
+    { "key": "supplier_company_id", "value": "" },
+    { "key": "customer_user_id", "value": "" },
+    { "key": "customer_company_id", "value": "" },
+    { "key": "admin_user_id", "value": "" },
+    { "key": "category_id", "value": "" },
+    { "key": "unit_id", "value": "" },
+    { "key": "vat_rate_id", "value": "" },
+    { "key": "product_id", "value": "" },
+    { "key": "partnership_id", "value": "" },
+    { "key": "partnership_status", "value": "" },
+    { "key": "pre_partnership_search_count", "value": "" },
+    { "key": "verification_request_id", "value": "" },
+    { "key": "verification_request_id_2", "value": "" },
+    { "key": "order_id", "value": "" },
+    { "key": "order_number", "value": "" },
+    { "key": "order_item_id", "value": "" },
+    { "key": "generated_doc_id", "value": "" },
+    { "key": "discrepancy_order_id", "value": "" },
+    { "key": "discrepancy_order_item_id", "value": "" },
+    { "key": "ticket_id", "value": "" },
+    { "key": "ticket_message_count", "value": "" },
+    { "key": "lastRequestName", "value": "" },
+    { "key": "lastRequestMethod", "value": "" },
+    { "key": "lastRequestUrl", "value": "" },
+    { "key": "lastResponseCode", "value": "" },
+    { "key": "lastResponseBody", "value": "" },
+    { "key": "lastResponseHeaders", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "0. Boot & Accounts",
+      "item": [
+        {
+          "name": "0.1 Gateway Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/actuator/health", "host": ["{{baseUrl}}"], "path": ["actuator", "health"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Gateway health is UP', function () { pm.response.to.have.status(200); });",
+            "if (pm.response.code === 200) {",
+            "    var json = pm.response.json();",
+            "    pm.expect(json.status).to.eql('UP');",
+            "}"
+          ] } }]
+        },
+        {
+          "name": "0.2 Register verification candidate supplier",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "type", "value": "SUPPLIER", "type": "text" },
+                { "key": "email", "value": "{{newSupplierEmail}}", "type": "text" },
+                { "key": "password", "value": "{{newUserPassword}}", "type": "text" },
+                { "key": "passwordConfirm", "value": "{{newUserPassword}}", "type": "text" },
+                { "key": "name", "value": "Е2Е Поставщик {{runId}}", "type": "text" },
+                { "key": "legalName", "value": "ООО Е2Е Поставщик {{runId}}", "type": "text" },
+                { "key": "legalForm", "value": "LLC", "type": "text" },
+                { "key": "taxId", "value": "{{newSupplierTaxId}}", "type": "text" },
+                { "key": "registrationDate", "value": "2024-01-15", "type": "text" },
+                { "key": "contactPhone", "value": "+375291111111", "type": "text" },
+                { "key": "legalAddress", "value": "г. Минск, ул. Автотестовая, 1", "type": "text" },
+                { "key": "postalAddress", "value": "г. Минск, ул. Автотестовая, 1", "type": "text" },
+                { "key": "directorName", "value": "Иванов Иван Иванович", "type": "text" },
+                { "key": "accountantName", "value": "Петрова Анна Сергеевна", "type": "text" },
+                { "key": "bankName", "value": "ОАО Беларусбанк", "type": "text" },
+                { "key": "bankBic", "value": "AKBBBY2X", "type": "text" },
+                { "key": "bankAccount", "value": "BY20AKBB30120000000098765432", "type": "text" },
+                { "key": "paymentTerms", "value": "PREPAYMENT", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Supplier candidate registered', function () { pm.response.to.have.status(201); });",
+            "var json = pm.response.json();",
+            "pm.collectionVariables.set('new_supplier_user_id', String(json.userId));",
+            "pm.collectionVariables.set('new_supplier_company_id', String(json.companyId));",
+            "pm.expect(json.role).to.eql('SUPPLIER');"
+          ] } }]
+        },
+        {
+          "name": "0.3 Register verification candidate retail chain",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "type", "value": "RETAIL_CHAIN", "type": "text" },
+                { "key": "email", "value": "{{newRetailEmail}}", "type": "text" },
+                { "key": "password", "value": "{{newUserPassword}}", "type": "text" },
+                { "key": "passwordConfirm", "value": "{{newUserPassword}}", "type": "text" },
+                { "key": "name", "value": "Е2Е Торговая сеть {{runId}}", "type": "text" },
+                { "key": "legalName", "value": "ОАО Е2Е Торговая сеть {{runId}}", "type": "text" },
+                { "key": "legalForm", "value": "OJSC", "type": "text" },
+                { "key": "taxId", "value": "{{newRetailTaxId}}", "type": "text" },
+                { "key": "registrationDate", "value": "2024-02-20", "type": "text" },
+                { "key": "contactPhone", "value": "+375292222222", "type": "text" },
+                { "key": "legalAddress", "value": "г. Гомель, ул. Автотестовая, 2", "type": "text" },
+                { "key": "deliveryAddresses", "value": "[\"г. Гомель, ул. Мира, 10\"]", "type": "text" },
+                { "key": "directorName", "value": "Сидоров Петр Алексеевич", "type": "text" },
+                { "key": "accountantName", "value": "Климова Мария Олеговна", "type": "text" },
+                { "key": "bankName", "value": "ОАО Приорбанк", "type": "text" },
+                { "key": "bankBic", "value": "PJCBBY2X", "type": "text" },
+                { "key": "bankAccount", "value": "BY90PJCB30120000000055667788", "type": "text" },
+                { "key": "paymentTerms", "value": "DEFERRED_30", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Retail candidate registered', function () { pm.response.to.have.status(201); });",
+            "var json = pm.response.json();",
+            "pm.collectionVariables.set('new_retail_user_id', String(json.userId));",
+            "pm.collectionVariables.set('new_retail_company_id', String(json.companyId));",
+            "pm.expect(json.role).to.eql('RETAIL_CHAIN');"
+          ] } }]
+        },
+        {
+          "name": "0.4 Login seeded supplier",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{supplierEmail}}\",\n  \"password\": \"{{seedPassword}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Seeded supplier login OK', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.collectionVariables.set('supplier_token', json.token);",
+            "pm.collectionVariables.set('supplier_user_id', String(json.userId));",
+            "pm.collectionVariables.set('supplier_company_id', String(json.companyId));",
+            "pm.expect(json.role).to.eql('SUPPLIER');"
+          ] } }]
+        },
+        {
+          "name": "0.5 Login seeded retail chain",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{customerEmail}}\",\n  \"password\": \"{{seedPassword}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Seeded retail login OK', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.collectionVariables.set('customer_token', json.token);",
+            "pm.collectionVariables.set('customer_user_id', String(json.userId));",
+            "pm.collectionVariables.set('customer_company_id', String(json.companyId));",
+            "pm.expect(json.role).to.eql('RETAIL_CHAIN');"
+          ] } }]
+        },
+        {
+          "name": "0.6 Login admin",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{seedPassword}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Admin login OK', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.collectionVariables.set('admin_token', json.token);",
+            "pm.collectionVariables.set('admin_user_id', String(json.userId));",
+            "pm.expect(json.role).to.eql('ADMIN');"
+          ] } }]
+        },
+        {
+          "name": "0.7 Supplier profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{supplier_token}}" },
+              { "key": "X-User-Email", "value": "{{supplierEmail}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/auth/profile", "host": ["{{baseUrl}}"], "path": ["api", "auth", "profile"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Supplier profile returned', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json.role).to.eql('SUPPLIER');"
+          ] } }]
+        },
+        {
+          "name": "0.8 Supplier company profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{supplier_token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/company/{{supplier_company_id}}", "host": ["{{baseUrl}}"], "path": ["api", "auth", "company", "{{supplier_company_id}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Company profile returned', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json).to.have.property('taxId');"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "1. Admin verification & users",
+      "item": [
+        {
+          "name": "1.1 Dashboard stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" },
+              { "key": "X-User-Role", "value": "ADMIN" },
+              { "key": "X-User-Id", "value": "{{admin_user_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/admin/dashboard/stats", "host": ["{{baseUrl}}"], "path": ["api", "admin", "dashboard", "stats"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Admin stats returned', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json).to.have.property('totalUsers');"
+          ] } }]
+        },
+        {
+          "name": "1.2 Find supplier verification request",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" },
+              { "key": "X-User-Role", "value": "ADMIN" },
+              { "key": "X-User-Id", "value": "{{admin_user_id}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/verification?search={{newSupplierTaxId}}&page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "verification"],
+              "query": [
+                { "key": "search", "value": "{{newSupplierTaxId}}" },
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Supplier verification search returned', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json.data.content.length).to.be.above(0);",
+            "pm.collectionVariables.set('verification_request_id', String(json.data.content[0].id));"
+          ] } }]
+        },
+        {
+          "name": "1.3 Approve supplier verification",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" },
+              { "key": "X-User-Role", "value": "ADMIN" },
+              { "key": "X-User-Id", "value": "{{admin_user_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/admin/verification/{{verification_request_id}}/approve", "host": ["{{baseUrl}}"], "path": ["api", "admin", "verification", "{{verification_request_id}}", "approve"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Supplier verification approved', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        },
+        {
+          "name": "1.4 Find retail verification request",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" },
+              { "key": "X-User-Role", "value": "ADMIN" },
+              { "key": "X-User-Id", "value": "{{admin_user_id}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/verification?search={{newRetailTaxId}}&page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "verification"],
+              "query": [
+                { "key": "search", "value": "{{newRetailTaxId}}" },
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Retail verification search returned', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json.data.content.length).to.be.above(0);",
+            "pm.collectionVariables.set('verification_request_id_2', String(json.data.content[0].id));"
+          ] } }]
+        },
+        {
+          "name": "1.5 Reject retail verification",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" },
+              { "key": "X-User-Role", "value": "ADMIN" },
+              { "key": "X-User-Id", "value": "{{admin_user_id}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"E2E rejection path validation\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/admin/verification/{{verification_request_id_2}}/reject", "host": ["{{baseUrl}}"], "path": ["api", "admin", "verification", "{{verification_request_id_2}}", "reject"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Retail verification rejected', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        },
+        {
+          "name": "1.6 List users",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" },
+              { "key": "X-User-Role", "value": "ADMIN" },
+              { "key": "X-User-Id", "value": "{{admin_user_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/admin/users?page=0&size=20", "host": ["{{baseUrl}}"], "path": ["api", "admin", "users"], "query": [{ "key": "page", "value": "0" }, { "key": "size", "value": "20" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Users list returned', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json.content).to.be.an('array');"
+          ] } }]
+        },
+        {
+          "name": "1.7 Block new supplier user",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" },
+              { "key": "X-User-Role", "value": "ADMIN" },
+              { "key": "X-User-Id", "value": "{{admin_user_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/admin/users/{{new_supplier_user_id}}/block", "host": ["{{baseUrl}}"], "path": ["api", "admin", "users", "{{new_supplier_user_id}}", "block"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('User blocked', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        },
+        {
+          "name": "1.8 Unblock new supplier user",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" },
+              { "key": "X-User-Role", "value": "ADMIN" },
+              { "key": "X-User-Id", "value": "{{admin_user_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/admin/users/{{new_supplier_user_id}}/unblock", "host": ["{{baseUrl}}"], "path": ["api", "admin", "users", "{{new_supplier_user_id}}", "unblock"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('User unblocked', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "2. Supplier catalog & reference data",
+      "item": [
+        {
+          "name": "2.1 Get categories",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/categories", "host": ["{{baseUrl}}"], "path": ["api", "categories"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Categories returned', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json.data.length).to.be.above(0);",
+            "pm.collectionVariables.set('category_id', String(json.data[0].id));"
+          ] } }]
+        },
+        {
+          "name": "2.2 Get units",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/units", "host": ["{{baseUrl}}"], "path": ["api", "units"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Units returned', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json.data.length).to.be.above(0);",
+            "pm.collectionVariables.set('unit_id', String(json.data[0].id));"
+          ] } }]
+        },
+        {
+          "name": "2.3 Get VAT rates",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/vat-rates", "host": ["{{baseUrl}}"], "path": ["api", "vat-rates"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('VAT rates returned', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json.data.length).to.be.above(0);",
+            "pm.collectionVariables.set('vat_rate_id', String(json.data[0].id));"
+          ] } }]
+        },
+        {
+          "name": "2.4 Create supplier product draft",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{supplier_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{supplier_company_id}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"sku\": \"{{generatedProductSku}}\",\n  \"name\": \"{{generatedProductName}}\",\n  \"description\": \"Товар для e2e-проверки бизнес-флоу\",\n  \"categoryId\": {{category_id}},\n  \"pricePerUnit\": 3.50,\n  \"unitId\": {{unit_id}},\n  \"vatRateId\": {{vat_rate_id}},\n  \"weight\": 1.0,\n  \"packageDimensions\": \"{\\\"length\\\":10,\\\"width\\\":10,\\\"height\\\":20}\",\n  \"countryOfOrigin\": \"Беларусь\",\n  \"productionDate\": \"2026-03-01\",\n  \"expiryDate\": \"2026-04-01\",\n  \"initialQuantity\": 500\n}" },
+            "url": { "raw": "{{baseUrl}}/api/products", "host": ["{{baseUrl}}"], "path": ["api", "products"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Product created', function () { pm.response.to.have.status(201); });",
+            "var json = pm.response.json();",
+            "pm.collectionVariables.set('product_id', String(json.data.id));",
+            "pm.expect(json.data.status).to.eql('DRAFT');"
+          ] } }]
+        },
+        {
+          "name": "2.5 Publish supplier catalog",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{supplier_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{supplier_company_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/products/publish-catalog", "host": ["{{baseUrl}}"], "path": ["api", "products", "publish-catalog"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Catalog published', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        },
+        {
+          "name": "2.6 Get supplier products",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{supplier_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{supplier_company_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/products/supplier?page=0&size=20", "host": ["{{baseUrl}}"], "path": ["api", "products", "supplier"], "query": [{ "key": "page", "value": "0" }, { "key": "size", "value": "20" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Supplier products returned', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json.data.content.length).to.be.above(0);"
+          ] } }]
+        },
+        {
+          "name": "2.7 Update inventory",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{supplier_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{supplier_company_id}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"quantity\": 750\n}" },
+            "url": { "raw": "{{baseUrl}}/api/inventory/{{product_id}}", "host": ["{{baseUrl}}"], "path": ["api", "inventory", "{{product_id}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Inventory updated', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "3. Retail base & partnership",
+      "item": [
+        {
+          "name": "3.1 Search published products with current partnership state",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{customer_company_id}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/search?search={{generatedProductName}}&page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "search"],
+              "query": [
+                { "key": "search", "value": "{{generatedProductName}}" },
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Retail product search returned', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json.data.content).to.be.an('array');",
+            "pm.collectionVariables.set('pre_partnership_search_count', String(json.data.content.length));"
+          ] } }]
+        },
+        {
+          "name": "3.2 List suppliers with statuses",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{customer_company_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/partnerships/suppliers", "host": ["{{baseUrl}}"], "path": ["api", "partnerships", "suppliers"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Suppliers list returned', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json.data).to.be.an('array');",
+            "var supplier = json.data.find(function (item) { return String(item.companyId) === pm.collectionVariables.get('supplier_company_id'); });",
+            "pm.expect(supplier, 'Seed supplier must be present in supplier base').to.exist;",
+            "pm.collectionVariables.set('partnership_status', supplier.partnershipStatus || 'NEW');",
+            "if (supplier.partnershipId) { pm.collectionVariables.set('partnership_id', String(supplier.partnershipId)); }"
+          ] } }]
+        },
+        {
+          "name": "3.3 Create partnership request",
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "if ((pm.collectionVariables.get('partnership_status') || '').toUpperCase() !== 'NEW') {",
+              "    pm.execution.skipRequest();",
+              "}"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Partnership request created', function () { pm.response.to.have.status(201); });",
+              "var json = pm.response.json();",
+              "pm.collectionVariables.set('partnership_id', String(json.data.id));",
+              "pm.collectionVariables.set('partnership_status', 'PENDING');"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{customer_company_id}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"supplierId\": {{supplier_company_id}},\n  \"contractNumber\": \"{{generatedContractNumber}}\",\n  \"contractDate\": \"2026-03-14\",\n  \"contractEndDate\": \"2027-03-14\",\n  \"customerCompanyName\": \"Retail chain e2e\",\n  \"customerUnp\": \"1234567890\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/partnerships", "host": ["{{baseUrl}}"], "path": ["api", "partnerships"] }
+          }
+        },
+        {
+          "name": "3.4 Supplier sees pending partnership",
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "if ((pm.collectionVariables.get('partnership_status') || '').toUpperCase() === 'ACTIVE') {",
+              "    pm.execution.skipRequest();",
+              "}"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Pending partnership visible', function () { pm.response.to.have.status(200); });",
+              "var json = pm.response.json();",
+              "pm.expect(json.data.length).to.be.above(0);"
+            ] } }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{supplier_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{supplier_company_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/partnerships/supplier/pending", "host": ["{{baseUrl}}"], "path": ["api", "partnerships", "supplier", "pending"] }
+          }
+        },
+        {
+          "name": "3.5 Supplier updates contract",
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "if (!pm.collectionVariables.get('partnership_id')) {",
+              "    pm.execution.skipRequest();",
+              "}"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Contract updated', function () { pm.response.to.have.status(200); });"
+            ] } }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{supplier_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{supplier_company_id}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"contractNumber\": \"{{generatedContractNumber}}-REV1\",\n  \"contractDate\": \"2026-03-15\",\n  \"contractEndDate\": \"2027-03-20\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/partnerships/{{partnership_id}}/contract", "host": ["{{baseUrl}}"], "path": ["api", "partnerships", "{{partnership_id}}", "contract"] }
+          }
+        },
+        {
+          "name": "3.6 Supplier accepts partnership",
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "if ((pm.collectionVariables.get('partnership_status') || '').toUpperCase() === 'ACTIVE' || !pm.collectionVariables.get('partnership_id')) {",
+              "    pm.execution.skipRequest();",
+              "}"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Partnership accepted', function () { pm.response.to.have.status(200); });",
+              "var json = pm.response.json();",
+              "pm.expect(json.data.status).to.eql('ACTIVE');",
+              "pm.collectionVariables.set('partnership_status', 'ACTIVE');"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{supplier_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{supplier_company_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/partnerships/{{partnership_id}}/accept", "host": ["{{baseUrl}}"], "path": ["api", "partnerships", "{{partnership_id}}", "accept"] }
+          }
+        },
+        {
+          "name": "3.7 Customer partnerships list",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{customer_company_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/partnerships/customer", "host": ["{{baseUrl}}"], "path": ["api", "partnerships", "customer"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Customer partnerships returned', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json.data.length).to.be.above(0);"
+          ] } }]
+        },
+        {
+          "name": "3.8 Search published products after partnership activation",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{customer_company_id}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/search?search={{generatedProductName}}&page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "search"],
+              "query": [
+                { "key": "search", "value": "{{generatedProductName}}" },
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Retail product search returned after partnership activation', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json.data.content.length).to.be.above(0);",
+            "var target = json.data.content.find(function (item) {",
+            "    return String(item.id) === pm.collectionVariables.get('product_id') || item.sku === pm.collectionVariables.get('generatedProductSku') || item.name === pm.collectionVariables.get('generatedProductName');",
+            "});",
+            "pm.expect(target, 'Activated partnership should expose the generated product').to.exist;"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "4. Order lifecycle happy path",
+      "item": [
+        {
+          "name": "4.1 Add product to cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{customer_company_id}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"productId\": {{product_id}},\n  \"supplierId\": {{supplier_company_id}},\n  \"productName\": \"{{generatedProductName}}\",\n  \"productSku\": \"{{generatedProductSku}}\",\n  \"quantity\": 10,\n  \"unitPrice\": 3.50,\n  \"vatRate\": 20\n}" },
+            "url": { "raw": "{{baseUrl}}/api/cart/items", "host": ["{{baseUrl}}"], "path": ["api", "cart", "items"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Cart item added', function () { pm.response.to.have.status(201); });"
+          ] } }]
+        },
+        {
+          "name": "4.2 Checkout cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{customer_company_id}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"deliveryAddress\": \"г. Минск, ул. Е2Е, 10\",\n  \"desiredDeliveryDate\": \"2026-03-20\",\n  \"notes\": \"E2E checkout\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/cart/checkout", "host": ["{{baseUrl}}"], "path": ["api", "cart", "checkout"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Checkout created order', function () { pm.response.to.have.status(201); });",
+            "var json = pm.response.json();",
+            "pm.expect(json.data.orders.length).to.be.above(0);",
+            "pm.collectionVariables.set('order_id', String(json.data.orders[0].id));",
+            "pm.collectionVariables.set('order_number', json.data.orders[0].orderNumber);",
+            "pm.collectionVariables.set('order_item_id', String(json.data.orders[0].items[0].id));"
+          ] } }]
+        },
+        {
+          "name": "4.3 Supplier gets created order",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{supplier_token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/orders/{{order_id}}", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{order_id}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Order details returned', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json.data.statusCode).to.eql('PENDING_CONFIRMATION');"
+          ] } }]
+        },
+        {
+          "name": "4.4 Supplier confirms order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{supplier_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{supplier_company_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/orders/{{order_id}}/confirm", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{order_id}}", "confirm"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Order confirmed', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json.data.statusCode).to.eql('AWAITING_PAYMENT');"
+          ] } }]
+        },
+        {
+          "name": "4.5 Upload payment proof multipart",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{customer_company_id}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "{{paymentProofFile}}" },
+                { "key": "paymentReference", "value": "{{paymentReference}}", "type": "text" },
+                { "key": "notes", "value": "E2E multipart payment proof", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/orders/{{order_id}}/payment-proof", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{order_id}}", "payment-proof"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Multipart payment proof uploaded', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json.data.statusCode).to.eql('PENDING_PAYMENT_VERIFICATION');"
+          ] } }]
+        },
+        {
+          "name": "4.6 Supplier confirms payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{supplier_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{supplier_company_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/orders/{{order_id}}/confirm-payment", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{order_id}}", "confirm-payment"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Payment confirmed', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json.data.statusCode).to.eql('AWAITING_SHIPMENT');"
+          ] } }]
+        },
+        {
+          "name": "4.7 Generate TTN",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{supplier_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{supplier_company_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/orders/{{order_id}}/generate-ttn", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{order_id}}", "generate-ttn"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('TTN generated', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        },
+        {
+          "name": "4.8 Ship order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{supplier_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{supplier_company_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/orders/{{order_id}}/ship", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{order_id}}", "ship"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Order shipped', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json.data.statusCode).to.eql('SHIPPED');"
+          ] } }]
+        },
+        {
+          "name": "4.9 Customer sends order chat message",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" },
+              { "key": "X-User-Id", "value": "{{customer_user_id}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"messageText\": \"Добрый день, подтверждаем ожидание поставки.\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/chats/order/{{order_id}}/messages", "host": ["{{baseUrl}}"], "path": ["api", "chats", "order", "{{order_id}}", "messages"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Customer chat message sent', function () { pm.response.to.have.status(201); });"
+          ] } }]
+        },
+        {
+          "name": "4.10 Supplier replies in order chat",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{supplier_token}}" },
+              { "key": "X-User-Id", "value": "{{supplier_user_id}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"messageText\": \"Заказ отгружен, ожидайте доставку.\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/chats/order/{{order_id}}/messages", "host": ["{{baseUrl}}"], "path": ["api", "chats", "order", "{{order_id}}", "messages"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Supplier chat reply sent', function () { pm.response.to.have.status(201); });"
+          ] } }]
+        },
+        {
+          "name": "4.11 Customer receives order without discrepancy",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{customer_company_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/orders/{{order_id}}/deliver", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{order_id}}", "deliver"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Order delivered', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json.data.statusCode).to.eql('DELIVERED');"
+          ] } }]
+        },
+        {
+          "name": "4.12 Supplier closes order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{supplier_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{supplier_company_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/orders/{{order_id}}/close", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{order_id}}", "close"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Order closed', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json.data.statusCode).to.eql('CLOSED');"
+          ] } }]
+        },
+        {
+          "name": "4.13 Order history",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{supplier_token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/orders/{{order_id}}/history", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{order_id}}", "history"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Order history returned', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json.data.length).to.be.at.least(5);"
+          ] } }]
+        },
+        {
+          "name": "4.14 Generated documents by order",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{supplier_token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/generated-documents/order/{{order_id}}", "host": ["{{baseUrl}}"], "path": ["api", "generated-documents", "order", "{{order_id}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Generated documents returned', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "if (json.data.length > 0) { pm.collectionVariables.set('generated_doc_id', String(json.data[0].id)); }"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "5. Discrepancy, support, notifications & analytics",
+      "item": [
+        {
+          "name": "5.1 Create direct order for discrepancy flow",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{customer_company_id}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"supplierId\": {{supplier_company_id}},\n  \"deliveryAddress\": \"г. Минск, ул. Расхождений, 1\",\n  \"desiredDeliveryDate\": \"2026-03-21\",\n  \"items\": [\n    {\n      \"productId\": {{product_id}},\n      \"productName\": \"{{generatedProductName}}\",\n      \"productSku\": \"{{generatedProductSku}}\",\n      \"quantity\": 6,\n      \"unitPrice\": 3.50,\n      \"vatRate\": 20\n    }\n  ]\n}" },
+            "url": { "raw": "{{baseUrl}}/api/orders", "host": ["{{baseUrl}}"], "path": ["api", "orders"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Discrepancy order created', function () { pm.response.to.have.status(201); });",
+            "var json = pm.response.json();",
+            "pm.collectionVariables.set('discrepancy_order_id', String(json.data.id));"
+          ] } }]
+        },
+        {
+          "name": "5.2 Confirm discrepancy order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{supplier_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{supplier_company_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/orders/{{discrepancy_order_id}}/confirm", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{discrepancy_order_id}}", "confirm"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Discrepancy order confirmed', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        },
+        {
+          "name": "5.3 Upload legacy payment proof JSON",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{customer_company_id}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"documentKey\": \"{{legacyPaymentKey}}\",\n  \"paymentReference\": \"{{paymentReference}}-LEGACY\",\n  \"notes\": \"Legacy JSON payment proof path\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/orders/{{discrepancy_order_id}}/payment-proof", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{discrepancy_order_id}}", "payment-proof"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Legacy payment proof accepted', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        },
+        {
+          "name": "5.4 Confirm payment discrepancy order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{supplier_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{supplier_company_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/orders/{{discrepancy_order_id}}/confirm-payment", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{discrepancy_order_id}}", "confirm-payment"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Payment confirmed for discrepancy order', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        },
+        {
+          "name": "5.5 Generate TTN discrepancy order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{supplier_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{supplier_company_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/orders/{{discrepancy_order_id}}/generate-ttn", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{discrepancy_order_id}}", "generate-ttn"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('TTN generated for discrepancy order', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        },
+        {
+          "name": "5.6 Ship discrepancy order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{supplier_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{supplier_company_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/orders/{{discrepancy_order_id}}/ship", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{discrepancy_order_id}}", "ship"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Discrepancy order shipped', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        },
+        {
+          "name": "5.7 Read discrepancy order details",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{customer_token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/orders/{{discrepancy_order_id}}", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{discrepancy_order_id}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Discrepancy order details returned', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.collectionVariables.set('discrepancy_order_item_id', String(json.data.items[0].id));"
+          ] } }]
+        },
+        {
+          "name": "5.8 Create discrepancy",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{customer_company_id}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"items\": [\n    {\n      \"orderItemId\": {{discrepancy_order_item_id}},\n      \"actualQuantity\": 5,\n      \"reason\": \"SHORTAGE\"\n    }\n  ],\n  \"notes\": \"E2E discrepancy report\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/orders/{{discrepancy_order_id}}/discrepancy", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{discrepancy_order_id}}", "discrepancy"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Discrepancy created', function () { pm.response.to.have.status(201); });",
+            "var json = pm.response.json();",
+            "pm.expect(json.data.items.length).to.be.above(0);"
+          ] } }]
+        },
+        {
+          "name": "5.9 Get discrepancy list",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{customer_token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/orders/{{discrepancy_order_id}}/discrepancies", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{discrepancy_order_id}}", "discrepancies"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Discrepancy list returned', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json.data.length).to.be.above(0);"
+          ] } }]
+        },
+        {
+          "name": "5.10 Supplier corrects discrepancy order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{supplier_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{supplier_company_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/orders/{{discrepancy_order_id}}/correct", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{discrepancy_order_id}}", "correct"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Discrepancy order corrected', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        },
+        {
+          "name": "5.11 Acceptance journal",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{customer_company_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/acceptance-journal", "host": ["{{baseUrl}}"], "path": ["api", "acceptance-journal"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Acceptance journal returned', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        },
+        {
+          "name": "5.12 Create support ticket with attachment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{customer_company_id}}" },
+              { "key": "X-User-Id", "value": "{{customer_user_id}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "subject", "value": "{{generatedSupportSubject}}", "type": "text" },
+                { "key": "message", "value": "{{generatedSupportMessage}}", "type": "text" },
+                { "key": "category", "value": "TECHNICAL", "type": "text" },
+                { "key": "priority", "value": "HIGH", "type": "text" },
+                { "key": "files", "type": "file", "src": "{{supportAttachmentFile}}" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/support/tickets", "host": ["{{baseUrl}}"], "path": ["api", "support", "tickets"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Support ticket created', function () { pm.response.to.have.status(201); });",
+            "var json = pm.response.json();",
+            "pm.collectionVariables.set('ticket_id', String(json.data.id));"
+          ] } }]
+        },
+        {
+          "name": "5.13 Admin gets tickets",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" },
+              { "key": "X-User-Role", "value": "ADMIN" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/support/tickets/admin?page=0&size=20", "host": ["{{baseUrl}}"], "path": ["api", "support", "tickets", "admin"], "query": [{ "key": "page", "value": "0" }, { "key": "size", "value": "20" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Admin ticket list returned', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        },
+        {
+          "name": "5.14 Assign support ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" },
+              { "key": "X-User-Id", "value": "{{admin_user_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/support/tickets/{{ticket_id}}/assign", "host": ["{{baseUrl}}"], "path": ["api", "support", "tickets", "{{ticket_id}}", "assign"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Ticket assigned', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        },
+        {
+          "name": "5.15 Admin replies with attachment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" },
+              { "key": "X-User-Id", "value": "{{admin_user_id}}" },
+              { "key": "X-User-Role", "value": "ADMIN" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "message", "value": "Проблема взята в работу, смотрите вложение.", "type": "text" },
+                { "key": "files", "type": "file", "src": "{{supportAttachmentFile}}" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/support/tickets/{{ticket_id}}/messages", "host": ["{{baseUrl}}"], "path": ["api", "support", "tickets", "{{ticket_id}}", "messages"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Admin ticket reply created', function () { pm.response.to.have.status(201); });"
+          ] } }]
+        },
+        {
+          "name": "5.16 Read ticket messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" },
+              { "key": "X-User-Id", "value": "{{admin_user_id}}" },
+              { "key": "X-User-Role", "value": "ADMIN" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/support/tickets/{{ticket_id}}/messages", "host": ["{{baseUrl}}"], "path": ["api", "support", "tickets", "{{ticket_id}}", "messages"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Ticket messages returned', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.collectionVariables.set('ticket_message_count', String(json.data.length));",
+            "pm.expect(json.data.length).to.be.at.least(2);"
+          ] } }]
+        },
+        {
+          "name": "5.17 Resolve ticket",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/support/tickets/{{ticket_id}}/resolve", "host": ["{{baseUrl}}"], "path": ["api", "support", "tickets", "{{ticket_id}}", "resolve"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Ticket resolved', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        },
+        {
+          "name": "5.18 Close ticket",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/support/tickets/{{ticket_id}}/close", "host": ["{{baseUrl}}"], "path": ["api", "support", "tickets", "{{ticket_id}}", "close"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Ticket closed', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        },
+        {
+          "name": "5.19 Supplier notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{supplier_token}}" },
+              { "key": "X-User-Id", "value": "{{supplier_user_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/notifications?page=0&size=20", "host": ["{{baseUrl}}"], "path": ["api", "notifications"], "query": [{ "key": "page", "value": "0" }, { "key": "size", "value": "20" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Notifications returned', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json.content).to.be.an('array');"
+          ] } }]
+        },
+        {
+          "name": "5.20 Unread notification count",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{supplier_token}}" },
+              { "key": "X-User-Id", "value": "{{supplier_user_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/notifications/unread-count", "host": ["{{baseUrl}}"], "path": ["api", "notifications", "unread-count"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Unread count returned', function () { pm.response.to.have.status(200); });",
+            "var json = pm.response.json();",
+            "pm.expect(json).to.have.property('unreadCount');"
+          ] } }]
+        },
+        {
+          "name": "5.21 Mark notifications read",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{supplier_token}}" },
+              { "key": "X-User-Id", "value": "{{supplier_user_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/notifications/read-all", "host": ["{{baseUrl}}"], "path": ["api", "notifications", "read-all"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Notifications marked read', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        },
+        {
+          "name": "5.22 Supplier analytics",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{supplier_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{supplier_company_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/analytics/supplier?period=month", "host": ["{{baseUrl}}"], "path": ["api", "analytics", "supplier"], "query": [{ "key": "period", "value": "month" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Supplier analytics returned', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        },
+        {
+          "name": "5.23 Customer analytics",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" },
+              { "key": "X-User-Company-Id", "value": "{{customer_company_id}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/analytics/customer?period=month", "host": ["{{baseUrl}}"], "path": ["api", "analytics", "customer"], "query": [{ "key": "period", "value": "month" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Customer analytics returned', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        },
+        {
+          "name": "5.24 Overall analytics",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/analytics?period=month", "host": ["{{baseUrl}}"], "path": ["api", "analytics"], "query": [{ "key": "period", "value": "month" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Overall analytics returned', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        },
+        {
+          "name": "5.25 Admin product moderation list",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" },
+              { "key": "X-User-Role", "value": "ADMIN" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/products/admin/all?page=0&size=20", "host": ["{{baseUrl}}"], "path": ["api", "products", "admin", "all"], "query": [{ "key": "page", "value": "0" }, { "key": "size", "value": "20" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Admin moderation list returned', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        },
+        {
+          "name": "5.26 Admin hide product",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" },
+              { "key": "X-User-Role", "value": "ADMIN" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/products/{{product_id}}/hide", "host": ["{{baseUrl}}"], "path": ["api", "products", "{{product_id}}", "hide"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Admin hid product', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        },
+        {
+          "name": "5.27 Admin show product back",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" },
+              { "key": "X-User-Role", "value": "ADMIN" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/products/{{product_id}}/show", "host": ["{{baseUrl}}"], "path": ["api", "products", "{{product_id}}", "show"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Admin restored product visibility', function () { pm.response.to.have.status(200); });"
+          ] } }]
+        }
+      ]
+    }
+  ]
+}
+

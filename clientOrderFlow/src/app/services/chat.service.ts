@@ -101,9 +101,17 @@ export class ChatService {
     );
   }
 
-  getAllTickets(): Observable<SupportTicket[]> {
-    return this.http.get<ApiResponse<SupportTicket[]>>(`${this.API_URL}/support/tickets/admin`).pipe(
-      map(response => response.data || [])
+  getAllTickets(status?: string, page: number = 0, size: number = 20): Observable<PageResponse<SupportTicket>> {
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('size', size.toString());
+
+    if (status) {
+      params = params.set('status', status);
+    }
+
+    return this.http.get<ApiResponse<PageResponse<SupportTicket>>>(`${this.API_URL}/support/tickets/admin`, { params }).pipe(
+      map(response => response.data || { content: [], totalElements: 0, totalPages: 0, size, number: page })
     );
   }
 

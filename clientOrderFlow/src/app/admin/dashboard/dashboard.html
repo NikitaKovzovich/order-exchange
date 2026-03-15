@@ -28,6 +28,12 @@
           <svg *ngIf="stat.icon === 'revenue'" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
           </svg>
+          <svg *ngIf="stat.icon === 'verification'" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <svg *ngIf="stat.icon === 'support'" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-4l-4 4v-4z"></path>
+          </svg>
         </div>
       </div>
     </div>
@@ -49,13 +55,13 @@
             </thead>
             <tbody>
               <tr *ngFor="let request of registrationRequests" class="bg-white border-b hover:bg-gray-50">
-                <td class="px-6 py-4 font-medium text-gray-900">{{ request.company?.legalName }}</td>
+                <td class="px-6 py-4 font-medium text-gray-900">{{ request.companyName }}</td>
                 <td class="px-6 py-4">
-                  <span [ngClass]="getRoleClass(request.user?.role || '')" class="text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">
-                    {{ getRoleLabel(request.user?.role || '') }}
+                  <span [ngClass]="getRoleClass(request.role)" class="text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">
+                    {{ getRoleLabel(request.role) }}
                   </span>
                 </td>
-                <td class="px-6 py-4">{{ formatDate(request.createdAt) }}</td>
+                <td class="px-6 py-4">{{ formatDate(request.date) }}</td>
                 <td class="px-6 py-4">
                   <a [routerLink]="['/admin/verification', request.id]" class="font-medium text-indigo-600 hover:underline">Проверить</a>
                 </td>
@@ -71,10 +77,10 @@
         <ul class="space-y-3">
           <li *ngFor="let ticket of supportTickets" class="flex justify-between items-center p-3 bg-gray-50 rounded-md">
             <div>
-              <p class="text-sm font-medium text-gray-900">#{{ ticket.ticketNumber }}: {{ ticket.subject }}</p>
-              <p class="text-xs text-gray-500">{{ ticket.userEmail }}</p>
+              <p class="text-sm font-medium text-gray-900">#{{ ticket.ticketNumber || ticket.ticketId || ticket.id }}: {{ ticket.subject || 'Обращение в поддержку' }}</p>
+              <p class="text-xs text-gray-500">{{ ticket.userEmail || '—' }}</p>
             </div>
-            <span [ngClass]="getStatusClass(ticket.status)" class="text-xs font-semibold px-2 py-1 rounded-full">
+            <span [ngClass]="getStatusClass(ticket.status || '')" class="text-xs font-semibold px-2 py-1 rounded-full">
               {{ ticket.status }}
             </span>
           </li>

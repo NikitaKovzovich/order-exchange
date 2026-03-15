@@ -84,12 +84,12 @@ class OrderTest {
 		@Test
 		@DisplayName("Should ship order")
 		void shouldShipOrder() {
-			OrderStatus paidStatus = OrderStatus.builder()
+			OrderStatus awaitingShipmentStatus = OrderStatus.builder()
 					.id(6L)
-					.code(OrderStatus.Codes.PAID)
-					.name("Оплачен")
+					.code(OrderStatus.Codes.AWAITING_SHIPMENT)
+					.name("Ожидает отгрузки")
 					.build();
-			order.setStatus(paidStatus);
+			order.setStatus(awaitingShipmentStatus);
 
 			order.ship(shippedStatus);
 			assertThat(order.getStatus().getCode()).isEqualTo(OrderStatus.Codes.SHIPPED);

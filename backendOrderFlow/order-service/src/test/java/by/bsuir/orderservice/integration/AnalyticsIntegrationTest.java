@@ -34,6 +34,12 @@ class AnalyticsIntegrationTest {
 	@MockBean
 	private EventPublisher eventPublisher;
 
+	@MockBean
+	private by.bsuir.orderservice.client.AuthServiceClient authServiceClient;
+
+	@MockBean
+	private by.bsuir.orderservice.client.DocumentServiceClient documentServiceClient;
+
 	@Test
 	@DisplayName("Should get overall analytics")
 	void shouldGetOverallAnalytics() throws Exception {

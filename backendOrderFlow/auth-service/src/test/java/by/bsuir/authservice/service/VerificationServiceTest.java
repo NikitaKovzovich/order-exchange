@@ -41,6 +41,9 @@ class VerificationServiceTest {
 	@Mock
 	private RabbitEventPublisher rabbitEventPublisher;
 
+	@Mock
+	private EmailService emailService;
+
 	@InjectMocks
 	private VerificationService verificationService;
 

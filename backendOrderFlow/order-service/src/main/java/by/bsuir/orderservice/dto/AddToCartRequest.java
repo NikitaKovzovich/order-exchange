@@ -5,9 +5,9 @@ import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 
-/**
- * Запрос на добавление товара в корзину
- */
+
+
+
 public record AddToCartRequest(
 	@NotNull(message = "Product ID is required")
 	Long productId,

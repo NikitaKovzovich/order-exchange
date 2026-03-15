@@ -14,12 +14,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -95,6 +97,7 @@ class ProductServiceTest {
 				1L,
 				1L,
 				new BigDecimal("0.5"),
+				null,
 				"Belarus",
 				null,
 				null,
@@ -343,10 +346,65 @@ class ProductServiceTest {
 			Page<Product> page = new PageImpl<>(List.of(testProduct));
 			when(productRepository.findBySupplierId(eq(100L), any(Pageable.class))).thenReturn(page);
 
-			PageResponse<ProductResponse> response = productService.getSupplierProducts(100L, 0, 10);
+			PageResponse<ProductResponse> response = productService.getSupplierProducts(100L, null, 0, 10);
 
 			assertThat(response.content()).hasSize(1);
 			assertThat(response.totalElements()).isEqualTo(1);
+		}
+	}
+
+	@Nested
+	@DisplayName("Admin Product Tests")
+	class AdminProductTests {
+
+		@Test
+		@DisplayName("Should request admin products sorted by id descending")
+		void shouldRequestAdminProductsSortedByIdDescending() {
+			Page<Product> page = new PageImpl<>(List.of(testProduct));
+			when(productRepository.findAllForAdmin(
+					nullable(Long.class),
+					nullable(Long.class),
+					nullable(Product.ProductStatus.class),
+					nullable(String.class),
+					any(Pageable.class)))
+					.thenReturn(page);
+
+			PageResponse<ProductResponse> response = productService.getAdminProducts(null, null, null, null, 0, 20);
+
+			ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+			verify(productRepository).findAllForAdmin(isNull(), isNull(), isNull(), isNull(), pageableCaptor.capture());
+			Pageable pageable = pageableCaptor.getValue();
+			Sort.Order order = pageable.getSort().getOrderFor("id");
+
+			assertThat(response.content()).hasSize(1);
+			assertThat(order).isNotNull();
+			assertThat(order.getDirection()).isEqualTo(Sort.Direction.DESC);
+		}
+
+		@Test
+		@DisplayName("Should hide product for admin")
+		void shouldHideProductForAdmin() {
+			testProduct.setStatus(Product.ProductStatus.PUBLISHED);
+			when(productRepository.findById(1L)).thenReturn(Optional.of(testProduct));
+			when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+			ProductResponse response = productService.adminHideProduct(1L);
+
+			assertThat(response.status()).isEqualTo("ARCHIVED");
+			verify(productRepository).save(any(Product.class));
+		}
+
+		@Test
+		@DisplayName("Should show archived product for admin")
+		void shouldShowArchivedProductForAdmin() {
+			testProduct.setStatus(Product.ProductStatus.ARCHIVED);
+			when(productRepository.findById(1L)).thenReturn(Optional.of(testProduct));
+			when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+			ProductResponse response = productService.adminShowProduct(1L);
+
+			assertThat(response.status()).isEqualTo("PUBLISHED");
+			verify(productRepository).save(any(Product.class));
 		}
 	}
 }

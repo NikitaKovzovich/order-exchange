@@ -89,12 +89,15 @@ public class VerificationController {
 				.map(this::mapVerificationRequestToResponse)
 				.collect(Collectors.toList());
 
+		Map<String, Object> pageData = new LinkedHashMap<>();
+		pageData.put("content", content);
+		pageData.put("page", requestsPage.getNumber());
+		pageData.put("size", requestsPage.getSize());
+		pageData.put("totalElements", requestsPage.getTotalElements());
+		pageData.put("totalPages", requestsPage.getTotalPages());
+
 		Map<String, Object> response = new LinkedHashMap<>();
-		response.put("content", content);
-		response.put("page", requestsPage.getNumber());
-		response.put("size", requestsPage.getSize());
-		response.put("totalElements", requestsPage.getTotalElements());
-		response.put("totalPages", requestsPage.getTotalPages());
+		response.put("data", pageData);
 
 		return ResponseEntity.ok(response);
 	}

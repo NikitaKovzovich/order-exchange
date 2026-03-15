@@ -5,10 +5,10 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-/**
- * История изменений заказа (Read Model для CQRS)
- * Хранит человекочитаемую историю событий
- */
+
+
+
+
 @Entity
 @Table(name = "order_history", indexes = {
 	@Index(name = "idx_order_id", columnList = "order_id")
@@ -35,31 +35,31 @@ public class OrderHistory {
 	@Column(name = "event_description", nullable = false)
 	private String eventDescription;
 
-	/**
-	 * ID пользователя, совершившего действие
-	 */
+
+
+
 	@Column(name = "user_id")
 	private Long userId;
 
-	/**
-	 * Предыдущий статус
-	 */
+
+
+
 	@Column(name = "previous_status", length = 50)
 	private String previousStatus;
 
-	/**
-	 * Новый статус
-	 */
+
+
+
 	@Column(name = "new_status", length = 50)
 	private String newStatus;
 
-	/**
-	 * Дополнительные данные (JSON)
-	 */
+
+
+
 	@Column(name = "metadata", columnDefinition = "JSON")
 	private String metadata;
 
-	// ========== Фабричные методы ==========
+
 
 	public static OrderHistory createStatusChange(Order order, String previousStatus,
 												String newStatus, Long userId, String description) {

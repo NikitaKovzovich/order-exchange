@@ -3,9 +3,9 @@ package by.bsuir.catalogservice.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-/**
- * Изображение товара (Read Model для CQRS)
- */
+
+
+
 @Entity
 @Table(name = "product_image")
 @Getter
@@ -24,7 +24,7 @@ public class ProductImage {
 	private Product product;
 
 	@Lob
-	@Column(name = "image_data", nullable = false)
+	@Column(name = "image_data", nullable = false, columnDefinition = "MEDIUMBLOB")
 	private byte[] imageData;
 
 	@Column(name = "is_primary")
@@ -34,26 +34,26 @@ public class ProductImage {
 	@Column(name = "mime_type", length = 50)
 	private String mimeType;
 
-	@Column(name = "file_name")
+	@Column(name = "file_name", length = 255)
 	private String fileName;
 
-	/**
-	 * Получить размер изображения в KB
-	 */
+
+
+
 	public long getSizeKb() {
 		return imageData != null ? imageData.length / 1024 : 0;
 	}
 
-	/**
-	 * Установить как основное изображение
-	 */
+
+
+
 	public void setPrimary() {
 		this.isPrimary = true;
 	}
 
-	/**
-	 * Снять флаг основного изображения
-	 */
+
+
+
 	public void unsetPrimary() {
 		this.isPrimary = false;
 	}

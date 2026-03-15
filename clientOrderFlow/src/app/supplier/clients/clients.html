@@ -1,0 +1,127 @@
+<div class="bg-white p-6 rounded-lg shadow mb-6">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <h2 class="text-2xl font-bold">Мои клиенты</h2>
+      <p class="text-gray-600 mt-1">Новые заявки на сотрудничество и активные договоры</p>
+    </div>
+
+    <div class="flex gap-2">
+      <button
+        (click)="setTab('pending')"
+        [ngClass]="activeTab === 'pending' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'"
+        class="px-4 py-2 rounded-md text-sm font-medium">
+        Новые заявки
+      </button>
+      <button
+        (click)="setTab('active')"
+        [ngClass]="activeTab === 'active' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'"
+        class="px-4 py-2 rounded-md text-sm font-medium">
+        Активные договоры
+      </button>
+      <button
+        (click)="setTab('all')"
+        [ngClass]="activeTab === 'all' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'"
+        class="px-4 py-2 rounded-md text-sm font-medium">
+        Все
+      </button>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="errorMessage" class="bg-red-50 text-red-700 border border-red-200 rounded-lg px-4 py-3 mb-6">
+  {{ errorMessage }}
+</div>
+
+<div *ngIf="isLoading" class="bg-white p-10 rounded-lg shadow text-center text-gray-500">
+  Загрузка партнёрств...
+</div>
+
+<div *ngIf="!isLoading" class="space-y-4">
+  <div *ngFor="let partnership of visiblePartnerships" class="bg-white rounded-lg shadow p-6">
+    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+      <div class="space-y-2 flex-1">
+        <div class="flex items-center gap-3 flex-wrap">
+          <h3 class="text-lg font-semibold text-gray-900">{{ partnership.customerCompanyName }}</h3>
+          <span [ngClass]="getStatusClass(partnership.status)" class="text-xs font-semibold px-2.5 py-1 rounded-full">
+            {{ getStatusLabel(partnership.status) }}
+          </span>
+        </div>
+        <p class="text-sm text-gray-500">УНП: {{ partnership.customerUnp || '—' }}</p>
+        <p class="text-sm text-gray-500">Дата заявки: {{ formatDate(partnership.createdAt) }}</p>
+
+        <div *ngIf="editingId !== partnership.id" class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+          <div>
+            <div class="text-xs text-gray-500">Номер договора</div>
+            <div class="text-sm text-gray-800">{{ partnership.contractNumber || '—' }}</div>
+          </div>
+          <div>
+            <div class="text-xs text-gray-500">Дата договора</div>
+            <div class="text-sm text-gray-800">{{ formatDate(partnership.contractDate) }}</div>
+          </div>
+          <div>
+            <div class="text-xs text-gray-500">Окончание</div>
+            <div class="text-sm text-gray-800">{{ formatDate(partnership.contractEndDate) }}</div>
+          </div>
+        </div>
+
+        <div *ngIf="editingId === partnership.id" class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+          <input
+            [(ngModel)]="contractForm.contractNumber"
+            placeholder="Номер договора"
+            class="px-3 py-2 border border-gray-300 rounded-md">
+          <input
+            type="date"
+            [(ngModel)]="contractForm.contractDate"
+            class="px-3 py-2 border border-gray-300 rounded-md">
+          <input
+            type="date"
+            [(ngModel)]="contractForm.contractEndDate"
+            class="px-3 py-2 border border-gray-300 rounded-md">
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-2 lg:justify-end">
+        <button
+          *ngIf="editingId !== partnership.id"
+          (click)="startEdit(partnership)"
+          class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 text-sm">
+          Изменить договор
+        </button>
+
+        <button
+          *ngIf="editingId === partnership.id"
+          (click)="saveContract(partnership)"
+          class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm">
+          Сохранить
+        </button>
+
+        <button
+          *ngIf="editingId === partnership.id"
+          (click)="cancelEdit()"
+          class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 text-sm">
+          Отмена
+        </button>
+
+        <button
+          *ngIf="partnership.status === 'PENDING'"
+          (click)="reject(partnership)"
+          class="px-4 py-2 border border-red-300 text-red-700 rounded-md hover:bg-red-50 text-sm">
+          Отклонить
+        </button>
+
+        <button
+          *ngIf="partnership.status === 'PENDING'"
+          (click)="accept(partnership)"
+          class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm">
+          Подтвердить договор
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="!isLoading && visiblePartnerships.length === 0" class="bg-white p-12 rounded-lg shadow text-center">
+  <h3 class="text-lg font-medium text-gray-900">Нет записей для выбранной вкладки</h3>
+  <p class="mt-2 text-sm text-gray-500">Когда торговые сети отправят запросы, они появятся здесь.</p>
+</div>
+

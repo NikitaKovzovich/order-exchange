@@ -11,9 +11,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * Контроллер для работы с корзиной покупателя
- */
+
+
+
 @RestController
 @RequestMapping("/api/cart")
 @RequiredArgsConstructor
@@ -76,6 +76,17 @@ public class CartController {
 	@Operation(summary = "Оформить заказ",
 			description = "Создает отдельные заказы для каждого поставщика из корзины")
 	public ResponseEntity<ApiResponse<CheckoutResponse>> checkout(
+			@RequestHeader("X-User-Company-Id") Long customerId,
+			@Valid @RequestBody CheckoutRequest request) {
+
+		CheckoutResponse response = cartService.checkout(customerId, request);
+		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
+	}
+
+	@PostMapping("/checkout-all")
+	@Operation(summary = "Отправить все заказы (ТЗ стр. 23)",
+			description = "Аналог checkout — оформляет все группы в корзине одним запросом")
+	public ResponseEntity<ApiResponse<CheckoutResponse>> checkoutAll(
 			@RequestHeader("X-User-Company-Id") Long customerId,
 			@Valid @RequestBody CheckoutRequest request) {
 

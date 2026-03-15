@@ -144,6 +144,10 @@
     </div>
 
     <form #loginForm="ngForm" (ngSubmit)="onLogin()">
+      <div *ngIf="loginErrorMessage" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        {{ loginErrorMessage }}
+      </div>
+
       <div class="mb-4">
         <label for="login-email" class="block text-gray-700 font-medium mb-2">Email</label>
         <input
@@ -207,6 +211,10 @@
     </div>
 
     <form #registerForm="ngForm" (ngSubmit)="onRegister()">
+      <div *ngIf="registerErrorMessage" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        {{ registerErrorMessage }}
+      </div>
+
       <div class="mb-4">
         <label class="block text-gray-700 font-medium mb-3">Тип аккаунта</label>
         <div class="grid grid-cols-2 gap-3">

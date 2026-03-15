@@ -1,8 +1,10 @@
 import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Chart } from 'chart.js';
 import { AnalyticsService, SupplierAnalyticsResponse } from '../../services/analytics.service';
 import { AnalyticsPeriod } from '../../models/api.models';
+
+type ChartModule = typeof import('chart.js/auto');
+type ChartInstance = { destroy(): void };
 
 @Component({
   selector: 'app-analytics',
@@ -25,8 +27,9 @@ export class Analytics implements OnInit, AfterViewInit, OnDestroy {
   analytics: SupplierAnalyticsResponse | null = null;
   isLoading: boolean = false;
 
-  private salesChartInstance?: Chart;
-  private topProductsChartInstance?: Chart;
+  private salesChartInstance?: ChartInstance;
+  private topProductsChartInstance?: ChartInstance;
+  private chartModulePromise?: Promise<ChartModule>;
 
   constructor(private analyticsService: AnalyticsService) {}
 
@@ -35,7 +38,9 @@ export class Analytics implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit() {
-    setTimeout(() => this.initCharts(), 100);
+    setTimeout(() => {
+      void this.initCharts();
+    }, 100);
   }
 
   ngOnDestroy() {
@@ -49,7 +54,9 @@ export class Analytics implements OnInit, AfterViewInit, OnDestroy {
       next: (data) => {
         this.analytics = data;
         this.isLoading = false;
-        setTimeout(() => this.initCharts(), 100);
+        setTimeout(() => {
+          void this.initCharts();
+        }, 100);
       },
       error: (error) => {
         console.error('Error loading analytics:', error);
@@ -63,19 +70,20 @@ export class Analytics implements OnInit, AfterViewInit, OnDestroy {
     this.loadAnalytics();
   }
 
-  private initCharts() {
+  private async initCharts(): Promise<void> {
     if (!this.analytics) return;
-    this.initSalesChart();
-    this.initTopProductsChart();
+    await this.initSalesChart();
+    await this.initTopProductsChart();
   }
 
-  private initSalesChart() {
+  private async initSalesChart(): Promise<void> {
     if (!this.salesChart?.nativeElement || !this.analytics) return;
 
     this.salesChartInstance?.destroy();
 
     const ctx = this.salesChart.nativeElement.getContext('2d');
     if (ctx) {
+      const { default: Chart } = await this.loadChartModule();
       const labels = this.analytics.salesDynamics.map(d => {
         const date = new Date(d.date);
         return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
@@ -105,13 +113,14 @@ export class Analytics implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  private initTopProductsChart() {
+  private async initTopProductsChart(): Promise<void> {
     if (!this.topProductsChart?.nativeElement || !this.analytics) return;
 
     this.topProductsChartInstance?.destroy();
 
     const ctx = this.topProductsChart.nativeElement.getContext('2d');
     if (ctx) {
+      const { default: Chart } = await this.loadChartModule();
       const topProducts = this.analytics.productAnalytics.topByRevenue.slice(0, 5);
       const labels = topProducts.map(p => p.productName.substring(0, 15) + (p.productName.length > 15 ? '...' : ''));
       const data = topProducts.map(p => p.revenue);
@@ -141,6 +150,14 @@ export class Analytics implements OnInit, AfterViewInit, OnDestroy {
         }
       });
     }
+  }
+
+  private loadChartModule(): Promise<ChartModule> {
+    if (!this.chartModulePromise) {
+      this.chartModulePromise = import('chart.js/auto');
+    }
+
+    return this.chartModulePromise;
   }
 
   formatCurrency(value: number): string {

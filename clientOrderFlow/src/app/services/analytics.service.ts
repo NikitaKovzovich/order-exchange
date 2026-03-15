@@ -2,7 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { ApiResponse, AnalyticsPeriod } from '../models/api.models';
+import {
+  ApiResponse,
+  AnalyticsPeriod,
+  CustomerDashboard,
+  ProductPurchaseHistoryItem,
+  SupplierDashboard
+} from '../models/api.models';
 
 export interface SupplierKPI {
   revenue: number;
@@ -97,9 +103,25 @@ export interface SupplierAnalyticsItem {
   supplierId: number;
   supplierName: string;
   orderCount: number;
-  totalSpent: number;
+  totalAmount: number;
   averageCheck: number;
   lastOrderDate: string;
+}
+
+export interface ProductPurchaseRecord {
+  date: string;
+  supplierId: number;
+  supplierName: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+export interface ProductPurchaseHistory {
+  productId: number;
+  productName: string;
+  productSku: string;
+  purchases: ProductPurchaseRecord[];
 }
 
 export interface CustomerAnalyticsResponse {
@@ -110,6 +132,7 @@ export interface CustomerAnalyticsResponse {
     bySupplier: ExpenseStructureItem[];
   };
   supplierAnalytics: SupplierAnalyticsItem[];
+  productHistory: ProductPurchaseHistory[];
 }
 
 @Injectable({
@@ -131,6 +154,29 @@ export class AnalyticsService {
     const params = new HttpParams().set('period', period);
     return this.http.get<ApiResponse<CustomerAnalyticsResponse>>(`${this.API_URL}/customer`, { params }).pipe(
       map(response => response.data!)
+    );
+  }
+
+  getSupplierDashboard(): Observable<SupplierDashboard> {
+    return this.http.get<ApiResponse<SupplierDashboard>>(`${this.API_URL}/dashboard/supplier`).pipe(
+      map(response => response.data!)
+    );
+  }
+
+  getCustomerDashboard(): Observable<CustomerDashboard> {
+    return this.http.get<ApiResponse<CustomerDashboard>>(`${this.API_URL}/dashboard/customer`).pipe(
+      map(response => response.data!)
+    );
+  }
+
+  getCustomerProductHistory(productId?: number): Observable<ProductPurchaseHistoryItem[]> {
+    let params = new HttpParams();
+    if (productId !== undefined) {
+      params = params.set('productId', String(productId));
+    }
+
+    return this.http.get<ApiResponse<ProductPurchaseHistoryItem[]>>(`${this.API_URL}/customer/product-history`, { params }).pipe(
+      map(response => response.data || [])
     );
   }
 }

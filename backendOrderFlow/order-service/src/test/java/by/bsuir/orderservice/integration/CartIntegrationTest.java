@@ -41,6 +41,12 @@ class CartIntegrationTest {
 	@MockBean
 	private EventPublisher eventPublisher;
 
+	@MockBean
+	private by.bsuir.orderservice.client.AuthServiceClient authServiceClient;
+
+	@MockBean
+	private by.bsuir.orderservice.client.DocumentServiceClient documentServiceClient;
+
 	private Cart testCart;
 
 	@BeforeEach

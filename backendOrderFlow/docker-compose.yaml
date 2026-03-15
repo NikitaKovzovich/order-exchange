@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 # OrderFlow — полный Docker Compose
 # Все микросервисы + все базы данных + инфраструктура
 # Использование: docker-compose up -d --build
@@ -30,8 +30,14 @@ services:
       --collation-server=utf8mb4_unicode_ci
       --skip-name-resolve
       --innodb-doublewrite=0
-      --innodb-flush-log-at-trx-commit=2
+      --innodb-flush-log-at-trx-commit=0
       --innodb-flush-method=O_DIRECT_NO_FSYNC
+      --innodb-buffer-pool-size=64M
+      --innodb-log-file-size=16M
+      --innodb-redo-log-capacity=32M
+      --performance-schema=OFF
+      --skip-log-bin
+      --max-connections=50
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-proot"]
       interval: 5s
@@ -61,8 +67,14 @@ services:
       --collation-server=utf8mb4_unicode_ci
       --skip-name-resolve
       --innodb-doublewrite=0
-      --innodb-flush-log-at-trx-commit=2
+      --innodb-flush-log-at-trx-commit=0
       --innodb-flush-method=O_DIRECT_NO_FSYNC
+      --innodb-buffer-pool-size=64M
+      --innodb-log-file-size=16M
+      --innodb-redo-log-capacity=32M
+      --performance-schema=OFF
+      --skip-log-bin
+      --max-connections=50
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-proot"]
       interval: 5s
@@ -92,8 +104,14 @@ services:
       --collation-server=utf8mb4_unicode_ci
       --skip-name-resolve
       --innodb-doublewrite=0
-      --innodb-flush-log-at-trx-commit=2
+      --innodb-flush-log-at-trx-commit=0
       --innodb-flush-method=O_DIRECT_NO_FSYNC
+      --innodb-buffer-pool-size=64M
+      --innodb-log-file-size=16M
+      --innodb-redo-log-capacity=32M
+      --performance-schema=OFF
+      --skip-log-bin
+      --max-connections=50
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-proot"]
       interval: 5s
@@ -123,8 +141,14 @@ services:
       --collation-server=utf8mb4_unicode_ci
       --skip-name-resolve
       --innodb-doublewrite=0
-      --innodb-flush-log-at-trx-commit=2
+      --innodb-flush-log-at-trx-commit=0
       --innodb-flush-method=O_DIRECT_NO_FSYNC
+      --innodb-buffer-pool-size=64M
+      --innodb-log-file-size=16M
+      --innodb-redo-log-capacity=32M
+      --performance-schema=OFF
+      --skip-log-bin
+      --max-connections=50
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-proot"]
       interval: 5s
@@ -154,8 +178,14 @@ services:
       --collation-server=utf8mb4_unicode_ci
       --skip-name-resolve
       --innodb-doublewrite=0
-      --innodb-flush-log-at-trx-commit=2
+      --innodb-flush-log-at-trx-commit=0
       --innodb-flush-method=O_DIRECT_NO_FSYNC
+      --innodb-buffer-pool-size=64M
+      --innodb-log-file-size=16M
+      --innodb-redo-log-capacity=32M
+      --performance-schema=OFF
+      --skip-log-bin
+      --max-connections=50
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-proot"]
       interval: 5s
@@ -247,6 +277,8 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      JWT_SECRET: 2a442e4cec2e697d12a41e5e8c6aa19cdf0dd009e75cd8ba1433d72b27dc9926
+      GATEWAY_AUTH_INTERNAL_SECRET: orderflow-gateway-internal-2026
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -272,6 +304,7 @@ services:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
       JWT_SECRET: 2a442e4cec2e697d12a41e5e8c6aa19cdf0dd009e75cd8ba1433d72b27dc9926
+      GATEWAY_AUTH_INTERNAL_SECRET: orderflow-gateway-internal-2026
     depends_on:
       auth-mysql:
         condition: service_healthy
@@ -300,6 +333,8 @@ services:
       SPRING_RABBITMQ_PASSWORD: orderflow123
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      GATEWAY_AUTH_ENABLED: "true"
+      GATEWAY_AUTH_INTERNAL_SECRET: orderflow-gateway-internal-2026
     depends_on:
       catalog-mysql:
         condition: service_healthy
@@ -328,6 +363,8 @@ services:
       SPRING_RABBITMQ_PASSWORD: orderflow123
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      GATEWAY_AUTH_ENABLED: "true"
+      GATEWAY_AUTH_INTERNAL_SECRET: orderflow-gateway-internal-2026
     depends_on:
       order-mysql:
         condition: service_healthy
@@ -356,6 +393,8 @@ services:
       SPRING_RABBITMQ_PASSWORD: orderflow123
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      GATEWAY_AUTH_ENABLED: "true"
+      GATEWAY_AUTH_INTERNAL_SECRET: orderflow-gateway-internal-2026
     depends_on:
       chat-mysql:
         condition: service_healthy
@@ -388,6 +427,8 @@ services:
       MINIO_BUCKET_NAME: orderflow-documents
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      GATEWAY_AUTH_ENABLED: "true"
+      GATEWAY_AUTH_INTERNAL_SECRET: orderflow-gateway-internal-2026
     depends_on:
       document-mysql:
         condition: service_healthy

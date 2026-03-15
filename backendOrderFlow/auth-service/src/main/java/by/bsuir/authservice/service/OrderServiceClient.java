@@ -1,10 +1,8 @@
 package by.bsuir.authservice.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -15,53 +13,53 @@ import java.util.Map;
 @Slf4j
 public class OrderServiceClient {
 
-	@Value("${services.order-service.url:http://localhost:8083}")
-	private String orderServiceUrl;
+	private static final String RPC_EXCHANGE = "rpc.exchange";
+	private static final String RPC_OVERALL_ANALYTICS = "rpc.order.getOverallAnalytics";
+	private static final String RPC_COMPANY_ORDER_STATS = "rpc.order.getCompanyOrderStats";
 
-	private final RestTemplate restTemplate = new RestTemplate();
+	private final RabbitTemplate rabbitTemplate;
 
-	
+	public OrderServiceClient(RabbitTemplate rabbitTemplate) {
+		this.rabbitTemplate = rabbitTemplate;
+	}
+
 	@SuppressWarnings("unchecked")
 	public Map<String, Object> getOverallAnalytics() {
 		try {
-			ResponseEntity<Map> response = restTemplate.getForEntity(
-					orderServiceUrl + "/api/analytics",
-					Map.class
-			);
-			if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-				Map<String, Object> body = response.getBody();
-				if (body.containsKey("data") && body.get("data") instanceof Map) {
-					return (Map<String, Object>) body.get("data");
+			Map<String, Object> request = Map.of("period", "all");
+			Object response = rabbitTemplate.convertSendAndReceive(RPC_EXCHANGE, RPC_OVERALL_ANALYTICS, request);
+
+			if (response instanceof Map<?, ?> map) {
+				Boolean success = (Boolean) map.get("success");
+				if (Boolean.TRUE.equals(success) && map.get("data") instanceof Map) {
+					return (Map<String, Object>) map.get("data");
 				}
-				return body;
 			}
 		} catch (Exception e) {
-			log.warn("Failed to fetch analytics from order-service: {}", e.getMessage());
+			log.warn("Failed to fetch analytics from order-service via RabbitMQ RPC: {}", e.getMessage());
 		}
 		return Collections.emptyMap();
 	}
 
-	
+
 	@SuppressWarnings("unchecked")
 	public Map<String, Object> getCompanyOrderStats(Long companyId, String role) {
 		try {
-			String endpoint;
-			if ("SUPPLIER".equalsIgnoreCase(role)) {
-				endpoint = orderServiceUrl + "/api/analytics/supplier?companyId=" + companyId;
-			} else {
-				endpoint = orderServiceUrl + "/api/analytics/customer?companyId=" + companyId;
-			}
+			Map<String, Object> request = new HashMap<>();
+			request.put("companyId", companyId);
+			request.put("role", role);
 
-			ResponseEntity<Map> response = restTemplate.getForEntity(endpoint, Map.class);
-			if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-				Map<String, Object> body = response.getBody();
-				if (body.containsKey("data") && body.get("data") instanceof Map) {
-					return (Map<String, Object>) body.get("data");
+			Object response = rabbitTemplate.convertSendAndReceive(RPC_EXCHANGE, RPC_COMPANY_ORDER_STATS, request);
+
+			if (response instanceof Map<?, ?> map) {
+				Boolean success = (Boolean) map.get("success");
+				if (Boolean.TRUE.equals(success) && map.get("data") instanceof Map) {
+					return (Map<String, Object>) map.get("data");
 				}
-				return body;
 			}
 		} catch (Exception e) {
-			log.warn("Failed to fetch company stats from order-service for company {}: {}", companyId, e.getMessage());
+			log.warn("Failed to fetch company stats from order-service via RabbitMQ RPC for company {}: {}",
+					companyId, e.getMessage());
 		}
 		Map<String, Object> fallback = new HashMap<>();
 		fallback.put("totalOrders", 0);
@@ -70,16 +68,15 @@ public class OrderServiceClient {
 		return fallback;
 	}
 
-	
+
 	@SuppressWarnings("unchecked")
 	public Map<String, Object> getSupplierStats(Long companyId) {
 		return getCompanyOrderStats(companyId, "SUPPLIER");
 	}
 
-	
+
 	@SuppressWarnings("unchecked")
 	public Map<String, Object> getRetailChainStats(Long companyId) {
 		return getCompanyOrderStats(companyId, "RETAIL_CHAIN");
 	}
 }
-

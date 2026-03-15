@@ -2,6 +2,7 @@ package by.bsuir.apigateway.filter;
 
 import by.bsuir.apigateway.service.JwtProvider;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,9 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class GlobalJwtFilter implements GlobalFilter, Ordered {
     private final JwtProvider jwtProvider;
+
+    @Value("${gateway.auth.internal-secret:}")
+    private String gatewayInternalSecret;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, org.springframework.cloud.gateway.filter.GatewayFilterChain chain) {
@@ -45,6 +49,10 @@ public class GlobalJwtFilter implements GlobalFilter, Ordered {
             var requestBuilder = exchange.getRequest().mutate()
                     .header("X-User-Email", email)
                     .header("X-User-Role", role);
+
+            if (gatewayInternalSecret != null && !gatewayInternalSecret.isBlank()) {
+                requestBuilder.header("X-Gateway-Auth", gatewayInternalSecret);
+            }
 
             if (userId != null) {
                 requestBuilder.header("X-User-Id", userId.toString());

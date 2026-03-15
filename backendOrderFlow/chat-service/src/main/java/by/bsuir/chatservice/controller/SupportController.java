@@ -1,6 +1,7 @@
 package by.bsuir.chatservice.controller;
 
 import by.bsuir.chatservice.dto.*;
+import by.bsuir.chatservice.entity.SupportTicket;
 import by.bsuir.chatservice.service.SupportService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -9,7 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -26,6 +29,30 @@ public class SupportController {
 			@RequestHeader("X-User-Company-Id") Long companyId,
 			@RequestHeader("X-User-Id") Long userId,
 			@Valid @RequestBody CreateTicketRequest request) {
+		TicketResponse response = supportService.createTicket(companyId, userId, request);
+		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
+	}
+
+	@PostMapping(consumes = "multipart/form-data")
+	@Operation(summary = "Создать тикет поддержки с вложениями")
+	public ResponseEntity<ApiResponse<TicketResponse>> createTicketMultipart(
+			@RequestHeader("X-User-Company-Id") Long companyId,
+			@RequestHeader("X-User-Id") Long userId,
+			@RequestParam("subject") String subject,
+			@RequestParam("message") String message,
+			@RequestParam(value = "category", required = false) SupportTicket.TicketCategory category,
+			@RequestParam(value = "priority", required = false) SupportTicket.TicketPriority priority,
+			@RequestParam(value = "files", required = false) List<MultipartFile> files) {
+		List<String> attachmentKeys = new ArrayList<>();
+		if (files != null) {
+			for (MultipartFile file : files) {
+				if (file != null && !file.isEmpty()) {
+					attachmentKeys.add(supportService.storeAttachment(file, companyId));
+				}
+			}
+		}
+
+		CreateTicketRequest request = new CreateTicketRequest(subject, message, category, priority, attachmentKeys);
 		TicketResponse response = supportService.createTicket(companyId, userId, request);
 		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
 	}
@@ -55,9 +82,10 @@ public class SupportController {
 	@Operation(summary = "Получить все тикеты (для администратора)")
 	public ResponseEntity<ApiResponse<PageResponse<TicketResponse>>> getAllTickets(
 			@RequestParam(required = false) String status,
+			@RequestParam(required = false) String search,
 			@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "20") int size) {
-		PageResponse<TicketResponse> response = supportService.getAllTickets(status, page, size);
+		PageResponse<TicketResponse> response = supportService.getAllTickets(status, search, page, size);
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 
@@ -80,6 +108,29 @@ public class SupportController {
 			@RequestHeader(value = "X-User-Role", defaultValue = "USER") String role,
 			@Valid @RequestBody TicketMessageRequest request) {
 		boolean isAdmin = "ADMIN".equalsIgnoreCase(role);
+		TicketMessageResponse response = supportService.addMessage(ticketId, userId, isAdmin, request);
+		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
+	}
+
+	@PostMapping(value = "/{ticketId}/messages", consumes = "multipart/form-data")
+	@Operation(summary = "Добавить сообщение в тикет с вложениями")
+	public ResponseEntity<ApiResponse<TicketMessageResponse>> addMessageMultipart(
+			@PathVariable Long ticketId,
+			@RequestHeader("X-User-Id") Long userId,
+			@RequestHeader(value = "X-User-Role", defaultValue = "USER") String role,
+			@RequestParam("message") String message,
+			@RequestParam(value = "isInternalNote", required = false) Boolean isInternalNote,
+			@RequestParam(value = "files", required = false) List<MultipartFile> files) {
+		boolean isAdmin = "ADMIN".equalsIgnoreCase(role);
+		List<String> attachmentKeys = new ArrayList<>();
+		if (files != null) {
+			for (MultipartFile file : files) {
+				if (file != null && !file.isEmpty()) {
+					attachmentKeys.add(supportService.storeAttachment(file, ticketId));
+				}
+			}
+		}
+		TicketMessageRequest request = new TicketMessageRequest(message, attachmentKeys, null, isInternalNote);
 		TicketMessageResponse response = supportService.addMessage(ticketId, userId, isAdmin, request);
 		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
 	}

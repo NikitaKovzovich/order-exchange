@@ -73,8 +73,9 @@ public class InventoryController {
 		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Low stock products retrieved")
 	})
 	public ResponseEntity<ApiResponse<List<InventoryResponse>>> getLowStock(
-			@RequestParam(defaultValue = "10") @Parameter(description = "Stock threshold") int threshold) {
-		List<InventoryResponse> inventory = inventoryService.getLowStockProducts(threshold);
+			@RequestParam(defaultValue = "10") @Parameter(description = "Stock threshold") int threshold,
+			@RequestHeader(value = "X-User-Company-Id", required = false) @Parameter(hidden = true) Long supplierId) {
+		List<InventoryResponse> inventory = inventoryService.getLowStockProducts(threshold, supplierId);
 		return ResponseEntity.ok(ApiResponse.success(inventory));
 	}
 

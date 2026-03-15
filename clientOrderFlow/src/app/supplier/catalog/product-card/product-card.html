@@ -21,6 +21,26 @@
     </header>
 
     <main class="flex-1 overflow-y-auto p-6">
+      <div *ngIf="isLoading" class="rounded-lg bg-white p-8 text-center text-gray-500 shadow-sm">
+        Загрузка карточки товара...
+      </div>
+
+      <div *ngIf="errorMessage" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+        {{ errorMessage }}
+      </div>
+
+      <div *ngIf="notification" class="mb-6 rounded-lg border px-4 py-3" [ngClass]="{
+        'border-green-200 bg-green-50 text-green-800': notification.type === 'success',
+        'border-red-200 bg-red-50 text-red-800': notification.type === 'error',
+        'border-blue-200 bg-blue-50 text-blue-800': notification.type === 'info',
+        'border-amber-200 bg-amber-50 text-amber-800': notification.type === 'warning'
+      }">
+        <div class="flex items-start justify-between gap-4">
+          <p class="text-sm font-medium">{{ notification.message }}</p>
+          <button type="button" class="text-current opacity-70 hover:opacity-100" (click)="notification = null">✕</button>
+        </div>
+      </div>
+
       <div class="mb-4">
         <a routerLink="/supplier/catalog" class="text-sm text-indigo-600 hover:underline flex items-center">
           <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -30,15 +50,12 @@
         </a>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div *ngIf="product && !isLoading" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2">
           <div class="bg-white p-6 rounded-lg shadow-sm relative">
             <span class="absolute top-4 right-4 text-xs font-semibold py-1 px-2 uppercase rounded-full"
-                  [class.bg-green-200]="product.status === 'published'"
-                  [class.text-green-600]="product.status === 'published'"
-                  [class.bg-yellow-200]="product.status === 'draft'"
-                  [class.text-yellow-600]="product.status === 'draft'">
-              {{ product.status === 'published' ? 'Опубликован' : 'Черновик' }}
+                  [ngClass]="getStatusClass(product.status)">
+              {{ getStatusLabel(product.status) }}
             </span>
 
             <h2 class="text-2xl font-bold text-gray-800 mb-4 pr-24">{{ product.name }}</h2>
@@ -46,10 +63,11 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <div class="w-full h-64 rounded-lg overflow-hidden mb-2 bg-gray-200 flex items-center justify-center">
-                  <img [src]="product.photos[selectedPhoto]" alt="Product" class="w-full h-full object-cover">
+                  <img *ngIf="galleryImages.length > 0" [src]="galleryImages[selectedPhoto]" alt="Product" class="w-full h-full object-cover">
+                  <span *ngIf="galleryImages.length === 0" class="text-sm font-medium text-gray-500">Нет изображений</span>
                 </div>
-                <div class="grid grid-cols-3 gap-2">
-                  <div *ngFor="let photo of product.photos; let i = index"
+                <div class="grid grid-cols-3 gap-2" *ngIf="galleryImages.length > 1">
+                  <div *ngFor="let photo of galleryImages; let i = index"
                        (click)="selectPhoto(i)"
                        class="w-full h-24 rounded-lg overflow-hidden cursor-pointer bg-gray-200 flex items-center justify-center"
                        [class.border-2]="i === selectedPhoto"
@@ -61,12 +79,12 @@
 
               <div class="flex flex-col">
                 <div>
-                  <p class="text-3xl font-bold text-gray-800">{{ product.price }} BYN</p>
-                  <p class="text-sm text-gray-500">Цена за {{ product.unit }}</p>
+                  <p class="text-3xl font-bold text-gray-800">{{ formatPrice(product.pricePerUnit) }} BYN</p>
+                  <p class="text-sm text-gray-500">Цена за {{ product.unitOfMeasure }}</p>
                 </div>
                 <div class="mt-4 flex-grow">
                   <h3 class="font-semibold text-gray-700">Описание</h3>
-                  <p class="mt-1 text-sm text-gray-600">{{ product.description }}</p>
+                  <p class="mt-1 text-sm text-gray-600">{{ product.description || 'Описание не заполнено' }}</p>
                 </div>
                 <button (click)="editProduct()" class="mt-4 w-full flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">
                   <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -84,26 +102,31 @@
             <h3 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Управление остатками</h3>
             <div class="flex items-center justify-between mb-2">
               <p class="text-sm text-gray-600">Текущий остаток:</p>
-              <p class="font-bold text-gray-800 text-lg">{{ currentStock }} {{ product.unit }}</p>
+              <p class="font-bold text-gray-800 text-lg">{{ currentStock }} {{ product.unitOfMeasure }}</p>
+            </div>
+            <div class="mb-3 text-xs text-gray-500" *ngIf="inventory">
+              Зарезервировано: {{ inventory.reservedQuantity }} · Фактически доступно: {{ inventory.actualAvailable }}
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Новое количество</label>
               <input type="number" [(ngModel)]="newStock" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
             </div>
-            <button (click)="updateStock()" class="mt-4 w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg">Сохранить остаток</button>
+            <button (click)="updateStock()" [disabled]="isSavingStock" class="mt-4 w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50">
+              {{ isSavingStock ? 'Сохранение...' : 'Сохранить остаток' }}
+            </button>
           </div>
 
           <div class="bg-white p-6 rounded-lg shadow-sm">
             <h3 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Характеристики</h3>
             <ul class="text-sm text-gray-700 space-y-2">
               <li class="flex justify-between"><span>Артикул (SKU):</span> <span class="font-semibold">{{ product.sku }}</span></li>
-              <li class="flex justify-between"><span>Категория:</span> <span class="font-semibold">{{ product.category }}</span></li>
-              <li class="flex justify-between"><span>Ставка НДС:</span> <span class="font-semibold">{{ product.vat }}</span></li>
-              <li class="flex justify-between"><span>Вес:</span> <span class="font-semibold">{{ product.weight }} кг</span></li>
-              <li class="flex justify-between"><span>Габариты:</span> <span class="font-semibold">{{ product.dimensions }}</span></li>
-              <li class="flex justify-between"><span>Дата производства:</span> <span class="font-semibold">{{ product.mfgDate }}</span></li>
-              <li class="flex justify-between"><span>Срок годности:</span> <span class="font-semibold">{{ product.expDate }}</span></li>
-              <li class="flex justify-between"><span>Страна:</span> <span class="font-semibold">{{ product.origin }}</span></li>
+              <li class="flex justify-between"><span>Категория:</span> <span class="font-semibold">{{ product.category.name || '—' }}</span></li>
+              <li class="flex justify-between"><span>Ставка НДС:</span> <span class="font-semibold">{{ product.vatRateName || (product.vatRateValue + '%') }}</span></li>
+              <li class="flex justify-between"><span>Вес:</span> <span class="font-semibold">{{ product.weight ? product.weight + ' кг' : '—' }}</span></li>
+              <li class="flex justify-between"><span>Габариты:</span> <span class="font-semibold">{{ product.packageDimensions || '—' }}</span></li>
+              <li class="flex justify-between"><span>Дата производства:</span> <span class="font-semibold">{{ formatDate(product.productionDate) }}</span></li>
+              <li class="flex justify-between"><span>Срок годности:</span> <span class="font-semibold">{{ formatDate(product.expiryDate) }}</span></li>
+              <li class="flex justify-between"><span>Страна:</span> <span class="font-semibold">{{ product.countryOfOrigin || '—' }}</span></li>
             </ul>
           </div>
         </div>

@@ -42,7 +42,7 @@ public class SupportTicket {
 	@Builder.Default
 	private TicketPriority priority = TicketPriority.NORMAL;
 
-	@Enumerated(EnumType.STRING)
+	@Convert(converter = by.bsuir.chatservice.entity.TicketCategoryConverter.class)
 	@Column(name = "category")
 	private TicketCategory category;
 
@@ -79,12 +79,49 @@ public class SupportTicket {
 	}
 
 	public enum TicketCategory {
-		TECHNICAL_ISSUE,
-		PAYMENT_ISSUE,
-		ORDER_ISSUE,
-		ACCOUNT_ISSUE,
-		VERIFICATION_ISSUE,
-		OTHER
+		TECHNICAL("TECHNICAL_ISSUE"),
+		TECHNICAL_ISSUE("TECHNICAL_ISSUE"),
+		PAYMENT("PAYMENT_ISSUE"),
+		PAYMENT_ISSUE("PAYMENT_ISSUE"),
+		ORDER("ORDER_ISSUE"),
+		ORDER_ISSUE("ORDER_ISSUE"),
+		ACCOUNT("ACCOUNT_ISSUE"),
+		ACCOUNT_ISSUE("ACCOUNT_ISSUE"),
+		VERIFICATION("VERIFICATION_ISSUE"),
+		VERIFICATION_ISSUE("VERIFICATION_ISSUE"),
+		OTHER("OTHER");
+
+		private final String persistenceValue;
+
+		TicketCategory(String persistenceValue) {
+			this.persistenceValue = persistenceValue;
+		}
+
+		public String getPersistenceValue() {
+			return persistenceValue;
+		}
+
+		public static TicketCategory fromPersistenceValue(String value) {
+			if (value == null || value.isBlank()) {
+				return null;
+			}
+
+			for (TicketCategory category : values()) {
+				if (category.name().equalsIgnoreCase(value)) {
+					return category;
+				}
+			}
+
+			return switch (value.toUpperCase()) {
+				case "TECHNICAL_ISSUE" -> TECHNICAL_ISSUE;
+				case "PAYMENT_ISSUE" -> PAYMENT_ISSUE;
+				case "ORDER_ISSUE" -> ORDER_ISSUE;
+				case "ACCOUNT_ISSUE" -> ACCOUNT_ISSUE;
+				case "VERIFICATION_ISSUE" -> VERIFICATION_ISSUE;
+				case "OTHER" -> OTHER;
+				default -> throw new IllegalArgumentException("Unknown ticket category: " + value);
+			};
+		}
 	}
 
 	public void assignTo(Long adminId) {
