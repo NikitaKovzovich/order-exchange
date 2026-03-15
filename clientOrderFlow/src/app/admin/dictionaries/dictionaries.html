@@ -2,6 +2,18 @@
   <admin-header [title]="'Системные справочники'"></admin-header>
 
   <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
+    <div *ngIf="notification" class="mb-6 rounded-lg border px-4 py-3" [ngClass]="{
+      'border-green-200 bg-green-50 text-green-800': notification.type === 'success',
+      'border-red-200 bg-red-50 text-red-800': notification.type === 'error',
+      'border-blue-200 bg-blue-50 text-blue-800': notification.type === 'info',
+      'border-amber-200 bg-amber-50 text-amber-800': notification.type === 'warning'
+    }">
+      <div class="flex items-start justify-between gap-4">
+        <p class="text-sm font-medium">{{ notification.message }}</p>
+        <button type="button" class="text-current opacity-70 hover:opacity-100" (click)="notification = null">✕</button>
+      </div>
+    </div>
+
     <!-- Tabs -->
     <div class="border-b border-gray-200 mb-6">
       <nav class="-mb-px flex space-x-8" aria-label="Tabs">
@@ -20,8 +32,12 @@
       </nav>
     </div>
 
+    <div *ngIf="isLoading" class="rounded-lg border border-gray-200 bg-white p-8 text-center text-sm text-gray-500 shadow-sm">
+      Загрузка справочников...
+    </div>
+
     <!-- Units Tab -->
-    <div *ngIf="activeTab === 'units'">
+    <div *ngIf="!isLoading && activeTab === 'units'">
       <div class="flex justify-end mb-6">
         <button
           (click)="openEditModal()"
@@ -57,6 +73,9 @@
                   </button>
                 </td>
               </tr>
+              <tr *ngIf="!units.length">
+                <td colspan="2" class="px-6 py-10 text-center text-sm text-gray-500">Единицы измерения пока не созданы.</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -64,7 +83,7 @@
     </div>
 
     <!-- VAT Tab -->
-    <div *ngIf="activeTab === 'vat'">
+    <div *ngIf="!isLoading && activeTab === 'vat'">
       <div class="flex justify-end mb-6">
         <button
           (click)="openEditModal()"
@@ -100,6 +119,9 @@
                   </button>
                 </td>
               </tr>
+              <tr *ngIf="!vatRates.length">
+                <td colspan="2" class="px-6 py-10 text-center text-sm text-gray-500">Ставки НДС пока не созданы.</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -112,21 +134,47 @@
     <div class="bg-white rounded-lg shadow-xl w-full max-w-md m-4" (click)="$event.stopPropagation()">
       <div class="p-6">
         <h3 class="text-lg font-bold text-gray-800">
-          {{ editingItem ? 'Редактировать' : 'Добавить' }} {{ activeTab === 'units' ? 'единицу' : 'ставку' }}
+          {{ editingItem ? 'Редактировать' : 'Добавить' }} {{ activeTab === 'units' ? 'единицу измерения' : 'ставку НДС' }}
         </h3>
-        <div class="mt-4">
+        <div *ngIf="activeTab === 'units'" class="mt-4">
           <label for="value_name" class="block text-sm font-medium text-gray-700">Значение</label>
           <input
             id="value_name"
             type="text"
-            [(ngModel)]="editValue"
+            [(ngModel)]="unitName"
             class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            [placeholder]="activeTab === 'units' ? 'Например: шт' : 'Например: 20%'">
+            placeholder="Например: шт">
+        </div>
+
+        <div *ngIf="activeTab === 'vat'" class="mt-4 space-y-4">
+          <div>
+            <label for="vat_description" class="block text-sm font-medium text-gray-700">Описание</label>
+            <input
+              id="vat_description"
+              type="text"
+              [(ngModel)]="vatDescription"
+              class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="Например: НДС 20%">
+          </div>
+
+          <div>
+            <label for="vat_rate" class="block text-sm font-medium text-gray-700">Ставка, %</label>
+            <input
+              id="vat_rate"
+              type="number"
+              min="0"
+              step="0.01"
+              [(ngModel)]="vatRatePercentage"
+              class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="Например: 20">
+          </div>
         </div>
       </div>
       <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
-        <button (click)="closeEditModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Отмена</button>
-        <button (click)="saveItem()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold">Сохранить</button>
+        <button (click)="closeEditModal()" [disabled]="isSaving" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-60">Отмена</button>
+        <button (click)="saveItem()" [disabled]="isSaving" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold disabled:cursor-not-allowed disabled:opacity-60">
+          {{ isSaving ? 'Сохранение...' : 'Сохранить' }}
+        </button>
       </div>
     </div>
   </div>
@@ -143,11 +191,15 @@
           </div>
           <h3 class="ml-4 text-lg font-bold text-gray-800">Удалить элемент?</h3>
         </div>
-        <p class="text-sm text-gray-600 mt-4">Вы уверены, что хотите удалить это значение? Это действие нельзя отменить.</p>
+        <p class="text-sm text-gray-600 mt-4">
+          Вы уверены, что хотите удалить <span class="font-semibold text-gray-800">{{ getDeleteItemLabel() }}</span>? Это действие нельзя отменить.
+        </p>
       </div>
       <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
-        <button (click)="closeDeleteModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Отмена</button>
-        <button (click)="confirmDelete()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold">Удалить</button>
+        <button (click)="closeDeleteModal()" [disabled]="isDeleting" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-60">Отмена</button>
+        <button (click)="confirmDelete()" [disabled]="isDeleting" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold disabled:cursor-not-allowed disabled:opacity-60">
+          {{ isDeleting ? 'Удаление...' : 'Удалить' }}
+        </button>
       </div>
     </div>
   </div>

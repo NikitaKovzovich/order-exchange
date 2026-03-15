@@ -3,7 +3,6 @@ package by.bsuir.chatservice.service;
 import by.bsuir.chatservice.dto.*;
 import by.bsuir.chatservice.entity.ChatChannel;
 import by.bsuir.chatservice.entity.Message;
-import by.bsuir.chatservice.exception.AccessDeniedException;
 import by.bsuir.chatservice.exception.DuplicateResourceException;
 import by.bsuir.chatservice.exception.ResourceNotFoundException;
 import by.bsuir.chatservice.repository.ChatChannelRepository;
@@ -45,12 +44,12 @@ public class ChatService {
 		return toChannelResponse(channel, 0L);
 	}
 
-	@Transactional(readOnly = true)
+	@Transactional
 	public ChatChannelResponse getChannelByOrderId(Long orderId, Long userId) {
 		ChatChannel channel = channelRepository.findByOrderId(orderId)
 				.orElseThrow(() -> new ResourceNotFoundException("ChatChannel", "orderId", orderId));
 
-		validateParticipant(channel, userId);
+		ensureParticipant(channel, userId);
 		long unreadCount = messageRepository.countUnreadMessages(channel.getId(), userId);
 
 		return toChannelResponse(channel, unreadCount);
@@ -58,7 +57,26 @@ public class ChatService {
 
 	@Transactional(readOnly = true)
 	public List<ChatChannelResponse> getUserChannels(Long userId) {
-		List<ChatChannel> channels = channelRepository.findActiveByUserId(userId);
+		return getUserChannels(userId, null);
+	}
+
+	@Transactional(readOnly = true)
+	public List<ChatChannelResponse> getUserChannels(Long userId, String search) {
+		List<ChatChannel> channels;
+		if (search != null && !search.isBlank()) {
+			channels = new java.util.ArrayList<>(channelRepository.findActiveByUserIdAndSearch(userId, search));
+		} else {
+			channels = new java.util.ArrayList<>(channelRepository.findActiveByUserId(userId));
+		}
+
+
+
+		List<ChatChannel> messageChannels = channelRepository.findActiveChannelsBySenderId(userId);
+		for (ChatChannel mc : messageChannels) {
+			if (channels.stream().noneMatch(c -> c.getId().equals(mc.getId()))) {
+				channels.add(mc);
+			}
+		}
 
 		return channels.stream()
 				.map(channel -> {
@@ -68,12 +86,12 @@ public class ChatService {
 				.toList();
 	}
 
-	@Transactional(readOnly = true)
+	@Transactional
 	public PageResponse<MessageResponse> getMessages(Long orderId, Long userId, int page, int size) {
 		ChatChannel channel = channelRepository.findByOrderId(orderId)
 				.orElseThrow(() -> new ResourceNotFoundException("ChatChannel", "orderId", orderId));
 
-		validateParticipant(channel, userId);
+		ensureParticipant(channel, userId);
 
 		Pageable pageable = PageRequest.of(page, size);
 		Page<Message> messagePage = messageRepository.findByChannelIdOrderBySentAtDesc(channel.getId(), pageable);
@@ -95,13 +113,28 @@ public class ChatService {
 
 	@Transactional
 	public MessageResponse sendMessage(Long orderId, Long senderId, SendMessageRequest request) {
-		ChatChannel channel = channelRepository.findByOrderId(orderId)
-				.orElseThrow(() -> new ResourceNotFoundException("ChatChannel", "orderId", orderId));
+		ChatChannel channel = channelRepository.findByOrderId(orderId).orElse(null);
 
-		validateParticipant(channel, senderId);
+		if (channel == null) {
+
+			channel = ChatChannel.builder()
+					.orderId(orderId)
+					.supplierUserId(senderId)
+					.customerUserId(senderId)
+					.channelName("Заказ #" + orderId)
+					.build();
+			channel = channelRepository.save(channel);
+			log.info("Auto-created chat channel for order {} by user {}", orderId, senderId);
+		} else {
+
+			ensureParticipant(channel, senderId);
+		}
 
 		if (!channel.getIsActive()) {
-			throw new IllegalStateException("Cannot send message to inactive channel");
+
+			channel.setIsActive(true);
+			channelRepository.save(channel);
+			log.info("Reactivated chat channel for order {} on new message from user {}", orderId, senderId);
 		}
 
 		Message message = Message.builder()
@@ -123,7 +156,7 @@ public class ChatService {
 		ChatChannel channel = channelRepository.findByOrderId(orderId)
 				.orElseThrow(() -> new ResourceNotFoundException("ChatChannel", "orderId", orderId));
 
-		validateParticipant(channel, userId);
+		ensureParticipant(channel, userId);
 		int count = messageRepository.markAsRead(channel.getId(), userId);
 		log.debug("Marked {} messages as read in channel {}", count, channel.getId());
 	}
@@ -138,10 +171,31 @@ public class ChatService {
 		log.info("Deactivated chat channel for order {}", orderId);
 	}
 
-	private void validateParticipant(ChatChannel channel, Long userId) {
-		if (!channel.isParticipant(userId)) {
-			throw new AccessDeniedException("User is not a participant of this channel");
+
+
+
+
+
+
+	private void ensureParticipant(ChatChannel channel, Long userId) {
+		if (channel.isParticipant(userId)) {
+			return;
 		}
+
+		if (channel.getSupplierUserId().equals(channel.getCustomerUserId())) {
+			if (!channel.getSupplierUserId().equals(userId)) {
+				channel.setCustomerUserId(userId);
+				channelRepository.save(channel);
+				log.info("Auto-added user {} as second participant to channel {}", userId, channel.getId());
+			}
+			return;
+		}
+
+
+		channel.setSupplierUserId(channel.getCustomerUserId());
+		channel.setCustomerUserId(userId);
+		channelRepository.save(channel);
+		log.info("Remapped channel {} participants to include user {}", channel.getId(), userId);
 	}
 
 	private ChatChannelResponse toChannelResponse(ChatChannel channel, long unreadCount) {

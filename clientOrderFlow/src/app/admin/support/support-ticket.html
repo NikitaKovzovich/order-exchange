@@ -1,37 +1,59 @@
 <div class="flex-1 flex flex-col">
-  <admin-header [title]="'Обращение #TKT-105'"></admin-header>
+  <admin-header [title]="'Обращение #' + (ticket?.ticketNumber || ('TKT-' + ticketId))"></admin-header>
 
   <main class="flex-1 overflow-y-auto p-6">
-    <div class="bg-white p-6 rounded-lg shadow-sm mb-6">
+    <div *ngIf="notification" class="mb-6 rounded-lg border px-4 py-3" [ngClass]="{
+      'border-green-200 bg-green-50 text-green-800': notification.type === 'success',
+      'border-red-200 bg-red-50 text-red-800': notification.type === 'error',
+      'border-blue-200 bg-blue-50 text-blue-800': notification.type === 'info',
+      'border-amber-200 bg-amber-50 text-amber-800': notification.type === 'warning'
+    }">
+      <div class="flex items-start justify-between gap-4">
+        <p class="text-sm font-medium">{{ notification.message }}</p>
+        <button type="button" class="text-current opacity-70 hover:opacity-100" (click)="notification = null">✕</button>
+      </div>
+    </div>
+
+    <div *ngIf="isLoading" class="rounded-lg bg-white p-8 text-center text-gray-500 shadow-sm mb-6">
+      Загрузка обращения...
+    </div>
+
+    <div *ngIf="ticket" class="bg-white p-6 rounded-lg shadow-sm mb-6">
       <div class="flex flex-wrap justify-between items-start">
         <div>
-          <h2 class="text-2xl font-bold text-gray-800">Тема: Не могу загрузить УПД</h2>
+          <h2 class="text-2xl font-bold text-gray-800">Тема: {{ ticket.subject }}</h2>
           <div class="mt-2 text-sm text-gray-500">
-            <span>Пользователь: <a href="#" class="font-semibold text-indigo-600">Сеть Магазинов</a></span>
+            <span>Пользователь ID: <span class="font-semibold text-indigo-600">{{ ticket.userId }}</span></span>
             <span class="mx-2">|</span>
-            <span>Дата: 16.10.2025</span>
+            <span>Дата: {{ formatDateTime(ticket.createdAt) }}</span>
           </div>
         </div>
-        <div class="mt-4 sm:mt-0">
-          <label for="status" class="block text-xs font-medium text-gray-500">Статус</label>
-          <select id="status" [(ngModel)]="ticketStatus" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white">
-            <option value="new" class="text-red-700">Новое</option>
-            <option value="in-progress">В работе</option>
-            <option value="resolved">Решен</option>
-          </select>
+        <div class="mt-4 sm:mt-0 space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-500">Статус</label>
+            <span [ngClass]="getStatusClass(ticket.status)" class="mt-1 inline-flex rounded-full px-3 py-1 text-xs font-semibold">
+              {{ getStatusLabel(ticket.status) }}
+            </span>
+          </div>
+          <div class="flex flex-wrap gap-2 justify-end">
+            <button *ngIf="!ticket.assignedAdminId && ticket.status === 'OPEN'" (click)="assignTicket()" [disabled]="isProcessing" class="rounded-md bg-indigo-600 px-3 py-2 text-sm text-white hover:bg-indigo-700 disabled:opacity-50">Назначить</button>
+            <button *ngIf="ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS' || ticket.status === 'WAITING_USER'" (click)="resolveTicket()" [disabled]="isProcessing" class="rounded-md bg-green-600 px-3 py-2 text-sm text-white hover:bg-green-700 disabled:opacity-50">Решить</button>
+            <button *ngIf="ticket.status !== 'CLOSED'" (click)="closeTicket()" [disabled]="isProcessing" class="rounded-md bg-gray-700 px-3 py-2 text-sm text-white hover:bg-gray-800 disabled:opacity-50">Закрыть</button>
+            <button *ngIf="ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'" (click)="reopenTicket()" [disabled]="isProcessing" class="rounded-md bg-yellow-500 px-3 py-2 text-sm text-white hover:bg-yellow-600 disabled:opacity-50">Переоткрыть</button>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow-sm flex flex-col" style="height: calc(100vh - 20rem);">
+    <div *ngIf="ticket" class="bg-white rounded-lg shadow-sm flex flex-col" style="height: calc(100vh - 20rem);">
       <div class="flex-1 p-6 overflow-y-auto space-y-4">
-        <div *ngFor="let message of messages" [ngClass]="message.sender === 'user' ? 'flex justify-start' : 'flex justify-end'">
-          <div [ngClass]="message.sender === 'user' ? 'bg-gray-100 text-gray-800' : 'bg-indigo-600 text-white'" class="max-w-lg px-4 py-3 rounded-lg">
+        <div *ngFor="let message of messages" [ngClass]="isAdminMessage(message) ? 'flex justify-end' : 'flex justify-start'">
+          <div [ngClass]="isAdminMessage(message) ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-800'" class="max-w-lg px-4 py-3 rounded-lg">
             <div class="flex items-center mb-1">
-              <span class="text-xs font-semibold">{{ message.senderName }}</span>
-              <span [ngClass]="message.sender === 'user' ? 'text-gray-400' : 'text-indigo-200'" class="text-xs ml-2">{{ message.time }}</span>
+              <span class="text-xs font-semibold">{{ isAdminMessage(message) ? 'Администратор' : 'Пользователь' }}</span>
+              <span [ngClass]="isAdminMessage(message) ? 'text-indigo-200' : 'text-gray-400'" class="text-xs ml-2">{{ formatDateTime(message.createdAt) }}</span>
             </div>
-            <p class="text-sm">{{ message.text }}</p>
+            <p class="text-sm">{{ message.messageText }}</p>
           </div>
         </div>
       </div>
@@ -43,8 +65,9 @@
             [(ngModel)]="newMessage"
             (keyup.enter)="sendMessage()"
             placeholder="Введите ответ..."
+            [disabled]="isProcessing"
             class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-          <button (click)="sendMessage()" class="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors">
+          <button (click)="sendMessage()" [disabled]="!newMessage.trim() || isProcessing" class="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50">
             Отправить
           </button>
         </div>

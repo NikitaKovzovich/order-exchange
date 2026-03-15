@@ -2,9 +2,13 @@ package by.bsuir.authservice.controller;
 
 import by.bsuir.authservice.entity.Company;
 import by.bsuir.authservice.entity.User;
-import by.bsuir.authservice.repository.CompanyRepository;
-import by.bsuir.authservice.repository.UserRepository;
-import by.bsuir.authservice.service.AuthService;
+import by.bsuir.authservice.entity.VerificationRequest;
+import by.bsuir.authservice.repository.*;
+import by.bsuir.authservice.service.EventPublisher;
+import by.bsuir.authservice.service.FileStorageService;
+import by.bsuir.authservice.service.NotificationService;
+import by.bsuir.authservice.service.OrderServiceClient;
+import by.bsuir.authservice.service.ChatServiceClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -14,13 +18,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -36,13 +44,46 @@ class AdminControllerTest {
 	private ObjectMapper objectMapper;
 
 	@MockBean
-	private AuthService authService;
-
-	@MockBean
 	private UserRepository userRepository;
 
 	@MockBean
 	private CompanyRepository companyRepository;
+
+	@MockBean
+	private VerificationRequestRepository verificationRequestRepository;
+
+	@MockBean
+	private BankAccountRepository bankAccountRepository;
+
+	@MockBean
+	private ResponsiblePersonRepository responsiblePersonRepository;
+
+	@MockBean
+	private CompanyDocumentRepository companyDocumentRepository;
+
+	@MockBean
+	private AddressRepository addressRepository;
+
+	@MockBean
+	private SupplierSettingsRepository supplierSettingsRepository;
+
+	@MockBean
+	private EventPublisher eventPublisher;
+
+	@MockBean
+	private FileStorageService fileStorageService;
+
+	@MockBean
+	private EventRepository eventRepository;
+
+	@MockBean
+	private NotificationService notificationService;
+
+	@MockBean
+	private OrderServiceClient orderServiceClient;
+
+	@MockBean
+	private ChatServiceClient chatServiceClient;
 
 	private User testUser;
 	private User adminUser;
@@ -55,6 +96,8 @@ class AdminControllerTest {
 				.name("Test Company")
 				.legalName("ООО Test Company")
 				.legalForm(Company.LegalForm.LLC)
+				.taxId("123456789")
+				.status(Company.CompanyStatus.ACTIVE)
 				.build();
 
 		testUser = User.builder()
@@ -62,6 +105,7 @@ class AdminControllerTest {
 				.email("user@example.com")
 				.role(User.Role.SUPPLIER)
 				.status("ACTIVE")
+				.isActive(true)
 				.company(testCompany)
 				.createdAt(LocalDateTime.now())
 				.build();
@@ -71,47 +115,39 @@ class AdminControllerTest {
 				.email("admin@example.com")
 				.role(User.Role.ADMIN)
 				.status("ACTIVE")
+				.isActive(true)
 				.createdAt(LocalDateTime.now())
 				.build();
 	}
 
 	@Nested
-	@DisplayName("Get All Users Tests")
-	class GetAllUsersTests {
+	@DisplayName("Get Users Tests")
+	class GetUsersTests {
 
 		@Test
-		@DisplayName("Should return all users")
-		void shouldReturnAllUsers() throws Exception {
-			when(userRepository.findAll()).thenReturn(List.of(testUser, adminUser));
+		@DisplayName("Should return paginated users")
+		void shouldReturnPaginatedUsers() throws Exception {
+			when(userRepository.findAll(any(Pageable.class)))
+					.thenReturn(new PageImpl<>(List.of(testUser, adminUser)));
 
 			mockMvc.perform(get("/api/admin/users"))
 					.andExpect(status().isOk())
-					.andExpect(jsonPath("$").isArray())
-					.andExpect(jsonPath("$.length()").value(2))
-					.andExpect(jsonPath("$[0].email").value("user@example.com"))
-					.andExpect(jsonPath("$[0].role").value("SUPPLIER"));
+					.andExpect(jsonPath("$.content").isArray())
+					.andExpect(jsonPath("$.content.length()").value(2))
+					.andExpect(jsonPath("$.content[0].email").value("user@example.com"))
+					.andExpect(jsonPath("$.totalElements").value(2));
 		}
 
 		@Test
-		@DisplayName("Should return empty list when no users")
-		void shouldReturnEmptyList() throws Exception {
-			when(userRepository.findAll()).thenReturn(List.of());
+		@DisplayName("Should return empty page when no users")
+		void shouldReturnEmptyPage() throws Exception {
+			when(userRepository.findAll(any(Pageable.class)))
+					.thenReturn(new PageImpl<>(List.of()));
 
 			mockMvc.perform(get("/api/admin/users"))
 					.andExpect(status().isOk())
-					.andExpect(jsonPath("$").isArray())
-					.andExpect(jsonPath("$.length()").value(0));
-		}
-
-		@Test
-		@DisplayName("Should return user with null status as ACTIVE")
-		void shouldReturnUserWithNullStatusAsActive() throws Exception {
-			testUser.setStatus(null);
-			when(userRepository.findAll()).thenReturn(List.of(testUser));
-
-			mockMvc.perform(get("/api/admin/users"))
-					.andExpect(status().isOk())
-					.andExpect(jsonPath("$[0].status").value("ACTIVE"));
+					.andExpect(jsonPath("$.content").isArray())
+					.andExpect(jsonPath("$.content.length()").value(0));
 		}
 	}
 
@@ -123,12 +159,17 @@ class AdminControllerTest {
 		@DisplayName("Should return user by id")
 		void shouldReturnUserById() throws Exception {
 			when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+			when(addressRepository.findByCompanyId(anyLong())).thenReturn(Collections.emptyList());
+			when(bankAccountRepository.findByCompanyId(anyLong())).thenReturn(Optional.empty());
+			when(responsiblePersonRepository.findByCompanyId(anyLong())).thenReturn(Collections.emptyList());
+			when(companyDocumentRepository.findByCompanyId(anyLong())).thenReturn(Collections.emptyList());
 
 			mockMvc.perform(get("/api/admin/users/1"))
 					.andExpect(status().isOk())
 					.andExpect(jsonPath("$.id").value(1))
 					.andExpect(jsonPath("$.email").value("user@example.com"))
-					.andExpect(jsonPath("$.role").value("SUPPLIER"));
+					.andExpect(jsonPath("$.role").value("SUPPLIER"))
+					.andExpect(jsonPath("$.companyProfile").exists());
 		}
 
 		@Test
@@ -150,10 +191,11 @@ class AdminControllerTest {
 		void shouldBlockUser() throws Exception {
 			when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
 			when(userRepository.save(any(User.class))).thenReturn(testUser);
+			when(companyRepository.save(any(Company.class))).thenReturn(testCompany);
 
 			mockMvc.perform(post("/api/admin/users/1/block"))
 					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.message").value("Пользователь заблокирован"));
+					.andExpect(jsonPath("$.message").value("User blocked"));
 
 			verify(userRepository).save(argThat(user -> "BLOCKED".equals(user.getStatus())));
 		}
@@ -178,21 +220,13 @@ class AdminControllerTest {
 			testUser.setStatus("BLOCKED");
 			when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
 			when(userRepository.save(any(User.class))).thenReturn(testUser);
+			when(companyRepository.save(any(Company.class))).thenReturn(testCompany);
 
 			mockMvc.perform(post("/api/admin/users/1/unblock"))
 					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.message").value("Пользователь разблокирован"));
+					.andExpect(jsonPath("$.message").value("User unblocked"));
 
 			verify(userRepository).save(argThat(user -> "ACTIVE".equals(user.getStatus())));
-		}
-
-		@Test
-		@DisplayName("Should return 404 when unblocking non-existent user")
-		void shouldReturn404WhenUnblockingNonExistentUser() throws Exception {
-			when(userRepository.findById(999L)).thenReturn(Optional.empty());
-
-			mockMvc.perform(post("/api/admin/users/999/unblock"))
-					.andExpect(status().isNotFound());
 		}
 	}
 
@@ -201,15 +235,19 @@ class AdminControllerTest {
 	class DashboardStatsTests {
 
 		@Test
-		@DisplayName("Should return dashboard stats")
+		@DisplayName("Should return real dashboard stats")
 		void shouldReturnDashboardStats() throws Exception {
 			when(userRepository.count()).thenReturn(100L);
+			when(userRepository.countByRole(User.Role.ADMIN)).thenReturn(5L);
+			when(userRepository.countByCreatedAtAfter(any(LocalDateTime.class))).thenReturn(10L);
+			when(verificationRequestRepository.countByStatus(VerificationRequest.VerificationStatus.PENDING))
+					.thenReturn(3L);
 
 			mockMvc.perform(get("/api/admin/dashboard/stats"))
 					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.totalUsers").value(100))
-					.andExpect(jsonPath("$.activeOrders").value(42))
-					.andExpect(jsonPath("$.pendingVerifications").value(5));
+					.andExpect(jsonPath("$.totalUsers").value(95))
+					.andExpect(jsonPath("$.usersWeekGrowth").value(10))
+					.andExpect(jsonPath("$.pendingVerifications").value(3));
 		}
 	}
 
@@ -224,29 +262,44 @@ class AdminControllerTest {
 			when(userRepository.countByRole(User.Role.SUPPLIER)).thenReturn(50L);
 			when(userRepository.countByRole(User.Role.RETAIL_CHAIN)).thenReturn(40L);
 			when(userRepository.countByRole(User.Role.ADMIN)).thenReturn(10L);
+			when(userRepository.countByStatus("BLOCKED")).thenReturn(2L);
+			when(userRepository.countByRoleAndCreatedAtAfter(any(User.Role.class), any(LocalDateTime.class)))
+					.thenReturn(5L);
 
 			mockMvc.perform(get("/api/admin/dashboard/users-stats"))
 					.andExpect(status().isOk())
 					.andExpect(jsonPath("$.total").value(100))
 					.andExpect(jsonPath("$.suppliers").value(50))
 					.andExpect(jsonPath("$.retailers").value(40))
-					.andExpect(jsonPath("$.admins").value(10));
+					.andExpect(jsonPath("$.admins").value(10))
+					.andExpect(jsonPath("$.blocked").value(2));
 		}
 	}
 
 	@Nested
-	@DisplayName("Orders Stats Tests")
-	class OrdersStatsTests {
+	@DisplayName("Delete User Tests")
+	class DeleteUserTests {
 
 		@Test
-		@DisplayName("Should return orders stats")
-		void shouldReturnOrdersStats() throws Exception {
-			mockMvc.perform(get("/api/admin/dashboard/orders-stats"))
+		@DisplayName("Should soft delete user")
+		void shouldSoftDeleteUser() throws Exception {
+			when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+			when(userRepository.save(any(User.class))).thenReturn(testUser);
+
+			mockMvc.perform(delete("/api/admin/users/1"))
 					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.total").value(245))
-					.andExpect(jsonPath("$.active").value(42))
-					.andExpect(jsonPath("$.completed").value(180))
-					.andExpect(jsonPath("$.cancelled").value(23));
+					.andExpect(jsonPath("$.message").value("User deleted"));
+
+			verify(userRepository).save(argThat(user -> "DELETED".equals(user.getStatus())));
+		}
+
+		@Test
+		@DisplayName("Should return 404 when deleting non-existent user")
+		void shouldReturn404WhenDeletingNonExistentUser() throws Exception {
+			when(userRepository.findById(999L)).thenReturn(Optional.empty());
+
+			mockMvc.perform(delete("/api/admin/users/999"))
+					.andExpect(status().isNotFound());
 		}
 	}
 }

@@ -46,6 +46,7 @@ class ProductControllerTest {
 				"20%",
 				new BigDecimal("20.00"),
 				new BigDecimal("0.5"),
+				null,
 				"Belarus",
 				null,
 				null,
@@ -76,7 +77,7 @@ class ProductControllerTest {
 		PageResponse<ProductResponse> pageResponse = new PageResponse<>(
 				List.of(product), 0, 20, 1, 1, true, true
 		);
-		when(productService.searchProducts(any(ProductSearchRequest.class))).thenReturn(pageResponse);
+		when(productService.searchProducts(any(ProductSearchRequest.class), any())).thenReturn(pageResponse);
 
 		mockMvc.perform(get("/api/products/search")
 						.param("page", "0")
@@ -93,7 +94,7 @@ class ProductControllerTest {
 		PageResponse<ProductResponse> pageResponse = new PageResponse<>(
 				List.of(product), 0, 20, 1, 1, true, true
 		);
-		when(productService.getSupplierProducts(eq(100L), anyInt(), anyInt())).thenReturn(pageResponse);
+		when(productService.getSupplierProducts(eq(100L), isNull(), anyInt(), anyInt())).thenReturn(pageResponse);
 
 		mockMvc.perform(get("/api/products/supplier")
 						.header("X-User-Company-Id", "100"))
@@ -108,7 +109,7 @@ class ProductControllerTest {
 		ProductRequest request = new ProductRequest(
 				"SKU-001", "Test Product", "Description",
 				1L, new BigDecimal("99.99"), 1L, 1L,
-				new BigDecimal("0.5"), "Belarus", null, null, 100
+				new BigDecimal("0.5"), null, "Belarus", null, null, 100
 		);
 		ProductResponse response = createTestProductResponse();
 		when(productService.createProduct(eq(100L), any(ProductRequest.class))).thenReturn(response);
@@ -126,7 +127,7 @@ class ProductControllerTest {
 	@DisplayName("POST /api/products - should return 400 for invalid request")
 	void shouldReturn400ForInvalidRequest() throws Exception {
 		ProductRequest invalidRequest = new ProductRequest(
-				"", "", null, null, null, null, null, null, null, null, null, null
+				"", "", null, null, null, null, null, null, null, null, null, null, null
 		);
 
 		mockMvc.perform(post("/api/products")
@@ -142,7 +143,7 @@ class ProductControllerTest {
 		ProductRequest request = new ProductRequest(
 				"SKU-001", "Updated Product", "Description",
 				1L, new BigDecimal("149.99"), 1L, 1L,
-				new BigDecimal("0.5"), "Belarus", null, null, null
+				new BigDecimal("0.5"), null, "Belarus", null, null, null
 		);
 		ProductResponse response = createTestProductResponse();
 		when(productService.updateProduct(eq(1L), eq(100L), any(ProductRequest.class))).thenReturn(response);
@@ -179,6 +180,19 @@ class ProductControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.success").value(true))
 				.andExpect(jsonPath("$.message").value("Product archived successfully"));
+	}
+
+	@Test
+	@DisplayName("POST /api/products/{id}/show - should show product for admin")
+	void shouldShowProductForAdmin() throws Exception {
+		ProductResponse response = createTestProductResponse();
+		when(productService.adminShowProduct(1L)).thenReturn(response);
+
+		mockMvc.perform(post("/api/products/1/show")
+						.header("X-User-Role", "ADMIN"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.message").value("Product shown by admin"));
 	}
 
 	@Test

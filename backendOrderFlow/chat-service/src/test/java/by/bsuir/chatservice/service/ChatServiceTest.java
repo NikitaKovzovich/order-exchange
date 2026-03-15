@@ -3,7 +3,6 @@ package by.bsuir.chatservice.service;
 import by.bsuir.chatservice.dto.*;
 import by.bsuir.chatservice.entity.ChatChannel;
 import by.bsuir.chatservice.entity.Message;
-import by.bsuir.chatservice.exception.AccessDeniedException;
 import by.bsuir.chatservice.exception.DuplicateResourceException;
 import by.bsuir.chatservice.exception.ResourceNotFoundException;
 import by.bsuir.chatservice.repository.ChatChannelRepository;
@@ -113,12 +112,16 @@ class ChatServiceTest {
 		}
 
 		@Test
-		@DisplayName("Should throw when user is not participant")
-		void shouldThrowWhenUserIsNotParticipant() {
+		@DisplayName("Should auto-add user when channel participant mapping needs remap")
+		void shouldAutoAddUserWhenUserIsNotParticipant() {
 			when(channelRepository.findByOrderId(100L)).thenReturn(Optional.of(testChannel));
+			when(channelRepository.save(any(ChatChannel.class))).thenReturn(testChannel);
+			when(messageRepository.countUnreadMessages(1L, 999L)).thenReturn(0L);
 
-			assertThatThrownBy(() -> chatService.getChannelByOrderId(100L, 999L))
-					.isInstanceOf(AccessDeniedException.class);
+			ChatChannelResponse response = chatService.getChannelByOrderId(100L, 999L);
+
+			assertThat(response).isNotNull();
+			verify(channelRepository).save(any(ChatChannel.class));
 		}
 	}
 
@@ -167,15 +170,28 @@ class ChatServiceTest {
 		}
 
 		@Test
-		@DisplayName("Should throw when sending to inactive channel")
-		void shouldThrowWhenSendingToInactiveChannel() {
+		@DisplayName("Should reactivate inactive channel on new message")
+		void shouldReactivateInactiveChannel() {
 			testChannel.setIsActive(false);
 			SendMessageRequest request = new SendMessageRequest("Hello!", null);
+			Message savedMessage = Message.builder()
+					.id(2L)
+					.channel(testChannel)
+					.senderId(1L)
+					.messageText("Hello!")
+					.messageType(Message.MessageType.TEXT)
+					.sentAt(LocalDateTime.now())
+					.isRead(false)
+					.build();
 
 			when(channelRepository.findByOrderId(100L)).thenReturn(Optional.of(testChannel));
+			when(channelRepository.save(any(ChatChannel.class))).thenReturn(testChannel);
+			when(messageRepository.save(any(Message.class))).thenReturn(savedMessage);
 
-			assertThatThrownBy(() -> chatService.sendMessage(100L, 1L, request))
-					.isInstanceOf(IllegalStateException.class);
+			MessageResponse response = chatService.sendMessage(100L, 1L, request);
+
+			assertThat(response).isNotNull();
+			verify(channelRepository).save(any(ChatChannel.class));
 		}
 
 		@Test

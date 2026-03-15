@@ -23,7 +23,7 @@ public class EventPublisher {
 
 	@Autowired
 	public EventPublisher(EventRepository eventRepository, ObjectMapper objectMapper,
-						  @Autowired(required = false) RabbitTemplate rabbitTemplate) {
+						@Autowired(required = false) RabbitTemplate rabbitTemplate) {
 		this.eventRepository = eventRepository;
 		this.objectMapper = objectMapper;
 		this.rabbitTemplate = rabbitTemplate;
@@ -55,6 +55,14 @@ public class EventPublisher {
 	public void publishProductArchived(Product product) {
 		publish("Product", product.getId().toString(), Event.EventTypes.PRODUCT_ARCHIVED,
 				Map.of("productId", product.getId()));
+	}
+
+	public void publishProductDeleted(Product product) {
+		publish("Product", product.getId().toString(), "PRODUCT_DELETED",
+				Map.of("productId", product.getId(),
+					"supplierId", product.getSupplierId(),
+					"sku", product.getSku(),
+					"name", product.getName()));
 	}
 
 	public void publishInventoryUpdated(Inventory inventory, String reason) {

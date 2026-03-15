@@ -63,6 +63,6 @@ spotbugs {
 
 pmd {
     ignoreFailures = true
-    ruleSets = []
+    ruleSets = ['category/java/bestpractices.xml', 'category/java/errorprone.xml']
     ruleSetFiles = files()
 }

@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   order-mysql:
@@ -9,17 +8,26 @@ services:
       MYSQL_DATABASE: order_db
       MYSQL_USER: app_user
       MYSQL_PASSWORD: app_password
+      MYSQL_INITDB_SKIP_TZINFO: "1"
     ports:
       - "3308:3306"
     volumes:
       - ./scripts/order_db.sql:/docker-entrypoint-initdb.d/order_db.sql
       - order_mysql_data:/var/lib/mysql
-    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --skip-name-resolve
+      --innodb-doublewrite=0
+      --innodb-flush-log-at-trx-commit=2
+      --innodb-flush-method=O_DIRECT_NO_FSYNC
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-proot"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 30
+      start_period: 60s
 
 volumes:
   order_mysql_data:

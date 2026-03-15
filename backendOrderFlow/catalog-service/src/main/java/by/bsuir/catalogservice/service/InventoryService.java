@@ -105,6 +105,15 @@ public class InventoryService {
 				.collect(Collectors.toList());
 	}
 
+	public List<InventoryResponse> getLowStockProducts(int threshold, Long supplierId) {
+		if (supplierId != null) {
+			return inventoryRepository.findLowStockBySupplierId(threshold, supplierId).stream()
+					.map(this::mapToResponse)
+					.collect(Collectors.toList());
+		}
+		return getLowStockProducts(threshold);
+	}
+
 	public List<InventoryResponse> getOutOfStockProducts() {
 		return inventoryRepository.findOutOfStock().stream()
 				.map(this::mapToResponse)

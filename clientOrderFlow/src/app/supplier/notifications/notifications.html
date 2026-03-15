@@ -20,7 +20,7 @@
           <p class="text-sm" [class.text-gray-800]="!notification.read" [class.text-gray-600]="notification.read">{{ notification.message }}</p>
           <p class="text-xs text-gray-500 mt-1">{{ notification.time }}</p>
           <button *ngIf="notification.orderId"
-                  (click)="goToOrder(notification.orderId)"
+                  (click)="openNotification(notification)"
                   class="mt-2 inline-block px-3 py-1 text-xs font-semibold rounded-md"
                   [class.bg-indigo-600]="!notification.read"
                   [class.text-white]="!notification.read"

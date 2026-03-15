@@ -16,6 +16,11 @@ interface SupplierGroup {
   total: number;
 }
 
+interface UiNotification {
+  type: 'success' | 'error' | 'info' | 'warning';
+  message: string;
+}
+
 @Component({
   selector: 'app-cart',
   standalone: true,
@@ -29,6 +34,7 @@ export class Cart implements OnInit {
   deliveryAddresses: string[] = [];
   isLoading: boolean = false;
   isCheckingOut: boolean = false;
+  notification: UiNotification | null = null;
 
   constructor(
     private router: Router,
@@ -117,7 +123,6 @@ export class Cart implements OnInit {
   }
 
   clearCart() {
-    if (!confirm('Очистить корзину?')) return;
 
     this.cartService.clearCart().subscribe({
       next: () => {
@@ -130,15 +135,22 @@ export class Cart implements OnInit {
 
   submitOrder(group: SupplierGroup) {
     if (!group.deliveryDate) {
-      alert('Пожалуйста, выберите дату доставки');
+      this.notification = {
+        type: 'warning',
+        message: 'Пожалуйста, выберите дату доставки.'
+      };
       return;
     }
 
     if (!group.deliveryAddress) {
-      alert('Пожалуйста, выберите адрес доставки');
+      this.notification = {
+        type: 'warning',
+        message: 'Пожалуйста, выберите адрес доставки.'
+      };
       return;
     }
 
+    this.notification = null;
     this.checkout(group.deliveryAddress, group.deliveryDate);
   }
 
@@ -151,13 +163,19 @@ export class Cart implements OnInit {
     }).subscribe({
       next: (response) => {
         this.isCheckingOut = false;
-        alert(`Создано заказов: ${response.totalOrders}. Общая сумма: ${response.totalAmount.toFixed(2)} BYN`);
+        this.notification = {
+          type: 'success',
+          message: `Создано заказов: ${response.totalOrders}. Общая сумма: ${response.totalAmount.toFixed(2)} BYN.`
+        };
         this.router.navigate(['/retail/orders']);
       },
       error: (error) => {
         console.error('Error during checkout:', error);
         this.isCheckingOut = false;
-        alert('Ошибка при оформлении заказа');
+        this.notification = {
+          type: 'error',
+          message: 'Ошибка при оформлении заказа.'
+        };
       }
     });
   }

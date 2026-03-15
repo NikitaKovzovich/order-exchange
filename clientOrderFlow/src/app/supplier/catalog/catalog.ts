@@ -22,6 +22,7 @@ export class Catalog implements OnInit {
 
   products: Product[] = [];
   filteredProducts: Product[] = [];
+  private searchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
 
   constructor(private catalogService: CatalogService) {}
 
@@ -55,8 +56,14 @@ export class Catalog implements OnInit {
   }
 
   onSearch() {
-    this.currentPage = 0;
-    this.loadProducts();
+    if (this.searchDebounceHandle) {
+      clearTimeout(this.searchDebounceHandle);
+    }
+
+    this.searchDebounceHandle = setTimeout(() => {
+      this.currentPage = 0;
+      this.loadProducts();
+    }, 300);
   }
 
   publishCatalog() {
@@ -92,12 +99,10 @@ export class Catalog implements OnInit {
   }
 
   deleteProduct(product: Product) {
-    if (confirm(`Удалить товар "${product.name}"?`)) {
-      this.catalogService.deleteProduct(product.id).subscribe({
-        next: () => this.loadProducts(),
-        error: (error) => console.error('Error deleting product:', error)
-      });
-    }
+    this.catalogService.deleteProduct(product.id).subscribe({
+      next: () => this.loadProducts(),
+      error: (error) => console.error('Error deleting product:', error)
+    });
   }
 
   getStatusClass(status: ProductStatus): string {

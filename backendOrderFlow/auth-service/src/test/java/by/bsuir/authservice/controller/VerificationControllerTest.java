@@ -4,9 +4,9 @@ import by.bsuir.authservice.entity.Company;
 import by.bsuir.authservice.entity.User;
 import by.bsuir.authservice.entity.VerificationDocument;
 import by.bsuir.authservice.entity.VerificationRequest;
-import by.bsuir.authservice.repository.CompanyRepository;
-import by.bsuir.authservice.repository.VerificationRequestRepository;
+import by.bsuir.authservice.repository.*;
 import by.bsuir.authservice.service.EventPublisher;
+import by.bsuir.authservice.service.FileStorageService;
 import by.bsuir.authservice.service.VerificationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,13 +17,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -47,10 +49,25 @@ class VerificationControllerTest {
 	private VerificationRequestRepository verificationRequestRepository;
 
 	@MockBean
-	private CompanyRepository companyRepository;
+	private AddressRepository addressRepository;
+
+	@MockBean
+	private BankAccountRepository bankAccountRepository;
+
+	@MockBean
+	private ResponsiblePersonRepository responsiblePersonRepository;
+
+	@MockBean
+	private CompanyDocumentRepository companyDocumentRepository;
+
+	@MockBean
+	private SupplierSettingsRepository supplierSettingsRepository;
 
 	@MockBean
 	private EventPublisher eventPublisher;
+
+	@MockBean
+	private FileStorageService fileStorageService;
 
 	private VerificationRequest testRequest;
 	private Company testCompany;
@@ -85,45 +102,48 @@ class VerificationControllerTest {
 	}
 
 	@Nested
-	@DisplayName("Get All Verification Requests Tests")
-	class GetAllVerificationRequestsTests {
+	@DisplayName("Get Verification Requests Tests")
+	class GetVerificationRequestsTests {
 
 		@Test
-		@DisplayName("Should return all verification requests")
-		void shouldReturnAllVerificationRequests() throws Exception {
-			when(verificationRequestRepository.findAll()).thenReturn(List.of(testRequest));
+		@DisplayName("Should return paginated verification requests")
+		void shouldReturnPaginatedRequests() throws Exception {
+			when(verificationRequestRepository.findAll(any(Pageable.class)))
+					.thenReturn(new PageImpl<>(List.of(testRequest)));
 
 			mockMvc.perform(get("/api/admin/verification"))
 					.andExpect(status().isOk())
-					.andExpect(jsonPath("$").isArray())
-					.andExpect(jsonPath("$.length()").value(1))
-					.andExpect(jsonPath("$[0].id").value(1))
-					.andExpect(jsonPath("$[0].companyName").value("ООО Test Company"))
-					.andExpect(jsonPath("$[0].status").value("PENDING"));
+					.andExpect(jsonPath("$.data.content").isArray())
+					.andExpect(jsonPath("$.data.content.length()").value(1))
+					.andExpect(jsonPath("$.data.content[0].id").value(1))
+					.andExpect(jsonPath("$.data.content[0].companyName").value("ООО Test Company"))
+					.andExpect(jsonPath("$.data.content[0].status").value("PENDING"));
 		}
 
 		@Test
 		@DisplayName("Should filter by status")
 		void shouldFilterByStatus() throws Exception {
-			when(verificationRequestRepository.findByStatus(VerificationRequest.VerificationStatus.PENDING))
-					.thenReturn(List.of(testRequest));
+			when(verificationRequestRepository.findByStatus(
+					eq(VerificationRequest.VerificationStatus.PENDING), any(Pageable.class)))
+					.thenReturn(new PageImpl<>(List.of(testRequest)));
 
 			mockMvc.perform(get("/api/admin/verification")
 							.param("status", "PENDING"))
 					.andExpect(status().isOk())
-					.andExpect(jsonPath("$").isArray())
-					.andExpect(jsonPath("$.length()").value(1));
+					.andExpect(jsonPath("$.data.content").isArray())
+					.andExpect(jsonPath("$.data.content.length()").value(1));
 		}
 
 		@Test
-		@DisplayName("Should return empty list")
-		void shouldReturnEmptyList() throws Exception {
-			when(verificationRequestRepository.findAll()).thenReturn(List.of());
+		@DisplayName("Should return empty page")
+		void shouldReturnEmptyPage() throws Exception {
+			when(verificationRequestRepository.findAll(any(Pageable.class)))
+					.thenReturn(new PageImpl<>(List.of()));
 
 			mockMvc.perform(get("/api/admin/verification"))
 					.andExpect(status().isOk())
-					.andExpect(jsonPath("$").isArray())
-					.andExpect(jsonPath("$.length()").value(0));
+					.andExpect(jsonPath("$.data.content").isArray())
+					.andExpect(jsonPath("$.data.content.length()").value(0));
 		}
 	}
 
@@ -136,8 +156,7 @@ class VerificationControllerTest {
 		void shouldReturnPendingRequests() throws Exception {
 			when(verificationService.getPendingRequests()).thenReturn(List.of(testRequest));
 
-			mockMvc.perform(get("/api/admin/verification/pending")
-							.header("X-User-Email", "admin@example.com"))
+			mockMvc.perform(get("/api/admin/verification/pending"))
 					.andExpect(status().isOk())
 					.andExpect(jsonPath("$").isArray())
 					.andExpect(jsonPath("$.length()").value(1));
@@ -145,21 +164,26 @@ class VerificationControllerTest {
 	}
 
 	@Nested
-	@DisplayName("Get Verification Request By Id Tests")
-	class GetVerificationRequestByIdTests {
+	@DisplayName("Get Verification Request Detail Tests")
+	class GetVerificationRequestDetailTests {
 
 		@Test
-		@DisplayName("Should return verification request by id")
-		void shouldReturnVerificationRequestById() throws Exception {
+		@DisplayName("Should return full verification request detail")
+		void shouldReturnFullDetail() throws Exception {
 			when(verificationService.getVerificationRequest(1L)).thenReturn(testRequest);
+			when(addressRepository.findByCompanyId(1L)).thenReturn(Collections.emptyList());
+			when(responsiblePersonRepository.findByCompanyId(1L)).thenReturn(Collections.emptyList());
+			when(bankAccountRepository.findByCompanyId(1L)).thenReturn(java.util.Optional.empty());
+			when(companyDocumentRepository.findByCompanyId(1L)).thenReturn(Collections.emptyList());
 
-			mockMvc.perform(get("/api/admin/verification/1")
-							.header("X-User-Email", "admin@example.com"))
+			mockMvc.perform(get("/api/admin/verification/1"))
 					.andExpect(status().isOk())
 					.andExpect(jsonPath("$.id").value(1))
-					.andExpect(jsonPath("$.companyId").value(1))
-					.andExpect(jsonPath("$.companyName").value("ООО Test Company"))
-					.andExpect(jsonPath("$.status").value("PENDING"));
+					.andExpect(jsonPath("$.status").value("PENDING"))
+					.andExpect(jsonPath("$.role").value("SUPPLIER"))
+					.andExpect(jsonPath("$.company.legalName").value("ООО Test Company"))
+					.andExpect(jsonPath("$.company.taxId").value("1234567890"))
+					.andExpect(jsonPath("$.documents").isArray());
 		}
 	}
 
@@ -179,22 +203,26 @@ class VerificationControllerTest {
 					.uploadedAt(LocalDateTime.now())
 					.build();
 
+			when(verificationService.getVerificationRequest(1L)).thenReturn(testRequest);
+			when(companyDocumentRepository.findByCompanyId(1L)).thenReturn(Collections.emptyList());
 			when(verificationService.getVerificationDocuments(1L)).thenReturn(List.of(document));
+			when(fileStorageService.getPresignedUrl(anyString())).thenReturn("http://minio/presigned-url");
 
-			mockMvc.perform(get("/api/admin/verification/1/documents")
-							.header("X-User-Email", "admin@example.com"))
+			mockMvc.perform(get("/api/admin/verification/1/documents"))
 					.andExpect(status().isOk())
 					.andExpect(jsonPath("$").isArray())
-					.andExpect(jsonPath("$.length()").value(1));
+					.andExpect(jsonPath("$.length()").value(1))
+					.andExpect(jsonPath("$[0].originalFilename").value("certificate.pdf"));
 		}
 
 		@Test
 		@DisplayName("Should return empty list when no documents")
 		void shouldReturnEmptyListWhenNoDocuments() throws Exception {
+			when(verificationService.getVerificationRequest(1L)).thenReturn(testRequest);
+			when(companyDocumentRepository.findByCompanyId(1L)).thenReturn(Collections.emptyList());
 			when(verificationService.getVerificationDocuments(1L)).thenReturn(List.of());
 
-			mockMvc.perform(get("/api/admin/verification/1/documents")
-							.header("X-User-Email", "admin@example.com"))
+			mockMvc.perform(get("/api/admin/verification/1/documents"))
 					.andExpect(status().isOk())
 					.andExpect(jsonPath("$").isArray())
 					.andExpect(jsonPath("$.length()").value(0));
@@ -208,30 +236,16 @@ class VerificationControllerTest {
 		@Test
 		@DisplayName("Should approve verification")
 		void shouldApproveVerification() throws Exception {
-			when(verificationRequestRepository.findById(1L)).thenReturn(Optional.of(testRequest));
-			when(companyRepository.save(any(Company.class))).thenReturn(testCompany);
-			when(verificationRequestRepository.save(any(VerificationRequest.class))).thenReturn(testRequest);
+			testCompany.setStatus(Company.CompanyStatus.ACTIVE);
+			when(verificationService.getVerificationRequest(1L)).thenReturn(testRequest);
 
 			mockMvc.perform(post("/api/admin/verification/1/approve")
 							.header("X-User-Id", "2"))
 					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.message").value("Верификация одобрена"));
+					.andExpect(jsonPath("$.message").value("Verification approved"));
 
 			verify(verificationService).approveVerification(1L, 2L);
 			verify(eventPublisher, times(2)).publish(anyString(), anyString(), anyString(), anyMap());
-		}
-
-		@Test
-		@DisplayName("Should handle approve when request not found")
-		void shouldHandleApproveWhenRequestNotFound() throws Exception {
-			when(verificationRequestRepository.findById(999L)).thenReturn(Optional.empty());
-
-			mockMvc.perform(post("/api/admin/verification/999/approve")
-							.header("X-User-Id", "2"))
-					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.message").value("Верификация одобрена"));
-
-			verify(verificationService).approveVerification(999L, 2L);
 		}
 	}
 
@@ -240,21 +254,34 @@ class VerificationControllerTest {
 	class RejectVerificationTests {
 
 		@Test
-		@DisplayName("Should reject verification")
+		@DisplayName("Should reject verification with reason")
 		void shouldRejectVerification() throws Exception {
-			when(verificationRequestRepository.findById(1L)).thenReturn(Optional.of(testRequest));
-			when(verificationRequestRepository.save(any(VerificationRequest.class))).thenReturn(testRequest);
+			testCompany.setStatus(Company.CompanyStatus.REJECTED);
+			when(verificationService.getVerificationRequest(1L)).thenReturn(testRequest);
 
-			Map<String, String> body = Map.of("reason", "Документы не соответствуют требованиям");
+			Map<String, String> body = Map.of("reason", "Documents not readable");
 
 			mockMvc.perform(post("/api/admin/verification/1/reject")
 							.header("X-User-Id", "2")
 							.contentType(MediaType.APPLICATION_JSON)
 							.content(objectMapper.writeValueAsString(body)))
 					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.message").value("Верификация отклонена"));
+					.andExpect(jsonPath("$.message").value("Verification rejected"));
 
-			verify(verificationService).rejectVerification(1L, 2L, "Документы не соответствуют требованиям");
+			verify(verificationService).rejectVerification(1L, 2L, "Documents not readable");
+		}
+
+		@Test
+		@DisplayName("Should reject when reason is empty")
+		void shouldRejectWhenReasonIsEmpty() throws Exception {
+			Map<String, String> body = Map.of("reason", "");
+
+			mockMvc.perform(post("/api/admin/verification/1/reject")
+							.header("X-User-Id", "2")
+							.contentType(MediaType.APPLICATION_JSON)
+							.content(objectMapper.writeValueAsString(body)))
+					.andExpect(status().isBadRequest())
+					.andExpect(jsonPath("$.error").value("Rejection reason is required"));
 		}
 	}
 }

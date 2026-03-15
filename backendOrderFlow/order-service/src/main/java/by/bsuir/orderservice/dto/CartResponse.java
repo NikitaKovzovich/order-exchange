@@ -4,9 +4,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * Ответ с информацией о корзине
- */
+
+
+
 public record CartResponse(
 	Long id,
 	Long customerId,

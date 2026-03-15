@@ -1,0 +1,108 @@
+<div class="bg-white p-6 rounded-lg shadow mb-6">
+  <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+	<div>
+	  <h2 class="text-2xl font-bold">Цифровой журнал приёмки</h2>
+	  <p class="text-gray-600 mt-1">Агрегаты и история приёмок по поставщикам и поставкам</p>
+	</div>
+
+	<div class="grid grid-cols-1 md:grid-cols-3 gap-3 w-full md:w-auto">
+	  <input
+		type="date"
+		[(ngModel)]="filterDate"
+		class="px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+
+	  <input
+		type="number"
+		[(ngModel)]="filterSupplier"
+		placeholder="ID поставщика"
+		class="px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+
+	  <button
+		(click)="applyFilters()"
+		class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+		Применить
+	  </button>
+	</div>
+  </div>
+</div>
+
+<div *ngIf="errorMessage" class="bg-red-50 text-red-700 border border-red-200 rounded-lg px-4 py-3 mb-6">
+  {{ errorMessage }}
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+  <div class="bg-white p-5 rounded-lg shadow">
+	<p class="text-sm text-gray-500">Количество записей</p>
+	<p class="text-3xl font-bold text-gray-800 mt-1">{{ totalItems }}</p>
+  </div>
+  <div class="bg-white p-5 rounded-lg shadow">
+	<p class="text-sm text-gray-500">Общий объём</p>
+	<p class="text-3xl font-bold text-gray-800 mt-1">{{ totalQuantity }}</p>
+  </div>
+  <div class="bg-white p-5 rounded-lg shadow">
+	<p class="text-sm text-gray-500">Общая сумма</p>
+	<p class="text-3xl font-bold text-gray-800 mt-1">{{ totalAmount | number:'1.2-2' }} BYN</p>
+  </div>
+</div>
+
+<div *ngIf="isLoading" class="bg-white p-12 rounded-lg shadow text-center text-gray-500 mb-6">
+  Загрузка журнала приёмки...
+</div>
+
+<div *ngIf="!isLoading" class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+  <div class="xl:col-span-2 bg-white rounded-lg shadow overflow-hidden">
+	<div class="p-4 border-b bg-gray-50">
+	  <h3 class="text-lg font-semibold text-gray-800">Детализация поставок</h3>
+	</div>
+
+	<div class="overflow-x-auto">
+	  <table class="w-full text-sm text-left text-gray-600">
+		<thead class="bg-gray-50 text-xs uppercase text-gray-500">
+		  <tr>
+			<th class="px-4 py-3">Дата приёмки</th>
+			<th class="px-4 py-3">Поставщик</th>
+			<th class="px-4 py-3">Товар</th>
+			<th class="px-4 py-3">Кол-во</th>
+			<th class="px-4 py-3">Сумма</th>
+			<th class="px-4 py-3">Заказ</th>
+		  </tr>
+		</thead>
+		<tbody>
+		  <tr *ngFor="let record of details" class="border-t">
+			<td class="px-4 py-3">{{ formatDateTime(record.acceptanceDate) }}</td>
+			<td class="px-4 py-3">{{ record.supplierName }}</td>
+			<td class="px-4 py-3">
+			  <div class="font-medium text-gray-900">{{ record.productName }}</div>
+			  <div class="text-xs text-gray-500">SKU: {{ record.productSku }}</div>
+			</td>
+			<td class="px-4 py-3">{{ record.quantity }}</td>
+			<td class="px-4 py-3">{{ record.totalPrice | number:'1.2-2' }} BYN</td>
+			<td class="px-4 py-3">#{{ record.orderNumber }}</td>
+		  </tr>
+		</tbody>
+	  </table>
+	</div>
+  </div>
+
+  <div class="bg-white rounded-lg shadow overflow-hidden">
+	<div class="p-4 border-b bg-gray-50">
+	  <h3 class="text-lg font-semibold text-gray-800">Сводка по товарам</h3>
+	</div>
+
+	<div class="divide-y">
+	  <div *ngFor="let item of summary" class="p-4">
+		<div class="font-medium text-gray-900">{{ item.productName }}</div>
+		<div class="text-xs text-gray-500 mb-2">SKU: {{ item.productSku }}</div>
+		<div class="text-sm text-gray-600">Количество: {{ item.totalQuantity }}</div>
+		<div class="text-sm text-gray-600">Сумма: {{ item.totalAmount | number:'1.2-2' }} BYN</div>
+		<div class="text-sm text-gray-600">Поставщиков: {{ item.uniqueSuppliers }}</div>
+	  </div>
+	</div>
+  </div>
+</div>
+
+<div *ngIf="!isLoading && details.length === 0" class="bg-white p-12 rounded-lg shadow text-center mt-6">
+  <h3 class="text-lg font-medium text-gray-900">Записи журнала не найдены</h3>
+  <p class="mt-2 text-sm text-gray-500">Измените фильтры или выберите другой период</p>
+</div>
+

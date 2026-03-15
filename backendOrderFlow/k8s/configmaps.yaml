@@ -1,0 +1,57 @@
+# OrderFlow — ConfigMaps
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: orderflow-config
+  namespace: orderflow
+data:
+  SPRING_PROFILES_ACTIVE: "docker"
+  SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
+  SPRING_JPA_SHOW_SQL: "false"
+  EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,prometheus"
+  MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: "always"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: orderflow
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+    scrape_configs:
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+      - job_name: 'eureka-server'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['eureka-server:8761']
+      - job_name: 'api-gateway'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['api-gateway:8765']
+      - job_name: 'auth-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['auth-service:8081']
+      - job_name: 'catalog-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['catalog-service:8082']
+      - job_name: 'order-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['order-service:8083']
+      - job_name: 'chat-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['chat-service:8084']
+      - job_name: 'document-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['document-service:8085']
+

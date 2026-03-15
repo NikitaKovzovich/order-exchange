@@ -43,7 +43,7 @@
 
 <div class="bg-white p-6 rounded-lg shadow-sm">
   <div *ngIf="viewMode === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-    <div *ngFor="let product of filteredProducts" class="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer" [routerLink]="['/supplier/catalog/product', product.id]">
+    <div *ngFor="let product of filteredProducts" class="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer" [routerLink]="['/supplier/catalog', product.id]">
       <div class="w-full h-40 flex items-center justify-center bg-gray-200 text-gray-600">
         <span class="text-sm font-medium">Фото товара</span>
       </div>
@@ -96,7 +96,7 @@
             </span>
           </td>
           <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-            <a [routerLink]="['/supplier/catalog/product', product.id]" class="text-indigo-600 hover:text-indigo-900">Подробнее</a>
+            <a [routerLink]="['/supplier/catalog', product.id]" class="text-indigo-600 hover:text-indigo-900">Подробнее</a>
           </td>
         </tr>
       </tbody>

@@ -26,3 +26,7 @@ logging:
     root: WARN
     by.bsuir: DEBUG
 
+# Disable gateway auth filter for tests (#48)
+gateway:
+  auth:
+    enabled: false

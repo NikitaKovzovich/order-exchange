@@ -4,11 +4,13 @@ import by.bsuir.orderservice.dto.*;
 import by.bsuir.orderservice.entity.Cart;
 import by.bsuir.orderservice.entity.CartItem;
 import by.bsuir.orderservice.entity.Order;
+import by.bsuir.orderservice.entity.OrderHistory;
 import by.bsuir.orderservice.entity.OrderItem;
 import by.bsuir.orderservice.entity.OrderStatus;
 import by.bsuir.orderservice.exception.InvalidOperationException;
 import by.bsuir.orderservice.exception.ResourceNotFoundException;
 import by.bsuir.orderservice.repository.CartRepository;
+import by.bsuir.orderservice.repository.OrderHistoryRepository;
 import by.bsuir.orderservice.repository.OrderRepository;
 import by.bsuir.orderservice.repository.OrderStatusRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,18 +31,20 @@ public class CartService {
 	private final CartRepository cartRepository;
 	private final OrderRepository orderRepository;
 	private final OrderStatusRepository statusRepository;
+	private final OrderHistoryRepository historyRepository;
 	private final EventPublisher eventPublisher;
+	private final by.bsuir.orderservice.client.AuthServiceClient authServiceClient;
 
-	/**
-	 * Получить корзину покупателя
-	 */
+
+
+
 	@Transactional(readOnly = true)
 	public CartResponse getCart(Long customerId) {
 		Cart cart = cartRepository.findByCustomerIdWithItems(customerId)
 				.orElse(null);
 
 		if (cart == null) {
-			// Вернуть пустую корзину
+
 			return new CartResponse(
 					null, customerId, List.of(), 0,
 					BigDecimal.ZERO, BigDecimal.ZERO, List.of(),
@@ -51,9 +55,9 @@ public class CartService {
 		return mapToResponse(cart);
 	}
 
-	/**
-	 * Добавить товар в корзину
-	 */
+
+
+
 	@Transactional
 	public CartResponse addItem(Long customerId, AddToCartRequest request) {
 		Cart cart = getOrCreateCart(customerId);
@@ -78,9 +82,9 @@ public class CartService {
 		return mapToResponse(cart);
 	}
 
-	/**
-	 * Обновить количество товара в корзине
-	 */
+
+
+
 	@Transactional
 	public CartResponse updateItemQuantity(Long customerId, Long productId, UpdateCartItemRequest request) {
 		Cart cart = cartRepository.findByCustomerIdWithItems(customerId)
@@ -99,9 +103,9 @@ public class CartService {
 		return mapToResponse(cart);
 	}
 
-	/**
-	 * Удалить товар из корзины
-	 */
+
+
+
 	@Transactional
 	public CartResponse removeItem(Long customerId, Long productId) {
 		Cart cart = cartRepository.findByCustomerIdWithItems(customerId)
@@ -115,9 +119,9 @@ public class CartService {
 		return mapToResponse(cart);
 	}
 
-	/**
-	 * Очистить корзину
-	 */
+
+
+
 	@Transactional
 	public void clearCart(Long customerId) {
 		Cart cart = cartRepository.findByCustomerIdWithItems(customerId).orElse(null);
@@ -128,10 +132,10 @@ public class CartService {
 		}
 	}
 
-	/**
-	 * Оформить заказ (checkout)
-	 * Создает отдельные заказы для каждого поставщика
-	 */
+
+
+
+
 	@Transactional
 	public CheckoutResponse checkout(Long customerId, CheckoutRequest request) {
 		Cart cart = cartRepository.findByCustomerIdWithItems(customerId)
@@ -147,7 +151,7 @@ public class CartService {
 		List<Order> createdOrders = new ArrayList<>();
 		List<Long> supplierIds = cart.getSupplierIds();
 
-		// Создаем отдельный заказ для каждого поставщика
+
 		for (Long supplierId : supplierIds) {
 			List<CartItem> supplierItems = cart.getItemsBySupplierId(supplierId);
 
@@ -188,13 +192,25 @@ public class CartService {
 			order = orderRepository.save(order);
 			createdOrders.add(order);
 
-			// Публикуем событие создания заказа
+
+			OrderHistory history = OrderHistory.createStatusChange(
+					order, null, OrderStatus.Codes.PENDING_CONFIRMATION, customerId, "Заказ создан (из корзины)");
+			historyRepository.save(history);
+
+
 			eventPublisher.publishOrderCreated(order);
+
+
+			for (OrderItem orderItem : order.getItems()) {
+				eventPublisher.publishStockReserveRequest(
+						orderItem.getProductId(), orderItem.getQuantity(), order.getId());
+			}
+
 			log.info("Created order from cart: orderId={}, supplierId={}, customerId={}",
 					order.getId(), supplierId, customerId);
 		}
 
-		// Очищаем корзину после успешного оформления
+
 		cart.clear();
 		cartRepository.save(cart);
 
@@ -209,7 +225,7 @@ public class CartService {
 		);
 	}
 
-	// ========== Helper Methods ==========
+
 
 	private Cart getOrCreateCart(Long customerId) {
 		return cartRepository.findByCustomerIdWithItems(customerId)
@@ -278,14 +294,23 @@ public class CartService {
 				order.getId(),
 				order.getOrderNumber(),
 				order.getSupplierId(),
+				authServiceClient.getCompanyName(order.getSupplierId()),
 				order.getCustomerId(),
+				authServiceClient.getCompanyName(order.getCustomerId()),
 				order.getStatus().getCode(),
 				OrderStatus.getDisplayName(order.getStatus().getCode()),
 				order.getDeliveryAddress(),
 				order.getDesiredDeliveryDate(),
 				order.getTotalAmount(),
 				order.getVatAmount(),
+				order.getContractNumber(),
+				order.getContractDate(),
+				order.getContractEndDate(),
+				order.getTtnGenerated(),
 				items,
+				List.of(),
+				List.of(),
+				List.of(),
 				order.getCreatedAt(),
 				order.getUpdatedAt()
 		);

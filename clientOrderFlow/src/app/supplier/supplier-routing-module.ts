@@ -12,11 +12,13 @@ import { UPD } from './orders/upd/upd';
 import { Analytics } from './analytics/analytics';
 import { Communications } from './communications/communications';
 import { Support } from './support/support';
+import { SupportTicket } from './support/support-ticket/support-ticket';
 import { CreateTicket } from './support/create-ticket/create-ticket';
 import { Notifications } from './notifications/notifications';
 import { ProductCard } from './catalog/product-card/product-card';
 import { AddProduct } from './catalog/add-product/add-product';
 import { EmptyCatalog } from './catalog/empty-catalog/empty-catalog';
+import { Clients } from './clients/clients';
 import { authGuard } from '../guards/auth.guard';
 
 const routes: Routes = [
@@ -38,7 +40,9 @@ const routes: Routes = [
       { path: 'catalog', component: Catalog },
       { path: 'catalog/empty', component: EmptyCatalog },
       { path: 'catalog/add', component: AddProduct },
+      { path: 'catalog/:id/edit', component: AddProduct },
       { path: 'catalog/:id', component: ProductCard },
+      { path: 'clients', component: Clients },
       { path: 'orders', component: Orders },
       { path: 'orders/:id', component: OrderDetail },
       { path: 'orders/:id/invoice', component: Invoice },
@@ -47,6 +51,7 @@ const routes: Routes = [
       { path: 'communications', component: Communications },
       { path: 'support', component: Support },
       { path: 'support/create', component: CreateTicket },
+      { path: 'support/:id', component: SupportTicket },
       { path: 'notifications', component: Notifications },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]

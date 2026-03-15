@@ -1,69 +1,43 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
-
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface LoginResponse {
-  token: string;
-  email: string;
-  role: 'ADMIN' | 'SUPPLIER' | 'RETAIL_CHAIN';
-  userId: number;
-  companyId: number;
-}
-
-export interface UserProfile {
-  id: number;
-  email: string;
-  role: 'ADMIN' | 'SUPPLIER' | 'RETAIL_CHAIN';
-  companyId: number;
-}
-
-export interface CompanyProfile {
-  id: number;
-  legalName: string;
-  legalForm: string;
-  taxId: string;
-  registrationDate: string;
-  status: 'PENDING' | 'ACTIVE' | 'REJECTED' | 'BLOCKED';
-  contactPhone: string;
-  addresses: Array<{
-    id: number;
-    addressType: string;
-    fullAddress: string;
-    isDefault: boolean;
-  }>;
-}
+import { catchError, tap } from 'rxjs/operators';
+import {
+  AuthSession,
+  CompanyProfile,
+  LoginRequest,
+  LoginResponse,
+  UserProfile,
+  UserRole
+} from '../models/api.models';
+import { AuthApiService } from './auth-api.service';
+import { AuthStorageService } from './auth-storage.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private readonly API_URL = '/api/auth';
-  private tokenSubject = new BehaviorSubject<string | null>(this.getStoredToken());
-  private currentUserSubject = new BehaviorSubject<Partial<LoginResponse> | null>(this.getStoredUser());
+  private tokenSubject: BehaviorSubject<string | null>;
+  private currentUserSubject: BehaviorSubject<AuthSession | null>;
 
-  public token$ = this.tokenSubject.asObservable();
-  public currentUser$ = this.currentUserSubject.asObservable();
+  public token$: Observable<string | null>;
+  public currentUser$: Observable<AuthSession | null>;
 
-  constructor(private http: HttpClient) {
-    const token = this.getStoredToken();
-    const user = this.getStoredUser();
+  constructor(
+    private authApi: AuthApiService,
+    private authStorage: AuthStorageService
+  ) {
+    this.tokenSubject = new BehaviorSubject<string | null>(this.authStorage.getToken());
+    this.currentUserSubject = new BehaviorSubject<AuthSession | null>(this.authStorage.getSession());
+    this.token$ = this.tokenSubject.asObservable();
+    this.currentUser$ = this.currentUserSubject.asObservable();
+
+    const token = this.authStorage.getToken();
+    const user = this.authStorage.getSession();
 
     if (token && !user) {
-      this.getProfile().subscribe({
-        next: (profile) => {
-          const userData = {
-            email: profile.email,
-            role: profile.role,
-            userId: profile.id,
-            companyId: profile.companyId
-          };
-          this.setUser(userData as LoginResponse);
+      this.refreshProfile().subscribe({
+        next: () => {
+          this.tokenSubject.next(this.authStorage.getToken());
         },
         error: () => {
           this.logout();
@@ -73,12 +47,11 @@ export class AuthService {
   }
 
   login(credentials: LoginRequest, rememberMe: boolean = false): Observable<LoginResponse> {
-    this.setRememberMe(rememberMe);
-
-    return this.http.post<LoginResponse>(`${this.API_URL}/login`, credentials).pipe(
+    return this.authApi.login(credentials).pipe(
       tap(response => {
-        this.setToken(response.token);
-        this.setUser(response);
+        this.authStorage.saveAuth(response, rememberMe);
+        this.tokenSubject.next(response.token);
+        this.currentUserSubject.next(this.authStorage.getSession());
       }),
       catchError(error => {
         console.error('Login error:', error);
@@ -88,7 +61,8 @@ export class AuthService {
   }
 
   getProfile(): Observable<UserProfile> {
-    return this.http.get<UserProfile>(`${this.API_URL}/profile`).pipe(
+    return this.authApi.getProfile().pipe(
+      tap(profile => this.syncSessionFromProfile(profile)),
       catchError(error => {
         console.error('Get profile error:', error);
         return throwError(() => error);
@@ -97,7 +71,7 @@ export class AuthService {
   }
 
   getCompanyProfile(companyId: number): Observable<CompanyProfile> {
-    return this.http.get<CompanyProfile>(`${this.API_URL}/company/${companyId}`).pipe(
+    return this.authApi.getCompanyProfile(companyId).pipe(
       catchError(error => {
         console.error('Get company profile error:', error);
         return throwError(() => error);
@@ -106,12 +80,12 @@ export class AuthService {
   }
 
   validateToken(): Observable<any> {
-    const token = this.getStoredToken();
+    const token = this.authStorage.getToken();
     if (!token) {
       return throwError(() => new Error('No token'));
     }
 
-    return this.http.get(`${this.API_URL}/validate`).pipe(
+    return this.authApi.validateToken().pipe(
       catchError(error => {
         console.error('Token validation error:', error);
         this.logout();
@@ -120,73 +94,96 @@ export class AuthService {
     );
   }
 
+  refreshProfile(): Observable<UserProfile> {
+    return this.authApi.getProfile().pipe(
+      tap(profile => this.syncSessionFromProfile(profile))
+    );
+  }
+
   logout(): void {
-    localStorage.removeItem('jwt_token');
-    sessionStorage.removeItem('jwt_token');
-    localStorage.removeItem('current_user');
-    sessionStorage.removeItem('current_user');
-    localStorage.removeItem('remember_me');
+    this.authStorage.clear();
     this.tokenSubject.next(null);
     this.currentUserSubject.next(null);
   }
 
   isAuthenticated(): boolean {
-    return !!this.getStoredToken();
+    return this.hasValidSession();
+  }
+
+  hasValidSession(): boolean {
+    return !!this.authStorage.getToken();
   }
 
   getToken(): string | null {
-    return this.getStoredToken();
+    return this.authStorage.getToken();
   }
 
-  getCurrentUser(): Partial<LoginResponse> | null {
+  getCurrentUser(): AuthSession | null {
+    return this.currentUserSubject.value;
+  }
+
+  getSession(): AuthSession | null {
     return this.currentUserSubject.value;
   }
 
   setRememberMe(remember: boolean): void {
-    localStorage.setItem('remember_me', remember.toString());
+    this.authStorage.setRememberMe(remember);
   }
 
-  getUserRole(): string | null {
+  getUserRole(): UserRole | null {
     const user = this.getCurrentUser();
     return user?.role || null;
   }
 
-  private setToken(token: string): void {
-    const rememberMe = localStorage.getItem('remember_me') === 'true';
-
-    if (rememberMe) {
-      localStorage.setItem('jwt_token', token);
-    } else {
-      sessionStorage.setItem('jwt_token', token);
-    }
-
-    this.tokenSubject.next(token);
+  getUserId(): number | null {
+    return this.getCurrentUser()?.userId ?? null;
   }
 
-  private setUser(user: LoginResponse): void {
-    const rememberMe = localStorage.getItem('remember_me') === 'true';
-    const userData = {
-      email: user.email,
-      role: user.role,
-      userId: user.userId,
-      companyId: user.companyId
+  getCompanyId(): number | null {
+    return this.getCurrentUser()?.companyId ?? null;
+  }
+
+  hasRole(role: UserRole): boolean {
+    return this.getUserRole() === role;
+  }
+
+  hasAnyRole(roles: readonly UserRole[]): boolean {
+    const userRole = this.getUserRole();
+    return !!userRole && roles.includes(userRole);
+  }
+
+  getDefaultRoute(): string {
+    return this.getDefaultRouteForRole(this.getUserRole());
+  }
+
+  getDefaultRouteForRole(role: UserRole | null | undefined): string {
+    switch (role) {
+      case 'ADMIN':
+        return '/admin/dashboard';
+      case 'SUPPLIER':
+        return '/supplier/dashboard';
+      case 'RETAIL_CHAIN':
+        return '/retail/dashboard';
+      default:
+        return '/';
+    }
+  }
+
+  private syncSessionFromProfile(profile: UserProfile): void {
+    const token = this.authStorage.getToken();
+    if (!token) {
+      return;
+    }
+
+    const session: AuthSession = {
+      email: profile.email,
+      role: profile.role,
+      userId: profile.id,
+      companyId: profile.companyId
     };
 
-    if (rememberMe) {
-      localStorage.setItem('current_user', JSON.stringify(userData));
-    } else {
-      sessionStorage.setItem('current_user', JSON.stringify(userData));
-    }
-
-    this.currentUserSubject.next(userData);
-  }
-
-  private getStoredToken(): string | null {
-    return localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token');
-  }
-
-  private getStoredUser(): Partial<LoginResponse> | null {
-    const userStr = localStorage.getItem('current_user') || sessionStorage.getItem('current_user');
-    return userStr ? JSON.parse(userStr) : null;
+    this.authStorage.saveSession(session);
+    this.tokenSubject.next(token);
+    this.currentUserSubject.next(session);
   }
 }

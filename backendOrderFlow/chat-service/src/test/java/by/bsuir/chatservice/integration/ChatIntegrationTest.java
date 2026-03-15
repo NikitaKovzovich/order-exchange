@@ -26,58 +26,58 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class ChatIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+	@Autowired
+	private MockMvc mockMvc;
 
-    @Autowired
-    private ChatChannelRepository channelRepository;
+	@Autowired
+	private ChatChannelRepository channelRepository;
 
-    @Autowired
-    private MessageRepository messageRepository;
+	@Autowired
+	private MessageRepository messageRepository;
 
-    private Long testOrderId;
+	private Long testOrderId;
 
-    @BeforeEach
-    void setUp() {
-        testOrderId = ThreadLocalRandom.current().nextLong(100000, 999999);
+	@BeforeEach
+	void setUp() {
+		testOrderId = ThreadLocalRandom.current().nextLong(100000, 999999);
 
-        ChatChannel testChannel = ChatChannel.builder()
-                .orderId(testOrderId)
-                .supplierUserId(1L)
-                .customerUserId(2L)
-                .channelName("Test Channel")
-                .createdAt(LocalDateTime.now())
-                .isActive(true)
-                .build();
-        testChannel = channelRepository.save(testChannel);
+		ChatChannel testChannel = ChatChannel.builder()
+				.orderId(testOrderId)
+				.supplierUserId(1L)
+				.customerUserId(2L)
+				.channelName("Test Channel")
+				.createdAt(LocalDateTime.now())
+				.isActive(true)
+				.build();
+		testChannel = channelRepository.save(testChannel);
 
-        Message testMessage = Message.builder()
-                .channel(testChannel)
-                .senderId(1L)
-                .messageText("Test message content")
-                .isRead(false)
-                .sentAt(LocalDateTime.now())
-                .build();
-        messageRepository.save(testMessage);
-    }
+		Message testMessage = Message.builder()
+				.channel(testChannel)
+				.senderId(1L)
+				.messageText("Test message content")
+				.isRead(false)
+				.sentAt(LocalDateTime.now())
+				.build();
+		messageRepository.save(testMessage);
+	}
 
-    @Test
-    @DisplayName("Should get channel by order ID")
-    void shouldGetChannelByOrderId() throws Exception {
-        mockMvc.perform(get("/api/chats/order/" + testOrderId)
-                        .header("X-User-Id", "1")
-                        .header("X-User-Company-Id", "1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
-    }
+	@Test
+	@DisplayName("Should get channel by order ID")
+	void shouldGetChannelByOrderId() throws Exception {
+		mockMvc.perform(get("/api/chats/order/" + testOrderId)
+						.header("X-User-Id", "1")
+						.header("X-User-Company-Id", "1"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true));
+	}
 
-    @Test
-    @DisplayName("Should get user channels")
-    void shouldGetUserChannels() throws Exception {
-        mockMvc.perform(get("/api/chats")
-                        .header("X-User-Id", "1")
-                        .header("X-User-Company-Id", "1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
-    }
+	@Test
+	@DisplayName("Should get user channels")
+	void shouldGetUserChannels() throws Exception {
+		mockMvc.perform(get("/api/chats")
+						.header("X-User-Id", "1")
+						.header("X-User-Company-Id", "1"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true));
+	}
 }

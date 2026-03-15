@@ -2,7 +2,8 @@ import {Component, OnInit} from '@angular/core';
 import {Router, RouterLink, ActivatedRoute} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {CommonModule} from '@angular/common';
-import {AuthService, LoginRequest} from '../../services/auth.service';
+import {AuthService} from '../../services/auth.service';
+import {LoginRequest} from '../../models/api.models';
 
 @Component({
   selector: 'app-login',
@@ -25,7 +26,7 @@ export class Login implements OnInit {
     private route: ActivatedRoute
   ) {
     if (this.authService.isAuthenticated()) {
-      this.router.navigate(['/admin/dashboard']);
+      this.router.navigateByUrl(this.authService.getDefaultRoute());
     }
   }
 
@@ -52,21 +53,12 @@ export class Login implements OnInit {
         console.log('Login successful:', response);
         this.isLoading = false;
 
-        const role = response.role.toLowerCase();
-
-        if (role === 'admin') {
-          this.router.navigate(['/admin/dashboard']);
-        } else if (role === 'supplier') {
-          this.router.navigate(['/supplier/dashboard']);
-        } else if (role === 'retail_chain') {
-          this.router.navigate(['/retail/dashboard']);
-        } else {
-          if (this.returnUrl) {
-            this.router.navigateByUrl(this.returnUrl);
-          } else {
-            this.router.navigate(['/admin/dashboard']);
-          }
+        if (this.returnUrl) {
+          this.router.navigateByUrl(this.returnUrl);
+          return;
         }
+
+        this.router.navigateByUrl(this.authService.getDefaultRouteForRole(response.role));
       },
       error: (error) => {
         this.isLoading = false;

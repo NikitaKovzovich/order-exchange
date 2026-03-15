@@ -1,0 +1,95 @@
+<div class="mx-auto max-w-5xl space-y-6">
+  <div class="flex items-center justify-between">
+    <a routerLink="/supplier/support" class="text-sm text-indigo-600 hover:text-indigo-800">← Вернуться к обращениям</a>
+    <div class="flex items-center gap-3" *ngIf="ticket">
+      <button *ngIf="ticket.status !== 'CLOSED'" (click)="closeTicket()" [disabled]="isProcessing" class="rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-50">
+        Закрыть обращение
+      </button>
+      <button *ngIf="ticket.status === 'CLOSED'" (click)="reopenTicket()" [disabled]="isProcessing" class="rounded-md border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50">
+        Переоткрыть
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="notification" class="rounded-lg border px-4 py-3"
+       [ngClass]="{
+         'border-green-200 bg-green-50 text-green-700': notification.type === 'success',
+         'border-red-200 bg-red-50 text-red-700': notification.type === 'error',
+         'border-blue-200 bg-blue-50 text-blue-700': notification.type === 'info',
+         'border-yellow-200 bg-yellow-50 text-yellow-700': notification.type === 'warning'
+       }">
+    {{ notification.message }}
+  </div>
+
+  <div *ngIf="isLoading" class="rounded-lg bg-white p-8 text-center text-gray-500 shadow-sm">
+    Загрузка обращения...
+  </div>
+
+  <div *ngIf="ticket && !isLoading" class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <section class="space-y-4 lg:col-span-1">
+      <div class="rounded-lg bg-white p-6 shadow-sm">
+        <h1 class="text-xl font-bold text-gray-900">{{ ticket.subject }}</h1>
+        <div class="mt-4 flex flex-wrap items-center gap-2">
+          <span [ngClass]="getStatusClass(ticket.status)" class="rounded-full px-3 py-1 text-xs font-semibold">
+            {{ getStatusLabel(ticket.status) }}
+          </span>
+          <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">#{{ ticket.id }}</span>
+        </div>
+        <dl class="mt-4 space-y-3 text-sm">
+          <div class="flex justify-between gap-4">
+            <dt class="text-gray-500">Категория</dt>
+            <dd class="font-medium text-gray-900">{{ ticket.category }}</dd>
+          </div>
+          <div class="flex justify-between gap-4">
+            <dt class="text-gray-500">Приоритет</dt>
+            <dd class="font-medium text-gray-900">{{ ticket.priority }}</dd>
+          </div>
+          <div class="flex justify-between gap-4">
+            <dt class="text-gray-500">Создано</dt>
+            <dd class="font-medium text-gray-900">{{ formatDateTime(ticket.createdAt) }}</dd>
+          </div>
+          <div class="flex justify-between gap-4">
+            <dt class="text-gray-500">Обновлено</dt>
+            <dd class="font-medium text-gray-900">{{ formatDateTime(ticket.updatedAt) }}</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="rounded-lg bg-white shadow-sm lg:col-span-2">
+      <div class="border-b px-6 py-4">
+        <h2 class="text-lg font-semibold text-gray-900">Переписка по обращению</h2>
+      </div>
+
+      <div class="max-h-[460px] space-y-4 overflow-y-auto p-6">
+        <div *ngFor="let message of messages" class="flex" [class.justify-end]="isOwnMessage(message)">
+          <div class="max-w-xl rounded-lg px-4 py-3"
+               [class.bg-indigo-600]="isOwnMessage(message)"
+               [class.text-white]="isOwnMessage(message)"
+               [class.bg-gray-100]="!isOwnMessage(message)">
+            <p class="text-sm">{{ message.messageText }}</p>
+            <div class="mt-2 text-xs" [class.text-indigo-200]="isOwnMessage(message)" [class.text-gray-500]="!isOwnMessage(message)">
+              {{ formatDateTime(message.createdAt) }}
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="messages.length === 0" class="rounded-md border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
+          Сообщений пока нет.
+        </div>
+      </div>
+
+      <div class="border-t p-6">
+        <div class="space-y-3">
+          <textarea [(ngModel)]="newMessage" rows="4" placeholder="Введите сообщение..." class="w-full rounded-md border px-3 py-2"></textarea>
+          <div class="flex justify-end">
+            <button (click)="sendMessage()" [disabled]="!newMessage.trim() || isProcessing" class="rounded-md bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
+              Отправить сообщение
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+

@@ -21,9 +21,18 @@ import java.util.stream.Collectors;
 public class AnalyticsService {
 
 	private final OrderRepository orderRepository;
+	private final by.bsuir.orderservice.client.AuthServiceClient authServiceClient;
 
-	public AnalyticsResponse getOverallAnalytics() {
+	public AnalyticsResponse getOverallAnalytics(String period) {
 		List<Order> allOrders = orderRepository.findAll();
+
+
+		if (period != null && !period.equalsIgnoreCase("all")) {
+			LocalDateTime startDate = getStartDate(period);
+			allOrders = allOrders.stream()
+					.filter(o -> o.getCreatedAt() != null && o.getCreatedAt().isAfter(startDate))
+					.toList();
+		}
 
 		OrderStats orderStats = calculateOrderStats(allOrders);
 		RevenueStats revenueStats = calculateRevenueStats(allOrders);
@@ -40,6 +49,34 @@ public class AnalyticsService {
 				ordersByStatus,
 				dailyStats
 		);
+	}
+
+
+
+
+	public by.bsuir.orderservice.dto.OrderSummaryResponse getDashboardSummary(Long companyId) {
+		List<Order> supplierOrders = orderRepository.findAllBySupplierId(companyId);
+		List<Order> customerOrders = orderRepository.findAllByCustomerId(companyId);
+
+		List<Order> allOrders = new java.util.ArrayList<>(supplierOrders);
+		allOrders.addAll(customerOrders);
+
+		Map<String, Long> countByStatus = allOrders.stream()
+				.collect(Collectors.groupingBy(o -> o.getStatus().getCode(), Collectors.counting()));
+
+		return new by.bsuir.orderservice.dto.OrderSummaryResponse(allOrders.size(), countByStatus);
+	}
+
+	private LocalDateTime getStartDate(String period) {
+		LocalDate today = LocalDate.now();
+		return switch (period.toLowerCase()) {
+			case "today" -> today.atStartOfDay();
+			case "week" -> today.minusWeeks(1).atStartOfDay();
+			case "month" -> today.minusMonths(1).atStartOfDay();
+			case "quarter" -> today.minusMonths(3).atStartOfDay();
+			case "year" -> today.minusYears(1).atStartOfDay();
+			default -> today.minusMonths(1).atStartOfDay();
+		};
 	}
 
 	public AnalyticsResponse getSupplierAnalytics(Long supplierId) {
@@ -175,6 +212,7 @@ public class AnalyticsService {
 				.limit(10)
 				.map(e -> new TopSupplier(
 						e.getKey(),
+						authServiceClient.getCompanyName(e.getKey()),
 						e.getValue().orderCount,
 						e.getValue().totalRevenue
 				))

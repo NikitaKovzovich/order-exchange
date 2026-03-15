@@ -1,68 +1,36 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router, RouterModule } from '@angular/router';
+import { OrderNotification } from '../../models/api.models';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-retail-notifications',
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './notifications.html',
   styleUrl: './notifications.css'
 })
 export class Notifications {
-  notifications = [
-    {
-      id: 1,
-      type: 'order',
-      title: 'Заказ №12345 доставлен',
-      message: 'Ваш заказ от поставщика "Продукты Оптом" был доставлен',
-      time: '5 минут назад',
-      read: false,
-      link: '/retail/orders/12345',
-      icon: 'truck'
-    },
-    {
-      id: 2,
-      type: 'payment',
-      title: 'Требуется оплата',
-      message: 'Заказ №12344 ожидает оплаты. Срок оплаты истекает через 2 дня',
-      time: '1 час назад',
-      read: false,
-      link: '/retail/orders/12344',
-      icon: 'credit-card'
-    },
-    {
-      id: 3,
-      type: 'supplier',
-      title: 'Новый поставщик',
-      message: 'В базе появился новый поставщик "Мясная Лавка"',
-      time: '3 часа назад',
-      read: false,
-      link: '/retail/suppliers',
-      icon: 'user-group'
-    },
-    {
-      id: 4,
-      type: 'message',
-      title: 'Новое сообщение',
-      message: 'Поставщик "Молочная Ферма" ответил на ваш запрос',
-      time: '5 часов назад',
-      read: true,
-      link: '/retail/communications',
-      icon: 'chat'
-    },
-    {
-      id: 5,
-      type: 'order',
-      title: 'Заказ подтвержден',
-      message: 'Заказ №12343 подтвержден поставщиком и готовится к отправке',
-      time: 'Вчера',
-      read: true,
-      link: '/retail/orders/12343',
-      icon: 'check-circle'
-    }
-  ];
+  notifications: Array<{
+    id: number;
+    type: string;
+    title: string;
+    message: string;
+    time: string;
+    read: boolean;
+    link: string;
+    icon: string;
+  }> = [];
 
   filteredNotifications = [...this.notifications];
   filter: string = 'all';
+
+  constructor(
+    private notificationService: NotificationService,
+    private router: Router
+  ) {
+    this.loadNotifications();
+  }
 
   get unreadCount(): number {
     return this.notifications.filter(n => !n.read).length;
@@ -80,22 +48,52 @@ export class Notifications {
   }
 
   markAsRead(notificationId: number) {
-    const notification = this.notifications.find(n => n.id === notificationId);
-    if (notification) {
-      notification.read = true;
-    }
+    this.notificationService.markAsRead(notificationId).subscribe({
+      next: () => {
+        const notification = this.notifications.find(n => n.id === notificationId);
+        if (notification) {
+          notification.read = true;
+        }
+        this.applyFilter(this.filter);
+      },
+      error: error => console.error('Error marking notification as read:', error)
+    });
   }
 
   markAllAsRead() {
-    this.notifications.forEach(n => n.read = true);
+    this.notificationService.markAllAsRead().subscribe({
+      next: () => {
+        this.notifications.forEach(n => n.read = true);
+        this.applyFilter(this.filter);
+      },
+      error: error => console.error('Error marking all notifications as read:', error)
+    });
   }
 
-  deleteNotification(notificationId: number) {
-    const index = this.notifications.findIndex(n => n.id === notificationId);
-    if (index > -1) {
-      this.notifications.splice(index, 1);
-      this.applyFilter(this.filter);
+  openNotification(notificationId: number, link: string, alreadyRead: boolean): void {
+    const navigate = () => {
+      void this.router.navigateByUrl(link);
+    };
+
+    if (alreadyRead) {
+      navigate();
+      return;
     }
+
+    this.notificationService.markAsRead(notificationId).subscribe({
+      next: () => {
+        const notification = this.notifications.find(n => n.id === notificationId);
+        if (notification) {
+          notification.read = true;
+        }
+        this.applyFilter(this.filter);
+        navigate();
+      },
+      error: error => {
+        console.error('Error marking retail notification as read:', error);
+        navigate();
+      }
+    });
   }
 
   getIconPath(icon: string): string {
@@ -117,5 +115,34 @@ export class Notifications {
       'message': 'bg-purple-100 text-purple-600'
     };
     return colors[type] || 'bg-gray-100 text-gray-600';
+  }
+
+  private loadNotifications(): void {
+    this.notificationService.getNotifications(0, 20).subscribe({
+      next: page => {
+        this.notifications = page.content.map(notification => this.mapNotification(notification));
+        this.filteredNotifications = [...this.notifications];
+      },
+      error: error => console.error('Error loading notifications:', error)
+    });
+  }
+
+  private mapNotification(notification: OrderNotification) {
+    const type = notification.type.toLowerCase().includes('payment')
+      ? 'payment'
+      : notification.type.toLowerCase().includes('chat')
+        ? 'message'
+        : 'order';
+
+    return {
+      id: notification.id,
+      type,
+      title: notification.title || notification.typeDisplayName || 'Уведомление',
+      message: notification.message,
+      time: new Date(notification.createdAt).toLocaleString('ru-RU'),
+      read: notification.read,
+      link: notification.orderId ? `/retail/orders/${notification.orderId}` : '/retail/notifications',
+      icon: type === 'payment' ? 'credit-card' : type === 'message' ? 'chat' : 'check-circle'
+    };
   }
 }

@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
+import { OrderNotification } from '../../models/api.models';
+import { NotificationService } from '../../services/notification.service';
 
 interface Notification {
   id: number;
@@ -20,71 +22,52 @@ interface Notification {
   styleUrl: './notifications.css'
 })
 export class Notifications implements OnInit {
-  notifications: Notification[] = [
-    {
-      id: 1,
-      type: 'order',
-      title: 'Новый заказ',
-      message: 'Поступил новый заказ #10235 от Торговой сети "Сеть Магазинов"',
-      time: '5 минут назад',
-      read: false,
-      orderId: '10235',
-      actionLabel: 'Перейти к заказу'
-    },
-    {
-      id: 2,
-      type: 'delivery',
-      title: 'Товар доставлен',
-      message: 'Торговая сеть "Гипермаркет Центр" подтвердила получение товара по заказу #10230. Подписанные документы загружены в систему.',
-      time: '2 часа назад',
-      read: true,
-      orderId: '10230',
-      actionLabel: 'Посмотреть документы'
-    },
-    {
-      id: 3,
-      type: 'shipment',
-      message: 'Отгрузочные документы по заказу #10232 успешно сформированы. Заказ готов к отправке. Пожалуйста, подтвердите отгрузку, как только товар покинет ваш склад.',
-      time: 'Вчера, 18:30',
-      read: true,
-      orderId: '10232',
-      actionLabel: 'Перейти к заказу'
-    },
-    {
-      id: 4,
-      type: 'payment',
-      title: 'Оплата подтверждена',
-      message: 'Оплата по заказу #10232 подтверждена. Следующий шаг — подготовка к отгрузке.',
-      time: 'Вчера, 15:10',
-      read: true,
-      orderId: '10232',
-      actionLabel: 'Сформировать документы'
-    },
-    {
-      id: 5,
-      type: 'payment-verification',
-      message: 'Торговая сеть «Супермаркет "Угол"» загрузила подтверждение оплаты по заказу #10232. Пожалуйста, проверьте поступление средств и подтвердите оплату.',
-      time: 'Вчера, 11:45',
-      read: true,
-      orderId: '10232',
-      actionLabel: 'Проверить оплату'
-    }
-  ];
+  notifications: Notification[] = [];
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private notificationService: NotificationService
+  ) {}
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.loadNotifications();
+  }
 
   get unreadCount(): number {
     return this.notifications.filter(n => !n.read).length;
   }
 
   markAllAsRead() {
-    this.notifications.forEach(n => n.read = true);
+    this.notificationService.markAllAsRead().subscribe({
+      next: () => {
+        this.notifications = this.notifications.map(notification => ({ ...notification, read: true }));
+      },
+      error: error => console.error('Error marking all notifications as read:', error)
+    });
   }
 
-  goToOrder(orderId: string) {
-    this.router.navigate(['/supplier/orders', orderId]);
+  openNotification(notification: Notification): void {
+    if (!notification.read) {
+      this.notificationService.markAsRead(notification.id).subscribe({
+        next: () => {
+          notification.read = true;
+          if (notification.orderId) {
+            this.router.navigate(['/supplier/orders', notification.orderId]);
+          }
+        },
+        error: error => {
+          console.error('Error marking supplier notification as read:', error);
+          if (notification.orderId) {
+            this.router.navigate(['/supplier/orders', notification.orderId]);
+          }
+        }
+      });
+      return;
+    }
+
+    if (notification.orderId) {
+      this.router.navigate(['/supplier/orders', notification.orderId]);
+    }
   }
 
   getIconColor(type: string): string {
@@ -107,6 +90,28 @@ export class Notifications implements OnInit {
       'payment-verification': 'M8.433 7.418c.158-.103.346-.195.574-.277.228-.082.48-.124.74-.124.26-.001.512.041.74.124.228.082.416.174.574.277a.5.5 0 01.166.623l-1.5 2.5a.5.5 0 01-.832.093l-1.5-2.5a.5.5 0 01.166-.623z M10 18a8 8 0 100-16 8 8 0 000 16zm0-2a6 6 0 100-12 6 6 0 000 12z'
     };
     return icons[type] || icons['order'];
+  }
+
+  private loadNotifications(): void {
+    this.notificationService.getNotifications(0, 20).subscribe({
+      next: page => {
+        this.notifications = page.content.map(notification => this.mapNotification(notification));
+      },
+      error: error => console.error('Error loading notifications:', error)
+    });
+  }
+
+  private mapNotification(notification: OrderNotification): Notification {
+    return {
+      id: notification.id,
+      type: notification.type.toLowerCase(),
+      title: notification.title || notification.typeDisplayName || 'Уведомление',
+      message: notification.message,
+      time: new Date(notification.createdAt).toLocaleString('ru-RU'),
+      read: notification.read,
+      orderId: notification.orderId ? String(notification.orderId) : undefined,
+      actionLabel: notification.orderId ? 'Перейти к заказу' : undefined
+    };
   }
 }
 

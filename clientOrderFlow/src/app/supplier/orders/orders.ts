@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { OrderService } from '../../services/order.service';
-import { OrderSummary, OrderStatus } from '../../models/api.models';
+import { OrderStatus, OrderStatusSummary, OrderSummary } from '../../models/api.models';
 
 @Component({
   selector: 'app-orders',
@@ -12,42 +12,62 @@ import { OrderSummary, OrderStatus } from '../../models/api.models';
   styleUrl: './orders.css'
 })
 export class Orders implements OnInit {
-  orderStats = {
-    new: 0,
-    shipping: 0,
+  orderStats: OrderStatusSummary = {
+    totalOrders: 0,
+    countByStatus: {},
+    pendingConfirmation: 0,
+    awaitingShipment: 0,
     inTransit: 0,
-    problems: 0
+    paymentProblems: 0,
+    awaitingDelivery: 0,
+    requirePayment: 0,
+    rejected: 0
   };
 
   filters = {
-    orderId: '',
-    client: '',
+    search: '',
     status: '' as OrderStatus | '',
-    date: ''
+    dateFrom: '',
+    dateTo: ''
   };
 
   orders: OrderSummary[] = [];
-  filteredOrders: OrderSummary[] = [];
   isLoading: boolean = false;
   currentPage: number = 0;
   totalPages: number = 0;
+  readonly pageSize: number = 20;
+  readonly statusOptions: Array<{ value: OrderStatus; label: string }> = [
+    { value: 'PENDING_CONFIRMATION', label: 'Ожидает подтверждения' },
+    { value: 'AWAITING_PAYMENT', label: 'Ожидает оплаты' },
+    { value: 'PENDING_PAYMENT_VERIFICATION', label: 'Проверка оплаты' },
+    { value: 'AWAITING_SHIPMENT', label: 'Ожидает отгрузки' },
+    { value: 'SHIPPED', label: 'В пути' },
+    { value: 'DELIVERED', label: 'Доставлен' },
+    { value: 'PAYMENT_PROBLEM', label: 'Проблема с оплатой' },
+    { value: 'REJECTED', label: 'Отклонён' },
+    { value: 'CLOSED', label: 'Закрыт' }
+  ];
 
   constructor(private orderService: OrderService) {}
 
   ngOnInit() {
+    this.loadSummary();
     this.loadOrders();
   }
 
   loadOrders() {
     this.isLoading = true;
-    const status = this.filters.status || undefined;
-
-    this.orderService.getSupplierOrders(status, this.currentPage, 20).subscribe({
+    this.orderService.getSupplierOrdersWithFilters({
+      status: this.filters.status || undefined,
+      search: this.filters.search || undefined,
+      dateFrom: this.filters.dateFrom || undefined,
+      dateTo: this.filters.dateTo || undefined,
+      page: this.currentPage,
+      size: this.pageSize
+    }).subscribe({
       next: (response) => {
         this.orders = response.content;
-        this.filteredOrders = [...this.orders];
         this.totalPages = response.totalPages;
-        this.updateStats();
         this.isLoading = false;
       },
       error: (error) => {
@@ -57,37 +77,51 @@ export class Orders implements OnInit {
     });
   }
 
-  updateStats() {
-    this.orderStats = {
-      new: this.orders.filter(o => o.statusCode === 'PENDING_CONFIRMATION').length,
-      shipping: this.orders.filter(o => o.statusCode === 'AWAITING_SHIPMENT').length,
-      inTransit: this.orders.filter(o => o.statusCode === 'SHIPPED').length,
-      problems: this.orders.filter(o => o.statusCode === 'PAYMENT_PROBLEM').length
-    };
+  loadSummary(): void {
+    this.orderService.getSupplierSummary().subscribe({
+      next: summary => {
+        this.orderStats = summary;
+      },
+      error: error => console.error('Error loading supplier summary:', error)
+    });
   }
 
   applyFilters() {
-    this.filteredOrders = this.orders.filter(order => {
-      let match = true;
-
-      if (this.filters.orderId) {
-        match = match && order.orderNumber.includes(this.filters.orderId);
-      }
-
-      if (this.filters.client) {
-        match = match && (order.customerName?.toLowerCase().includes(this.filters.client.toLowerCase()) || false);
-      }
-
-      if (this.filters.status) {
-        match = match && order.statusCode === this.filters.status;
-      }
-
-      return match;
-    });
+    this.currentPage = 0;
+    this.loadOrders();
   }
 
   onStatusFilterChange() {
     this.currentPage = 0;
+    this.loadOrders();
+  }
+
+  clearFilters(): void {
+    this.filters = {
+      search: '',
+      status: '',
+      dateFrom: '',
+      dateTo: ''
+    };
+    this.currentPage = 0;
+    this.loadOrders();
+  }
+
+  goToPreviousPage(): void {
+    if (this.currentPage === 0) {
+      return;
+    }
+
+    this.currentPage -= 1;
+    this.loadOrders();
+  }
+
+  goToNextPage(): void {
+    if (this.currentPage >= this.totalPages - 1) {
+      return;
+    }
+
+    this.currentPage += 1;
     this.loadOrders();
   }
 

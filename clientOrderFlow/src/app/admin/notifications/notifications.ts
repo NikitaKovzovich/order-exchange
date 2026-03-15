@@ -1,15 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Header } from '../shared/header/header';
+import { UserNotification } from '../../models/api.models';
+import { UserNotificationService } from '../../services/user-notification.service';
 
-interface Notification {
-  id: number;
-  title: string;
-  message: string;
-  type: string;
-  read: boolean;
-  createdAt: string;
-}
+interface Notification extends UserNotification {}
 
 @Component({
   selector: 'admin-notifications',
@@ -20,25 +15,58 @@ interface Notification {
 })
 export class Notifications implements OnInit {
   notifications: Notification[] = [];
+  isLoading: boolean = false;
+  unreadCount: number = 0;
+
+  constructor(private userNotificationService: UserNotificationService) {}
 
   ngOnInit() {
     this.loadNotifications();
   }
 
   loadNotifications() {
-    this.notifications = [
-      { id: 1, title: 'Новая заявка на верификацию', message: 'ИП Иванов А.А. подал з��явку на верификацию', type: 'verification', read: false, createdAt: '2024-10-18 10:30' },
-      { id: 2, title: 'Новое обращение в поддержку', message: 'ООО "БелПродукт" создал обращение', type: 'support', read: false, createdAt: '2024-10-18 09:15' },
-      { id: 3, title: 'Новый пользователь', message: 'Зарегистрирован новый пользователь', type: 'user', read: true, createdAt: '2024-10-17 14:20' }
-    ];
+    this.isLoading = true;
+
+    this.userNotificationService.getNotifications(0, 50).subscribe({
+      next: page => {
+        this.notifications = page.content;
+        this.unreadCount = page.content.filter(notification => !notification.isRead).length;
+        this.isLoading = false;
+      },
+      error: error => {
+        console.error('Error loading admin notifications:', error);
+        this.notifications = [];
+        this.unreadCount = 0;
+        this.isLoading = false;
+      }
+    });
   }
 
   markAsRead(notification: Notification) {
-    notification.read = true;
+    if (notification.isRead) {
+      return;
+    }
+
+    this.userNotificationService.markAsRead(notification.id).subscribe({
+      next: () => {
+        notification.isRead = true;
+        this.unreadCount = Math.max(0, this.unreadCount - 1);
+      },
+      error: error => console.error('Error marking admin notification as read:', error)
+    });
   }
 
   markAllAsRead() {
-    this.notifications.forEach(n => n.read = true);
+    this.userNotificationService.markAllAsRead().subscribe({
+      next: () => {
+        this.notifications = this.notifications.map(notification => ({
+          ...notification,
+          isRead: true
+        }));
+        this.unreadCount = 0;
+      },
+      error: error => console.error('Error marking all admin notifications as read:', error)
+    });
   }
 }
 

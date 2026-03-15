@@ -107,7 +107,7 @@ class SupportControllerTest {
 				List.of(testTicketResponse), 0, 20, 1, 1, true, true
 		);
 
-		when(supportService.getAllTickets(null, 0, 20)).thenReturn(pageResponse);
+		when(supportService.getAllTickets(isNull(), isNull(), eq(0), eq(20))).thenReturn(pageResponse);
 
 		mockMvc.perform(get("/api/support/tickets/admin"))
 				.andExpect(status().isOk())

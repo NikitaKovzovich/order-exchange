@@ -6,11 +6,19 @@ import by.bsuir.authservice.DTO.RegisterRequest;
 import by.bsuir.authservice.DTO.UserProfileResponse;
 import by.bsuir.authservice.DTO.CompanyProfileDTO;
 import by.bsuir.authservice.DTO.AddressResponseDTO;
+import by.bsuir.authservice.DTO.ProfileUpdateRequest;
 import by.bsuir.authservice.entity.User;
 import by.bsuir.authservice.entity.Company;
 import by.bsuir.authservice.entity.Address;
+import by.bsuir.authservice.entity.ResponsiblePerson;
+import by.bsuir.authservice.entity.CompanyDocument;
 import by.bsuir.authservice.service.AuthService;
 import by.bsuir.authservice.service.AddressService;
+import by.bsuir.authservice.service.FileStorageService;
+import by.bsuir.authservice.repository.BankAccountRepository;
+import by.bsuir.authservice.repository.ResponsiblePersonRepository;
+import by.bsuir.authservice.repository.CompanyDocumentRepository;
+import by.bsuir.authservice.repository.SupplierSettingsRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,6 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -33,6 +42,11 @@ public class AuthController {
 	private final AuthService authService;
 	private final AddressService addressService;
 	private final ObjectMapper objectMapper;
+	private final FileStorageService fileStorageService;
+	private final BankAccountRepository bankAccountRepository;
+	private final ResponsiblePersonRepository responsiblePersonRepository;
+	private final CompanyDocumentRepository companyDocumentRepository;
+	private final SupplierSettingsRepository supplierSettingsRepository;
 
 	@PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@Operation(summary = "Register new user with company")
@@ -127,18 +141,22 @@ public class AuthController {
 	@PostMapping("/login")
 	@Operation(summary = "Login user")
 	public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
-		String token = authService.login(request.getEmail(), request.getPassword());
-		User user = authService.getUserByEmail(request.getEmail());
+		try {
+			String token = authService.login(request.getEmail(), request.getPassword());
+			User user = authService.getUserByEmail(request.getEmail());
 
-		AuthResponse response = AuthResponse.builder()
-				.token(token)
-				.email(user.getEmail())
-				.role(user.getRole().name())
-				.userId(user.getId())
-				.companyId(user.getCompany() != null ? user.getCompany().getId() : null)
-				.build();
+			AuthResponse response = AuthResponse.builder()
+					.token(token)
+					.email(user.getEmail())
+					.role(user.getRole().name())
+					.userId(user.getId())
+					.companyId(user.getCompany() != null ? user.getCompany().getId() : null)
+					.build();
 
-		return ResponseEntity.ok(response);
+			return ResponseEntity.ok(response);
+		} catch (IllegalArgumentException ex) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}
 	}
 
 	@GetMapping("/profile")
@@ -151,6 +169,9 @@ public class AuthController {
 				.email(user.getEmail())
 				.role(user.getRole().name())
 				.companyId(user.getCompany() != null ? user.getCompany().getId() : null)
+				.companyName(user.getCompany() != null ? user.getCompany().getLegalName() : null)
+				.status(user.getStatus())
+				.isActive(user.getIsActive())
 				.build();
 
 		return ResponseEntity.ok(response);
@@ -171,18 +192,64 @@ public class AuthController {
 						.build())
 				.collect(Collectors.toList());
 
-		CompanyProfileDTO response = CompanyProfileDTO.builder()
+		CompanyProfileDTO.CompanyProfileDTOBuilder builder = CompanyProfileDTO.builder()
 				.id(company.getId())
+				.name(company.getName())
 				.legalName(company.getLegalName())
 				.legalForm(company.getLegalForm().name())
+				.legalFormText(company.getLegalFormText())
 				.taxId(company.getTaxId())
 				.registrationDate(company.getRegistrationDate())
 				.status(company.getStatus().name())
 				.contactPhone(company.getContactPhone())
-				.addresses(addressDTOs)
-				.build();
+				.verified(company.getVerified())
+				.addresses(addressDTOs);
+		bankAccountRepository.findByCompanyId(companyId).ifPresent(bank -> {
+			builder.bankName(bank.getBankName());
+			builder.bic(bank.getBic());
+			builder.accountNumber(bank.getAccountNumber());
+		});
+		List<ResponsiblePerson> persons = responsiblePersonRepository.findByCompanyId(companyId);
+		for (ResponsiblePerson p : persons) {
+			if (p.getPosition() == ResponsiblePerson.Position.director) {
+				builder.directorName(p.getFullName());
+			} else if (p.getPosition() == ResponsiblePerson.Position.chief_accountant) {
+				builder.chiefAccountantName(p.getFullName());
+			}
+		}
+		List<CompanyDocument> docs = companyDocumentRepository.findByCompanyId(companyId);
+		List<CompanyProfileDTO.DocumentInfo> documentInfos = docs.stream()
+				.map(doc -> CompanyProfileDTO.DocumentInfo.builder()
+						.id(doc.getId())
+						.documentType(doc.getDocumentType().name())
+						.originalFilename(doc.getOriginalFilename())
+						.downloadUrl(fileStorageService.getPresignedUrl(doc.getFilePath()))
+						.build())
+				.collect(Collectors.toList());
+		builder.documents(documentInfos);
+		supplierSettingsRepository.findById(companyId).ifPresent(settings -> {
+			builder.paymentTerms(settings.getPaymentTerms().name());
+		});
 
-		return ResponseEntity.ok(response);
+		return ResponseEntity.ok(builder.build());
+	}
+
+	@PutMapping("/profile")
+	@Operation(summary = "Update user profile (company details, bank, responsible persons)")
+	public ResponseEntity<Map<String, String>> updateProfile(
+			@RequestHeader("X-User-Id") Long userId,
+			@RequestBody ProfileUpdateRequest request) {
+		authService.updateProfile(userId, request);
+		return ResponseEntity.ok(Map.of("message", "Profile updated successfully"));
+	}
+
+	@PostMapping(value = "/profile/logo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@Operation(summary = "Update company logo")
+	public ResponseEntity<Map<String, String>> updateLogo(
+			@RequestHeader("X-User-Id") Long userId,
+			@RequestParam("logo") MultipartFile logo) {
+		authService.updateCompanyLogo(userId, logo);
+		return ResponseEntity.ok(Map.of("message", "Logo updated successfully"));
 	}
 
 	@GetMapping("/validate")

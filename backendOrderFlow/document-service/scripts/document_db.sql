@@ -1,9 +1,13 @@
-CREATE DATABASE IF NOT EXISTS document_db;
+CREATE DATABASE IF NOT EXISTS document_db
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_unicode_ci;
 USE document_db;
+
+SET NAMES utf8mb4;
 
 -- Типы документов
 CREATE TABLE document_type (
-    id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     code VARCHAR(50) NOT NULL UNIQUE,
     name VARCHAR(255) NOT NULL,
     description TEXT
@@ -12,7 +16,7 @@ CREATE TABLE document_type (
 -- Документы
 CREATE TABLE document (
     id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-    document_type_id INT UNSIGNED NOT NULL,
+    document_type_id BIGINT UNSIGNED NOT NULL,
     entity_type VARCHAR(50) NOT NULL COMMENT 'order, company, verification',
     entity_id BIGINT UNSIGNED NOT NULL,
     file_name VARCHAR(255) NOT NULL,

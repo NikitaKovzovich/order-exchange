@@ -1,0 +1,15 @@
+{
+  "name": "orderflow-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Newman runner dependencies for OrderFlow E2E business-flow collection",
+  "scripts": {
+    "install:ci": "npm install --no-fund --no-audit",
+    "run:local": "newman run postman/OrderFlow.E2E.postman_collection.json -e postman/OrderFlow.local.postman_environment.json --reporters cli,json,junit,htmlextra"
+  },
+  "devDependencies": {
+    "newman": "^6.2.1",
+    "newman-reporter-htmlextra": "^1.23.1"
+  }
+}
+

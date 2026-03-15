@@ -1,4 +1,16 @@
 <div class="max-w-5xl mx-auto space-y-8">
+  <div *ngIf="notification" class="rounded-lg border px-4 py-3" [ngClass]="{
+    'border-green-200 bg-green-50 text-green-800': notification.type === 'success',
+    'border-red-200 bg-red-50 text-red-800': notification.type === 'error',
+    'border-blue-200 bg-blue-50 text-blue-800': notification.type === 'info',
+    'border-amber-200 bg-amber-50 text-amber-800': notification.type === 'warning'
+  }">
+    <div class="flex items-start justify-between gap-4">
+      <p class="text-sm font-medium">{{ notification.message }}</p>
+      <button type="button" class="text-current opacity-70 hover:opacity-100" (click)="notification = null">✕</button>
+    </div>
+  </div>
+
   <div class="flex items-center justify-between mb-6">
     <h1 class="text-2xl font-bold text-gray-800">Формирование заказа</h1>
     <a routerLink="/retail/catalog" class="text-indigo-600 hover:underline flex items-center">

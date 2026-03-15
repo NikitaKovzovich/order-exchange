@@ -3,6 +3,7 @@ package by.bsuir.orderservice.controller;
 import by.bsuir.orderservice.dto.*;
 import by.bsuir.orderservice.exception.InvalidOperationException;
 import by.bsuir.orderservice.exception.ResourceNotFoundException;
+import by.bsuir.orderservice.service.CartService;
 import by.bsuir.orderservice.service.OrderService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,24 +38,29 @@ class OrderControllerTest {
 	@MockBean
 	private OrderService orderService;
 
+	@MockBean
+	private CartService cartService;
+
 	private OrderResponse testOrderResponse;
 
 	@BeforeEach
 	void setUp() {
-		testOrderResponse = new OrderResponse(
-				1L,
-				"ORD-123456-ABCD",
-				100L,
-				200L,
-				"PENDING_CONFIRMATION",
-				"Ожидает подтверждения",
-				"Test Address",
-				LocalDate.now().plusDays(7),
-				new BigDecimal("1000.00"),
-				new BigDecimal("200.00"),
-				List.of(),
-				LocalDateTime.now(),
-				null
+		testOrderResponse = createTestOrderResponse(
+				1L, "ORD-123456-ABCD", 100L, 200L,
+				"PENDING_CONFIRMATION", "Ожидает подтверждения"
+		);
+	}
+
+	private OrderResponse createTestOrderResponse(Long id, String orderNumber, Long supplierId, Long customerId,
+			String statusCode, String statusName) {
+		return new OrderResponse(
+				id, orderNumber, supplierId, "Компания #" + supplierId,
+				customerId, "Компания #" + customerId, statusCode, statusName,
+				"Test Address", LocalDate.now().plusDays(7),
+				new BigDecimal("1000.00"), new BigDecimal("200.00"),
+				null, null, null, false,
+				List.of(), List.of(), List.of(), List.of(),
+				LocalDateTime.now(), null
 		);
 	}
 
@@ -110,7 +116,7 @@ class OrderControllerTest {
 			PageResponse<OrderResponse> pageResponse = new PageResponse<>(
 					List.of(testOrderResponse), 0, 20, 1, 1, true, true
 			);
-			when(orderService.getSupplierOrders(eq(100L), isNull(), eq(0), eq(20)))
+			when(orderService.getSupplierOrders(eq(100L), isNull(), isNull(), isNull(), isNull(), eq(0), eq(20)))
 					.thenReturn(pageResponse);
 
 			mockMvc.perform(get("/api/orders/supplier")
@@ -129,7 +135,7 @@ class OrderControllerTest {
 			PageResponse<OrderResponse> pageResponse = new PageResponse<>(
 					List.of(testOrderResponse), 0, 20, 1, 1, true, true
 			);
-			when(orderService.getSupplierOrders(eq(100L), eq("PENDING_CONFIRMATION"), eq(0), eq(20)))
+			when(orderService.getSupplierOrders(eq(100L), eq("PENDING_CONFIRMATION"), isNull(), isNull(), isNull(), eq(0), eq(20)))
 					.thenReturn(pageResponse);
 
 			mockMvc.perform(get("/api/orders/supplier")
@@ -150,7 +156,7 @@ class OrderControllerTest {
 			PageResponse<OrderResponse> pageResponse = new PageResponse<>(
 					List.of(testOrderResponse), 0, 20, 1, 1, true, true
 			);
-			when(orderService.getCustomerOrders(eq(200L), isNull(), eq(0), eq(20)))
+			when(orderService.getCustomerOrders(eq(200L), isNull(), isNull(), isNull(), isNull(), eq(0), eq(20)))
 					.thenReturn(pageResponse);
 
 			mockMvc.perform(get("/api/orders/customer")
@@ -172,7 +178,7 @@ class OrderControllerTest {
 					100L,
 					"Delivery Address",
 					LocalDate.now().plusDays(7),
-					List.of(new OrderItemRequest(1L, 10, new BigDecimal("100.00"), new BigDecimal("20")))
+					List.of(new OrderItemRequest(1L, "Test Product", "SKU-001", 10, new BigDecimal("100.00"), new BigDecimal("20")))
 			);
 
 			when(orderService.createOrder(eq(200L), any(CreateOrderRequest.class)))
@@ -212,11 +218,8 @@ class OrderControllerTest {
 		@Test
 		@DisplayName("Should confirm order successfully")
 		void shouldConfirmOrderSuccessfully() throws Exception {
-			OrderResponse confirmedOrder = new OrderResponse(
-					1L, "ORD-123456-ABCD", 100L, 200L,
-					"CONFIRMED", "Подтвержден", "Test Address",
-					LocalDate.now().plusDays(7), new BigDecimal("1000.00"),
-					new BigDecimal("200.00"), List.of(), LocalDateTime.now(), LocalDateTime.now()
+			OrderResponse confirmedOrder = createTestOrderResponse(
+					1L, "ORD-123456-ABCD", 100L, 200L, "CONFIRMED", "Подтвержден"
 			);
 			when(orderService.confirmOrder(1L, 100L)).thenReturn(confirmedOrder);
 
@@ -246,11 +249,8 @@ class OrderControllerTest {
 		@Test
 		@DisplayName("Should reject order successfully")
 		void shouldRejectOrderSuccessfully() throws Exception {
-			OrderResponse rejectedOrder = new OrderResponse(
-					1L, "ORD-123456-ABCD", 100L, 200L,
-					"REJECTED", "Отклонен", "Test Address",
-					LocalDate.now().plusDays(7), new BigDecimal("1000.00"),
-					new BigDecimal("200.00"), List.of(), LocalDateTime.now(), LocalDateTime.now()
+			OrderResponse rejectedOrder = createTestOrderResponse(
+					1L, "ORD-123456-ABCD", 100L, 200L, "REJECTED", "Отклонен"
 			);
 			when(orderService.rejectOrder(eq(1L), eq(100L), anyString())).thenReturn(rejectedOrder);
 
@@ -272,11 +272,8 @@ class OrderControllerTest {
 		@Test
 		@DisplayName("Should confirm payment successfully")
 		void shouldConfirmPaymentSuccessfully() throws Exception {
-			OrderResponse paidOrder = new OrderResponse(
-					1L, "ORD-123456-ABCD", 100L, 200L,
-					"PAID", "Оплачен", "Test Address",
-					LocalDate.now().plusDays(7), new BigDecimal("1000.00"),
-					new BigDecimal("200.00"), List.of(), LocalDateTime.now(), LocalDateTime.now()
+			OrderResponse paidOrder = createTestOrderResponse(
+					1L, "ORD-123456-ABCD", 100L, 200L, "PAID", "Оплачен"
 			);
 			when(orderService.confirmPayment(1L, 100L)).thenReturn(paidOrder);
 
@@ -294,11 +291,8 @@ class OrderControllerTest {
 		@Test
 		@DisplayName("Should ship order successfully")
 		void shouldShipOrderSuccessfully() throws Exception {
-			OrderResponse shippedOrder = new OrderResponse(
-					1L, "ORD-123456-ABCD", 100L, 200L,
-					"SHIPPED", "Отгружен", "Test Address",
-					LocalDate.now().plusDays(7), new BigDecimal("1000.00"),
-					new BigDecimal("200.00"), List.of(), LocalDateTime.now(), LocalDateTime.now()
+			OrderResponse shippedOrder = createTestOrderResponse(
+					1L, "ORD-123456-ABCD", 100L, 200L, "SHIPPED", "В пути"
 			);
 			when(orderService.shipOrder(1L, 100L)).thenReturn(shippedOrder);
 
@@ -316,11 +310,8 @@ class OrderControllerTest {
 		@Test
 		@DisplayName("Should deliver order successfully")
 		void shouldDeliverOrderSuccessfully() throws Exception {
-			OrderResponse deliveredOrder = new OrderResponse(
-					1L, "ORD-123456-ABCD", 100L, 200L,
-					"DELIVERED", "Доставлен", "Test Address",
-					LocalDate.now().plusDays(7), new BigDecimal("1000.00"),
-					new BigDecimal("200.00"), List.of(), LocalDateTime.now(), LocalDateTime.now()
+			OrderResponse deliveredOrder = createTestOrderResponse(
+					1L, "ORD-123456-ABCD", 100L, 200L, "DELIVERED", "Доставлен"
 			);
 			when(orderService.deliverOrder(1L, 200L)).thenReturn(deliveredOrder);
 

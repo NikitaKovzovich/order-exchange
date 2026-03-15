@@ -17,9 +17,10 @@ class JwtProviderTest {
 	@BeforeEach
 	void setUp() {
 		jwtProvider = new JwtProvider();
-		ReflectionTestUtils.setField(jwtProvider, "secretKey",
+		ReflectionTestUtils.setField(jwtProvider, "secretKeyString",
 				"test-secret-key-that-is-at-least-256-bits-long-for-hmac-sha256");
 		ReflectionTestUtils.setField(jwtProvider, "expirationTime", 3600000L);
+		jwtProvider.init();
 	}
 
 	@Nested

@@ -21,10 +21,10 @@ export const routes: Routes = [
   },
   {
     path: 'supplier',
-    loadChildren: () => import('./supplier/supplier-module').then(m => m.SupplierModule)
+    loadChildren: () => import('./supplier/supplier.routes').then(m => m.supplierRoutes)
   },
   {
     path: 'retail',
-    loadChildren: () => import('./retail-network/retail-network-module').then(m => m.RetailNetworkModule)
+    loadChildren: () => import('./retail-network/retail-network.routes').then(m => m.retailNetworkRoutes)
   }
 ];

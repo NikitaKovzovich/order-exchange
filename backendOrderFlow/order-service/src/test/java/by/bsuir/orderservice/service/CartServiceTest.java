@@ -8,6 +8,7 @@ import by.bsuir.orderservice.entity.OrderStatus;
 import by.bsuir.orderservice.exception.InvalidOperationException;
 import by.bsuir.orderservice.exception.ResourceNotFoundException;
 import by.bsuir.orderservice.repository.CartRepository;
+import by.bsuir.orderservice.repository.OrderHistoryRepository;
 import by.bsuir.orderservice.repository.OrderRepository;
 import by.bsuir.orderservice.repository.OrderStatusRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,7 +44,13 @@ class CartServiceTest {
 	private OrderStatusRepository statusRepository;
 
 	@Mock
+	private OrderHistoryRepository historyRepository;
+
+	@Mock
 	private EventPublisher eventPublisher;
+
+	@Mock
+	private by.bsuir.orderservice.client.AuthServiceClient authServiceClient;
 
 	@InjectMocks
 	private CartService cartService;
@@ -84,6 +91,9 @@ class CartServiceTest {
 				.code(OrderStatus.Codes.PENDING_CONFIRMATION)
 				.name("Pending Confirmation")
 				.build();
+
+		lenient().when(authServiceClient.getCompanyName(anyLong()))
+				.thenAnswer(invocation -> "Company #" + invocation.getArgument(0));
 	}
 
 	@Nested
@@ -160,7 +170,7 @@ class CartServiceTest {
 
 			cartService.addItem(1L, sameProductRequest);
 
-			assertThat(testCart.getItems().get(0).getQuantity()).isEqualTo(7); // 5 + 2
+			assertThat(testCart.getItems().get(0).getQuantity()).isEqualTo(7);
 		}
 	}
 
@@ -250,7 +260,7 @@ class CartServiceTest {
 		void shouldDoNothingWhenCartNotFound() {
 			when(cartRepository.findByCustomerIdWithItems(999L)).thenReturn(Optional.empty());
 
-			cartService.clearCart(999L); // Should not throw
+			cartService.clearCart(999L);
 
 			verify(cartRepository, never()).save(any());
 		}
@@ -263,7 +273,7 @@ class CartServiceTest {
 		@Test
 		@DisplayName("Should create orders grouped by supplier")
 		void shouldCreateOrdersGroupedBySupplier() {
-			// Add item from another supplier
+
 			CartItem secondSupplierItem = CartItem.builder()
 					.id(2L)
 					.productId(200L)
@@ -299,7 +309,7 @@ class CartServiceTest {
 			CheckoutResponse response = cartService.checkout(1L, request);
 
 			assertThat(response).isNotNull();
-			assertThat(response.orderCount()).isEqualTo(2); // 2 suppliers = 2 orders
+			assertThat(response.orderCount()).isEqualTo(2);
 			verify(orderRepository, times(2)).save(any(Order.class));
 			verify(eventPublisher, times(2)).publishOrderCreated(any(Order.class));
 		}

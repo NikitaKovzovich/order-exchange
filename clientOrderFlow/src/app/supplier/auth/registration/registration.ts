@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RegistrationService, RegistrationResponse } from '../../../services/registration.service';
+import { AuthStorageService } from '../../../services/auth-storage.service';
 
 interface DeliveryAddress {
   id: number;
@@ -61,7 +62,8 @@ export class Registration {
 
   constructor(
     private router: Router,
-    private registrationService: RegistrationService
+    private registrationService: RegistrationService,
+    private authStorage: AuthStorageService
   ) {
     const navigation = this.router.getCurrentNavigation();
     if (navigation?.extras?.state?.['startFromStep2']) {
@@ -277,18 +279,8 @@ export class Registration {
         this.isSubmitting = false;
         this.showSuccess = true;
 
-        // Сохраняем токен и данные пользователя
         if (response.token) {
-          localStorage.setItem('jwt_token', response.token);
-
-          // Сохраняем данные пользователя
-          const userData = {
-            email: response.email,
-            role: response.role,
-            userId: response.userId,
-            companyId: response.companyId
-          };
-          localStorage.setItem('current_user', JSON.stringify(userData));
+          this.authStorage.saveAuth(response, true);
         }
       },
       error: (error: any) => {

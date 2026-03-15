@@ -19,6 +19,7 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -131,6 +132,34 @@ class ProductImageServiceTest {
 
 			assertThat(response).isNotNull();
 			verify(imageRepository).save(any(ProductImage.class));
+		}
+
+		@Test
+		@DisplayName("Should keep full image bytes for large allowed image")
+		void shouldKeepFullImageBytesForLargeAllowedImage() {
+			byte[] largeImage = new byte[128 * 1024];
+			for (int i = 0; i < largeImage.length; i++) {
+				largeImage[i] = (byte) (i % 256);
+			}
+			MockMultipartFile file = new MockMultipartFile(
+					"file", "large.png", "image/png", largeImage
+			);
+			AtomicReference<ProductImage> savedImageRef = new AtomicReference<>();
+
+			when(productRepository.findById(1L)).thenReturn(Optional.of(testProduct));
+			when(imageRepository.save(any(ProductImage.class))).thenAnswer(invocation -> {
+				ProductImage image = invocation.getArgument(0);
+				savedImageRef.set(image);
+				image.setId(10L);
+				return image;
+			});
+
+			ProductImageResponse response = productImageService.uploadImage(1L, 100L, file, false);
+
+			assertThat(response).isNotNull();
+			assertThat(savedImageRef.get()).isNotNull();
+			assertThat(savedImageRef.get().getImageData()).hasSize(largeImage.length);
+			assertThat(savedImageRef.get().getImageData()).isEqualTo(largeImage);
 		}
 
 		@Test

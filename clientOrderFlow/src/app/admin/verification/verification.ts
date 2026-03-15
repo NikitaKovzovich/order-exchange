@@ -5,6 +5,11 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Header } from '../shared/header/header';
 import { AdminService, VerificationDetails } from '../../services/admin.service';
 
+interface UiNotification {
+  type: 'success' | 'error' | 'info' | 'warning';
+  message: string;
+}
+
 @Component({
   selector: 'admin-verification',
   standalone: true,
@@ -15,10 +20,13 @@ import { AdminService, VerificationDetails } from '../../services/admin.service'
 export class Verification implements OnInit {
   requestId: string = '';
   request: VerificationDetails | null = null;
+  showApproveModal: boolean = false;
   showRejectModal: boolean = false;
   rejectionReason: string = '';
+  rejectValidationMessage: string = '';
   isLoading: boolean = false;
   errorMessage: string = '';
+  notification: UiNotification | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -29,6 +37,10 @@ export class Verification implements OnInit {
   ngOnInit() {
     this.requestId = this.route.snapshot.paramMap.get('id') || '';
     this.loadRequest();
+  }
+
+  clearNotification(): void {
+    this.notification = null;
   }
 
   loadRequest() {
@@ -55,66 +67,99 @@ export class Verification implements OnInit {
   }
 
   approve() {
-    if (!confirm('Вы уверены, что хотите одобрить заявку?')) {
+    this.showApproveModal = true;
+  }
+
+  closeApproveModal(): void {
+    this.showApproveModal = false;
+  }
+
+  confirmApprove(): void {
+    const id = parseInt(this.requestId);
+    if (!id) {
+      this.notification = {
+        type: 'error',
+        message: 'Некорректный ID заявки.'
+      };
+      this.closeApproveModal();
       return;
     }
 
-    const id = parseInt(this.requestId);
     this.isLoading = true;
     this.errorMessage = '';
+    this.clearNotification();
+    this.closeApproveModal();
 
     this.adminService.approveVerification(id).subscribe({
       next: (response) => {
         console.log('Verification approved:', response);
-        alert(response.message || 'Заявка успешно одобрена');
-        this.router.navigate(['/admin/verification']);
+        this.router.navigate(['/admin/verification'], {
+          state: {
+            verificationNotification: {
+              type: 'success',
+              message: response.message || 'Заявка успешно одобрена.'
+            }
+          }
+        });
       },
       error: (error) => {
         console.error('Error approving verification:', error);
         this.isLoading = false;
         this.errorMessage = error.error?.message || 'Ошибка при одобрении заявки';
-        alert(this.errorMessage);
+        this.notification = {
+          type: 'error',
+          message: this.errorMessage
+        };
       }
     });
   }
 
   openRejectModal() {
+    this.rejectValidationMessage = '';
     this.showRejectModal = true;
   }
 
   closeRejectModal() {
     this.showRejectModal = false;
     this.rejectionReason = '';
+    this.rejectValidationMessage = '';
   }
 
   confirmRejection() {
     if (!this.rejectionReason.trim()) {
-      alert('Пожалуйста, укажите причину отклонения');
+      this.rejectValidationMessage = 'Пожалуйста, укажите причину отклонения.';
       return;
     }
 
     const id = parseInt(this.requestId);
     this.isLoading = true;
     this.errorMessage = '';
+    this.clearNotification();
+    this.rejectValidationMessage = '';
 
     this.adminService.rejectVerification(id, this.rejectionReason).subscribe({
       next: (response) => {
         console.log('Verification rejected:', response);
-        alert(response.message || 'Заявка отклонена. Компания получит уведомление.');
-        this.router.navigate(['/admin/verification']);
+        this.closeRejectModal();
+        this.router.navigate(['/admin/verification'], {
+          state: {
+            verificationNotification: {
+              type: 'success',
+              message: response.message || 'Заявка отклонена. Компания получит уведомление.'
+            }
+          }
+        });
       },
       error: (error) => {
         console.error('Error rejecting verification:', error);
         this.isLoading = false;
         this.errorMessage = error.error?.message || 'Ошибка при отклонении заявки';
-        alert(this.errorMessage);
+        this.notification = {
+          type: 'error',
+          message: this.errorMessage
+        };
       }
     });
-  }
-
-  downloadDocument(docName: string) {
-    console.log('Скачивание документа:', docName);
-    alert('Функция скачивания документа: ' + docName);
   }
 
   getDocumentIcon(type: string): string {

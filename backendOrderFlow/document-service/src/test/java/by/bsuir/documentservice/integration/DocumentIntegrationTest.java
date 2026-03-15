@@ -26,60 +26,60 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class DocumentIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+	@Autowired
+	private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+	@Autowired
+	private ObjectMapper objectMapper;
 
-    @Autowired
-    private DocumentRepository documentRepository;
+	@Autowired
+	private DocumentRepository documentRepository;
 
-    @Autowired
-    private DocumentTypeRepository documentTypeRepository;
+	@Autowired
+	private DocumentTypeRepository documentTypeRepository;
 
-    private Document testDocument;
+	private Document testDocument;
 
-    @BeforeEach
-    void setUp() {
-        documentRepository.deleteAll();
+	@BeforeEach
+	void setUp() {
+		documentRepository.deleteAll();
 
-        DocumentType invoiceType = documentTypeRepository.findByCode("INVOICE")
-                .orElseGet(() -> documentTypeRepository.save(DocumentType.builder()
-                        .code("INVOICE")
-                        .name("Счёт-фактура")
-                        .description("Счёт-фактура для заказа")
-                        .build()));
+		DocumentType invoiceType = documentTypeRepository.findByCode("INVOICE")
+				.orElseGet(() -> documentTypeRepository.save(DocumentType.builder()
+						.code("INVOICE")
+						.name("Счёт-фактура")
+						.description("Счёт-фактура для заказа")
+						.build()));
 
-        testDocument = Document.builder()
-                .documentType(invoiceType)
-                .entityType("order")
-                .entityId(1L)
-                .fileName("test-invoice.pdf")
-                .fileKey("documents/test-invoice.pdf")
-                .mimeType("application/pdf")
-                .fileSize(1024L)
-                .uploadedBy(1L)
-                .createdAt(LocalDateTime.now())
-                .build();
-        testDocument = documentRepository.save(testDocument);
-    }
+		testDocument = Document.builder()
+				.documentType(invoiceType)
+				.entityType("order")
+				.entityId(1L)
+				.fileName("test-invoice.pdf")
+				.fileKey("documents/test-invoice.pdf")
+				.mimeType("application/pdf")
+				.fileSize(1024L)
+				.uploadedBy(1L)
+				.createdAt(LocalDateTime.now())
+				.build();
+		testDocument = documentRepository.save(testDocument);
+	}
 
-    @Test
-    @DisplayName("Should get documents by entity")
-    void shouldGetDocumentsByEntity() throws Exception {
-        mockMvc.perform(get("/api/documents/entity/order/1")
-                        .header("X-User-Id", "1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
-    }
+	@Test
+	@DisplayName("Should get documents by entity")
+	void shouldGetDocumentsByEntity() throws Exception {
+		mockMvc.perform(get("/api/documents/entity/order/1")
+						.header("X-User-Id", "1"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true));
+	}
 
-    @Test
-    @DisplayName("Should get document by ID")
-    void shouldGetDocumentById() throws Exception {
-        mockMvc.perform(get("/api/documents/" + testDocument.getId())
-                        .header("X-User-Id", "1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
-    }
+	@Test
+	@DisplayName("Should get document by ID")
+	void shouldGetDocumentById() throws Exception {
+		mockMvc.perform(get("/api/documents/" + testDocument.getId())
+						.header("X-User-Id", "1"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true));
+	}
 }

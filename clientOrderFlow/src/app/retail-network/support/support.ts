@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { SupportService } from '../../services/support.service';
+import { CreateTicketRequest, SendTicketMessageRequest, SupportTicket, TicketCategory, TicketMessage, TicketPriority } from '../../models/api.models';
 
 @Component({
   selector: 'app-retail-support',
@@ -11,6 +13,7 @@ import { FormsModule } from '@angular/forms';
 export class Support {
   showNewTicketForm: boolean = false;
   selectedTicket: number | null = null;
+  formError: string = '';
 
   newTicket = {
     subject: '',
@@ -19,50 +22,17 @@ export class Support {
     description: ''
   };
 
-  tickets = [
-    {
-      id: 1,
-      subject: 'Проблема с оплатой заказа №12344',
-      category: 'Оплата',
-      priority: 'high',
-      status: 'open',
-      statusLabel: 'Открыто',
-      date: '20.10.2025',
-      lastUpdate: '2 часа назад',
-      messages: [
-        { from: 'me', text: 'Не могу оплатить заказ через систему. Выдает ошибку "Платеж отклонен"', time: '09:00', date: '20.10.2025' },
-        { from: 'support', text: 'Здравствуйте! Мы получили ваше обращение и уже работаем над проблемой. Пожалуйста, попробуйте использовать другой способ оплаты.', time: '09:30', date: '20.10.2025' }
-      ]
-    },
-    {
-      id: 2,
-      subject: 'Вопрос по доставке',
-      category: 'Доставка',
-      priority: 'medium',
-      status: 'in-progress',
-      statusLabel: 'В работе',
-      date: '19.10.2025',
-      lastUpdate: '1 день назад',
-      messages: [
-        { from: 'me', text: 'Когда ожидается доставка заказа №12345?', time: '14:00', date: '19.10.2025' },
-        { from: 'support', text: 'Ваш заказ находится в пути. Ожидаемая дата доставки - 22.10.2025', time: '14:30', date: '19.10.2025' }
-      ]
-    },
-    {
-      id: 3,
-      subject: 'Не могу добавить товар в корзину',
-      category: 'Технические вопросы',
-      priority: 'low',
-      status: 'closed',
-      statusLabel: 'Закрыто',
-      date: '18.10.2025',
-      lastUpdate: '2 дня назад',
-      messages: [
-        { from: 'me', text: 'При попытке добавить товар в корзину ничего не происходит', time: '10:00', date: '18.10.2025' },
-        { from: 'support', text: 'Проблема была связана с обновлением системы. Сейчас все работает корректно.', time: '11:00', date: '18.10.2025' }
-      ]
-    }
-  ];
+  tickets: Array<{
+    id: number;
+    subject: string;
+    category: string;
+    priority: string;
+    status: string;
+    statusLabel: string;
+    date: string;
+    lastUpdate: string;
+    messages: Array<{ from: 'me' | 'support'; text: string; time: string; date: string }>;
+  }> = [];
 
   categories = ['Оплата', 'Доставка', 'Технические вопросы', 'Возврат товара', 'Другое'];
   priorities = [
@@ -73,6 +43,10 @@ export class Support {
 
   newMessage: string = '';
 
+  constructor(private supportService: SupportService) {
+    this.loadTickets();
+  }
+
   toggleNewTicketForm() {
     this.showNewTicketForm = !this.showNewTicketForm;
     if (this.showNewTicketForm) {
@@ -80,57 +54,54 @@ export class Support {
     }
   }
 
-  selectTicket(ticketId: number) {
-    this.selectedTicket = ticketId;
-    this.showNewTicketForm = false;
-  }
-
   createTicket() {
     if (!this.newTicket.subject || !this.newTicket.category || !this.newTicket.priority || !this.newTicket.description) {
-      alert('Пожалуйста, заполните все поля');
+      this.formError = 'Пожалуйста, заполните все поля.';
       return;
     }
 
-    const ticket = {
-      id: this.tickets.length + 1,
+    this.formError = '';
+
+    const request: CreateTicketRequest = {
       subject: this.newTicket.subject,
-      category: this.newTicket.category,
-      priority: this.newTicket.priority,
-      status: 'open',
-      statusLabel: 'Открыто',
-      date: new Date().toLocaleDateString('ru-RU'),
-      lastUpdate: 'Только что',
-      messages: [
-        {
-          from: 'me',
-          text: this.newTicket.description,
-          time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
-          date: new Date().toLocaleDateString('ru-RU')
-        }
-      ]
+      message: this.newTicket.description,
+      category: this.mapCategory(this.newTicket.category),
+      priority: this.mapPriority(this.newTicket.priority)
     };
 
-    this.tickets.unshift(ticket);
-    this.newTicket = { subject: '', category: '', priority: '', description: '' };
-    this.showNewTicketForm = false;
-    this.selectTicket(ticket.id);
+    this.supportService.createTicket(request).subscribe({
+      next: ticket => {
+        const mapped = this.mapTicket(ticket, []);
+        this.tickets.unshift(mapped);
+        this.newTicket = { subject: '', category: '', priority: '', description: '' };
+        this.formError = '';
+        this.showNewTicketForm = false;
+        this.selectTicket(mapped.id);
+      },
+      error: error => console.error('Error creating retail ticket:', error)
+    });
   }
 
   sendMessage() {
     if (!this.newMessage.trim() || this.selectedTicket === null) return;
 
-    const ticket = this.tickets.find(t => t.id === this.selectedTicket);
-    if (ticket) {
-      ticket.messages.push({
-        from: 'me',
-        text: this.newMessage,
-        time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
-        date: new Date().toLocaleDateString('ru-RU')
-      });
-      ticket.lastUpdate = 'Только что';
-    }
+    const ticketId = this.selectedTicket;
+    const request: SendTicketMessageRequest = {
+      message: this.newMessage,
+      isInternalNote: false
+    };
 
-    this.newMessage = '';
+    this.supportService.sendTicketMessage(ticketId, request).subscribe({
+      next: message => {
+        const ticket = this.tickets.find(t => t.id === ticketId);
+        if (ticket) {
+          ticket.messages.push(this.mapMessage(message));
+          ticket.lastUpdate = 'Только что';
+        }
+        this.newMessage = '';
+      },
+      error: error => console.error('Error sending ticket message:', error)
+    });
   }
 
   getStatusClass(status: string): string {
@@ -162,5 +133,139 @@ export class Support {
 
   get selectedTicketData() {
     return this.tickets.find(t => t.id === this.selectedTicket);
+  }
+
+  private loadTickets(): void {
+    this.supportService.getUserTickets().subscribe({
+      next: page => {
+        const tickets = page.content;
+        this.tickets = tickets.map(ticket => this.mapTicket(ticket, []));
+        if (tickets.length > 0 && this.selectedTicket === null) {
+          this.selectTicket(tickets[0].id);
+        }
+      },
+      error: error => console.error('Error loading retail tickets:', error)
+    });
+  }
+
+  private loadTicketMessages(ticketId: number): void {
+    this.supportService.getTicketMessages(ticketId).subscribe({
+      next: messages => {
+        const ticket = this.tickets.find(item => item.id === ticketId);
+        if (ticket) {
+          ticket.messages = messages.map(message => this.mapMessage(message));
+        }
+      },
+      error: error => console.error('Error loading ticket messages:', error)
+    });
+  }
+
+  private mapTicket(ticket: SupportTicket, messages: TicketMessage[]) {
+    return {
+      id: ticket.id,
+      subject: ticket.subject,
+      category: this.getCategoryLabel(ticket.category),
+      priority: this.getPriorityValue(ticket.priority),
+      status: this.getStatusValue(ticket.status),
+      statusLabel: this.getStatusLabel(ticket.status),
+      date: new Date(ticket.createdAt).toLocaleDateString('ru-RU'),
+      lastUpdate: ticket.updatedAt ? new Date(ticket.updatedAt).toLocaleString('ru-RU') : '—',
+      messages: messages.map(message => this.mapMessage(message))
+    };
+  }
+
+  private mapMessage(message: TicketMessage) {
+    return {
+      from: message.senderRole === 'ADMIN' ? 'support' as const : 'me' as const,
+      text: message.messageText,
+      time: new Date(message.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+      date: new Date(message.createdAt).toLocaleDateString('ru-RU')
+    };
+  }
+
+  private mapCategory(category: string): TicketCategory {
+    switch (category) {
+      case 'Оплата':
+        return 'PAYMENT_ISSUE';
+      case 'Доставка':
+        return 'ORDER_ISSUE';
+      case 'Технические вопросы':
+        return 'TECHNICAL_ISSUE';
+      default:
+        return 'OTHER';
+    }
+  }
+
+  private mapPriority(priority: string): TicketPriority {
+    switch (priority) {
+      case 'high':
+        return 'HIGH';
+      case 'medium':
+        return 'NORMAL';
+      default:
+        return 'LOW';
+    }
+  }
+
+  private getStatusValue(status: string): string {
+    switch (status) {
+      case 'OPEN':
+        return 'open';
+      case 'IN_PROGRESS':
+        return 'in-progress';
+      case 'CLOSED':
+        return 'closed';
+      case 'RESOLVED':
+        return 'closed';
+      default:
+        return status.toLowerCase();
+    }
+  }
+
+  private getStatusLabel(status: string): string {
+    switch (status) {
+      case 'OPEN':
+        return 'Открыто';
+      case 'IN_PROGRESS':
+        return 'В работе';
+      case 'WAITING_USER':
+        return 'Нужен ответ';
+      case 'RESOLVED':
+        return 'Решено';
+      case 'CLOSED':
+        return 'Закрыто';
+      default:
+        return status;
+    }
+  }
+
+  private getPriorityValue(priority: string): string {
+    switch (priority) {
+      case 'HIGH':
+        return 'high';
+      case 'NORMAL':
+        return 'medium';
+      default:
+        return 'low';
+    }
+  }
+
+  private getCategoryLabel(category: string): string {
+    switch (category) {
+      case 'PAYMENT_ISSUE':
+        return 'Оплата';
+      case 'ORDER_ISSUE':
+        return 'Доставка';
+      case 'TECHNICAL_ISSUE':
+        return 'Технические вопросы';
+      default:
+        return 'Другое';
+    }
+  }
+
+  selectTicket(ticketId: number) {
+    this.selectedTicket = ticketId;
+    this.showNewTicketForm = false;
+    this.loadTicketMessages(ticketId);
   }
 }

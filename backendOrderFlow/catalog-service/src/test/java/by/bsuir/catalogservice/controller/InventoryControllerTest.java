@@ -87,7 +87,7 @@ class InventoryControllerTest {
 		InventoryResponse response = new InventoryResponse(
 				1L, "Low Stock Product", "SKU-001", 5, 0, 5, true, false
 		);
-		when(inventoryService.getLowStockProducts(10)).thenReturn(List.of(response));
+		when(inventoryService.getLowStockProducts(eq(10), any())).thenReturn(List.of(response));
 
 		mockMvc.perform(get("/api/inventory/low-stock?threshold=10"))
 				.andExpect(status().isOk())

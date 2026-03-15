@@ -1,5 +1,6 @@
 package by.bsuir.orderservice.dto;
 
+import by.bsuir.orderservice.entity.DiscrepancyReason;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
@@ -11,5 +12,5 @@ public record DiscrepancyItemRequest(
 		@Min(value = 0, message = "Actual quantity must be non-negative")
 		Integer actualQuantity,
 
-		String reason
+		DiscrepancyReason reason
 ) {}

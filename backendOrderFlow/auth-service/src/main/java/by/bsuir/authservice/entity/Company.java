@@ -51,9 +51,7 @@ public class Company {
 		return this.legalForm;
 	}
 
-	/**
-	 * Получает текстовое представление организационно-правовой формы
-	 */
+
 	public String getLegalFormText() {
 		return switch (this.legalForm) {
 			case IE -> "ИП";
@@ -66,10 +64,7 @@ public class Company {
 		};
 	}
 
-	/**
-	 * Формирует полное юридическое наименование: форма + название
-	 * Например: "ООО 'Название компании'"
-	 */
+
 	public String buildLegalName() {
 		if (this.name == null || this.name.isEmpty()) {
 			return this.legalName;
@@ -77,9 +72,7 @@ public class Company {
 		return getLegalFormText() + " \"" + this.name + "\"";
 	}
 
-	/**
-	 * Устанавливает название и автоматически формирует legalName
-	 */
+
 	public void setNameAndBuildLegalName(String name) {
 		this.name = name;
 		this.legalName = buildLegalName();

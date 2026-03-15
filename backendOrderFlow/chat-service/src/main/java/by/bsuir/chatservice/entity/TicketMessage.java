@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "ticket_message", indexes = {
@@ -41,6 +43,13 @@ public class TicketMessage {
 	@Column(name = "attachment_key")
 	private String attachmentKey;
 
+	@ElementCollection(fetch = FetchType.LAZY)
+	@CollectionTable(name = "ticket_message_attachment",
+			joinColumns = @JoinColumn(name = "ticket_message_id"))
+	@Column(name = "attachment_key", nullable = false, length = 1024)
+	@Builder.Default
+	private List<String> attachmentKeys = new ArrayList<>();
+
 	@Column(name = "is_internal_note")
 	@Builder.Default
 	private Boolean isInternalNote = false;
@@ -56,5 +65,15 @@ public class TicketMessage {
 	public String getPreview() {
 		if (messageText == null) return "";
 		return messageText.length() > 150 ? messageText.substring(0, 150) + "..." : messageText;
+	}
+
+	public List<String> resolveAttachmentKeys() {
+		if (attachmentKeys != null && !attachmentKeys.isEmpty()) {
+			return attachmentKeys;
+		}
+		if (attachmentKey != null && !attachmentKey.isBlank()) {
+			return List.of(attachmentKey);
+		}
+		return List.of();
 	}
 }

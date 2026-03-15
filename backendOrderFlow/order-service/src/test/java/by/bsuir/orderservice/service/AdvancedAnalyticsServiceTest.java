@@ -29,6 +29,9 @@ class AdvancedAnalyticsServiceTest {
 	@Mock
 	private OrderRepository orderRepository;
 
+	@Mock
+	private by.bsuir.orderservice.client.AuthServiceClient authServiceClient;
+
 	@InjectMocks
 	private AdvancedAnalyticsService analyticsService;
 

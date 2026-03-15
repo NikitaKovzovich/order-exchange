@@ -2,11 +2,11 @@ package by.bsuir.orderservice.service;
 
 import by.bsuir.orderservice.dto.*;
 import by.bsuir.orderservice.entity.Order;
+import by.bsuir.orderservice.entity.OrderHistory;
 import by.bsuir.orderservice.entity.OrderStatus;
 import by.bsuir.orderservice.exception.InvalidOperationException;
 import by.bsuir.orderservice.exception.ResourceNotFoundException;
-import by.bsuir.orderservice.repository.OrderRepository;
-import by.bsuir.orderservice.repository.OrderStatusRepository;
+import by.bsuir.orderservice.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -38,7 +38,19 @@ class OrderServiceTest {
 	@Mock
 	private OrderStatusRepository statusRepository;
 	@Mock
+	private OrderDiscrepancyRepository discrepancyRepository;
+	@Mock
+	private OrderHistoryRepository historyRepository;
+	@Mock
+	private OrderDocumentRepository documentRepository;
+	@Mock
 	private EventPublisher eventPublisher;
+	@Mock
+	private by.bsuir.orderservice.client.AuthServiceClient authServiceClient;
+	@Mock
+	private by.bsuir.orderservice.client.DocumentServiceClient documentServiceClient;
+	@Mock
+	private NotificationService notificationService;
 
 	@InjectMocks
 	private OrderService orderService;
@@ -120,7 +132,7 @@ class OrderServiceTest {
 			Page<Order> page = new PageImpl<>(List.of(testOrder));
 			when(orderRepository.findBySupplierId(eq(100L), any(Pageable.class))).thenReturn(page);
 
-			PageResponse<OrderResponse> response = orderService.getSupplierOrders(100L, null, 0, 10);
+			PageResponse<OrderResponse> response = orderService.getSupplierOrders(100L, null, null, null, null, 0, 10);
 
 			assertThat(response.content()).hasSize(1);
 			assertThat(response.totalElements()).isEqualTo(1);
@@ -135,7 +147,7 @@ class OrderServiceTest {
 			when(orderRepository.findBySupplierIdAndStatus(eq(100L), eq(pendingStatus), any(Pageable.class)))
 					.thenReturn(page);
 
-			PageResponse<OrderResponse> response = orderService.getSupplierOrders(100L, "PENDING_CONFIRMATION", 0, 10);
+			PageResponse<OrderResponse> response = orderService.getSupplierOrders(100L, "PENDING_CONFIRMATION", null, null, null, 0, 10);
 
 			assertThat(response.content()).hasSize(1);
 		}
@@ -146,7 +158,7 @@ class OrderServiceTest {
 			Page<Order> page = new PageImpl<>(List.of(testOrder));
 			when(orderRepository.findByCustomerId(eq(200L), any(Pageable.class))).thenReturn(page);
 
-			PageResponse<OrderResponse> response = orderService.getCustomerOrders(200L, null, 0, 10);
+			PageResponse<OrderResponse> response = orderService.getCustomerOrders(200L, null, null, null, null, 0, 10);
 
 			assertThat(response.content()).hasSize(1);
 		}
@@ -163,12 +175,13 @@ class OrderServiceTest {
 					100L,
 					"Delivery Address",
 					null,
-					List.of(new OrderItemRequest(1L, 10, new BigDecimal("100.00"), new BigDecimal("20")))
+					List.of(new OrderItemRequest(1L, "Test Product", "SKU-001", 10, new BigDecimal("100.00"), new BigDecimal("20")))
 			);
 
 			when(statusRepository.findByCode(OrderStatus.Codes.PENDING_CONFIRMATION))
 					.thenReturn(Optional.of(pendingStatus));
 			when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
+			when(historyRepository.save(any(OrderHistory.class))).thenAnswer(i -> i.getArgument(0));
 
 			OrderResponse response = orderService.createOrder(200L, request);
 
@@ -184,10 +197,16 @@ class OrderServiceTest {
 		@Test
 		@DisplayName("Should confirm order successfully")
 		void shouldConfirmOrderSuccessfully() {
+			OrderStatus awaitingPaymentStatus = OrderStatus.builder()
+					.id(10L).code(OrderStatus.Codes.AWAITING_PAYMENT).name("Ожидает оплаты").build();
+
 			when(orderRepository.findById(1L)).thenReturn(Optional.of(testOrder));
 			when(statusRepository.findByCode(OrderStatus.Codes.CONFIRMED))
 					.thenReturn(Optional.of(confirmedStatus));
+			when(statusRepository.findByCode(OrderStatus.Codes.AWAITING_PAYMENT))
+					.thenReturn(Optional.of(awaitingPaymentStatus));
 			when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
+			when(historyRepository.save(any(OrderHistory.class))).thenAnswer(i -> i.getArgument(0));
 
 			OrderResponse response = orderService.confirmOrder(1L, 100L);
 
@@ -223,6 +242,7 @@ class OrderServiceTest {
 			when(statusRepository.findByCode(OrderStatus.Codes.REJECTED))
 					.thenReturn(Optional.of(rejectedStatus));
 			when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
+			when(historyRepository.save(any(OrderHistory.class))).thenAnswer(i -> i.getArgument(0));
 
 			OrderResponse response = orderService.rejectOrder(1L, 100L, "Out of stock");
 
@@ -238,23 +258,25 @@ class OrderServiceTest {
 		@Test
 		@DisplayName("Should ship order successfully")
 		void shouldShipOrderSuccessfully() {
-			OrderStatus paidStatus = OrderStatus.builder()
+			OrderStatus awaitingShipmentStatus = OrderStatus.builder()
 					.id(4L)
-					.code(OrderStatus.Codes.PAID)
-					.name("Оплачен")
+					.code(OrderStatus.Codes.AWAITING_SHIPMENT)
+					.name("Ожидает отгрузки")
 					.build();
-			testOrder.setStatus(paidStatus);
+			testOrder.setStatus(awaitingShipmentStatus);
+			testOrder.setTtnGenerated(true);
 
 			OrderStatus shippedStatus = OrderStatus.builder()
 					.id(5L)
 					.code(OrderStatus.Codes.SHIPPED)
-					.name("Отгружен")
+					.name("В пути")
 					.build();
 
 			when(orderRepository.findById(1L)).thenReturn(Optional.of(testOrder));
 			when(statusRepository.findByCode(OrderStatus.Codes.SHIPPED))
 					.thenReturn(Optional.of(shippedStatus));
 			when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
+			when(historyRepository.save(any(OrderHistory.class))).thenAnswer(i -> i.getArgument(0));
 
 			OrderResponse response = orderService.shipOrder(1L, 100L);
 
@@ -287,6 +309,7 @@ class OrderServiceTest {
 			when(statusRepository.findByCode(OrderStatus.Codes.DELIVERED))
 					.thenReturn(Optional.of(deliveredStatus));
 			when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
+			when(historyRepository.save(any(OrderHistory.class))).thenAnswer(i -> i.getArgument(0));
 
 			OrderResponse response = orderService.deliverOrder(1L, 200L);
 
@@ -302,6 +325,60 @@ class OrderServiceTest {
 			assertThatThrownBy(() -> orderService.deliverOrder(1L, 999L))
 					.isInstanceOf(InvalidOperationException.class)
 					.hasMessageContaining("does not belong");
+		}
+	}
+
+	@Nested
+	@DisplayName("Cancel Order Tests")
+	class CancelOrderTests {
+
+		@Test
+		@DisplayName("Should cancel order and publish event")
+		void shouldCancelOrderAndPublishEvent() {
+			OrderStatus cancelledStatus = OrderStatus.builder()
+					.id(13L)
+					.code(OrderStatus.Codes.CANCELLED)
+					.name("Отменен")
+					.build();
+
+			when(orderRepository.findById(1L)).thenReturn(Optional.of(testOrder));
+			when(statusRepository.findByCode(OrderStatus.Codes.CANCELLED))
+					.thenReturn(Optional.of(cancelledStatus));
+			when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
+			when(historyRepository.save(any(OrderHistory.class))).thenAnswer(i -> i.getArgument(0));
+
+			OrderResponse response = orderService.cancelOrder(1L, 200L, "Changed my mind");
+
+			assertThat(response).isNotNull();
+			verify(eventPublisher).publishOrderCancelled(any(Order.class));
+		}
+
+		@Test
+		@DisplayName("Should cancel order from PAYMENT_PROBLEM status")
+		void shouldCancelOrderFromPaymentProblem() {
+			OrderStatus paymentProblemStatus = OrderStatus.builder()
+					.id(7L)
+					.code(OrderStatus.Codes.PAYMENT_PROBLEM)
+					.name("Проблема с оплатой")
+					.build();
+			testOrder.setStatus(paymentProblemStatus);
+
+			OrderStatus cancelledStatus = OrderStatus.builder()
+					.id(13L)
+					.code(OrderStatus.Codes.CANCELLED)
+					.name("Отменен")
+					.build();
+
+			when(orderRepository.findById(1L)).thenReturn(Optional.of(testOrder));
+			when(statusRepository.findByCode(OrderStatus.Codes.CANCELLED))
+					.thenReturn(Optional.of(cancelledStatus));
+			when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
+			when(historyRepository.save(any(OrderHistory.class))).thenAnswer(i -> i.getArgument(0));
+
+			OrderResponse response = orderService.cancelOrder(1L, 200L, "Payment issue");
+
+			assertThat(response).isNotNull();
+			verify(eventPublisher).publishOrderCancelled(any(Order.class));
 		}
 	}
 }

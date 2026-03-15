@@ -1,0 +1,93 @@
+<div class="min-h-screen bg-gray-100 p-6 print:bg-white print:p-0">
+  <div class="mx-auto max-w-5xl space-y-6">
+	<div class="flex items-center justify-between print:hidden">
+	  <button (click)="goBack()" class="text-sm text-indigo-600 hover:text-indigo-800">← Вернуться к заказу</button>
+	  <div class="flex items-center gap-3">
+		<button (click)="printInvoice()" class="rounded-md border px-4 py-2 text-sm hover:bg-gray-50">Печать</button>
+	  </div>
+	</div>
+
+	<div *ngIf="isLoading" class="rounded-lg bg-white p-8 text-center text-gray-500 shadow-sm">
+	  Загрузка данных счёта...
+	</div>
+
+	<div *ngIf="errorMessage" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+	  {{ errorMessage }}
+	</div>
+
+	<div *ngIf="order && !isLoading" class="space-y-6">
+	  <section class="rounded-lg bg-white p-6 shadow-sm">
+		<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+		  <div>
+			<h1 class="text-2xl font-bold text-gray-900">Счёт по заказу {{ order.orderNumber }}</h1>
+			<p class="mt-2 text-sm text-gray-600">Покупатель: {{ order.customerName || ('Клиент #' + order.customerId) }}</p>
+			<p class="text-sm text-gray-600">Адрес доставки: {{ order.deliveryAddress }}</p>
+			<p class="mt-3 rounded-md bg-indigo-50 px-3 py-2 text-sm text-indigo-700">{{ invoiceWorkflowHint }}</p>
+		  </div>
+		  <div class="text-sm text-gray-600 md:text-right">
+			<p>Дата заказа: {{ formatDate(order.createdAt) }}</p>
+			<p>Желаемая доставка: {{ formatDate(order.desiredDeliveryDate) }}</p>
+			<p class="mt-2 text-base font-semibold text-gray-900">Сумма: {{ formatAmount(order.totalAmount) }} BYN</p>
+		  </div>
+		</div>
+	  </section>
+
+	  <section class="rounded-lg bg-white p-6 shadow-sm">
+		<h2 class="mb-4 text-lg font-semibold text-gray-900">Товары в счёте</h2>
+		<div class="overflow-x-auto">
+		  <table class="min-w-full text-sm">
+			<thead class="bg-gray-50 text-left text-xs uppercase text-gray-500">
+			  <tr>
+				<th class="px-4 py-3">Товар</th>
+				<th class="px-4 py-3">Артикул</th>
+				<th class="px-4 py-3 text-right">Кол-во</th>
+				<th class="px-4 py-3 text-right">Цена</th>
+				<th class="px-4 py-3 text-right">Сумма</th>
+			  </tr>
+			</thead>
+			<tbody>
+			  <tr *ngFor="let item of order.items" class="border-b">
+				<td class="px-4 py-3">{{ item.productName }}</td>
+				<td class="px-4 py-3 text-gray-600">{{ item.productSku }}</td>
+				<td class="px-4 py-3 text-right">{{ item.quantity }}</td>
+				<td class="px-4 py-3 text-right">{{ formatAmount(item.unitPrice) }} BYN</td>
+				<td class="px-4 py-3 text-right font-medium">{{ formatAmount(item.totalPrice) }} BYN</td>
+			  </tr>
+			</tbody>
+		  </table>
+		</div>
+	  </section>
+
+	  <section class="rounded-lg bg-white p-6 shadow-sm">
+		<h2 class="mb-4 text-lg font-semibold text-gray-900">Файлы счёта</h2>
+
+		<div *ngIf="invoiceGeneratedDocuments.length === 0 && invoiceDocuments.length === 0" class="rounded-md border border-dashed border-gray-300 p-6 text-sm text-gray-500">
+		  Для этого заказа пока нет доступных файлов счёта на оплату.
+		</div>
+
+		<div *ngIf="invoiceGeneratedDocuments.length > 0" class="mb-6 space-y-3">
+		  <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Сгенерированные документы</h3>
+		  <div *ngFor="let document of invoiceGeneratedDocuments" class="flex items-center justify-between rounded-md border p-4">
+			<div>
+			  <div class="font-medium text-gray-900">{{ document.templateDisplayName || 'Счёт на оплату' }}</div>
+			  <div class="text-xs text-gray-500">№ {{ document.documentNumber }} · {{ formatDate(document.documentDate) }}</div>
+			</div>
+			<button (click)="downloadGeneratedDocument(document)" class="text-sm font-medium text-indigo-600 hover:text-indigo-800">Скачать PDF</button>
+		  </div>
+		</div>
+
+		<div *ngIf="invoiceDocuments.length > 0" class="space-y-3">
+		  <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Документы заказа</h3>
+		  <div *ngFor="let document of invoiceDocuments" class="flex items-center justify-between rounded-md border p-4">
+			<div>
+			  <div class="font-medium text-gray-900">{{ document.documentTypeName || document.documentName || document.originalFilename || ('Документ #' + document.id) }}</div>
+			  <div class="text-xs text-gray-500">{{ formatDate(document.createdAt || document.uploadedAt) }}</div>
+			</div>
+			<button (click)="downloadOrderDocument(document)" class="text-sm font-medium text-indigo-600 hover:text-indigo-800">Скачать</button>
+		  </div>
+		</div>
+	  </section>
+	</div>
+  </div>
+</div>
+

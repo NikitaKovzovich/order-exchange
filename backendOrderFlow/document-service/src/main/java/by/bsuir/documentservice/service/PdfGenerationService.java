@@ -99,6 +99,35 @@ public class PdfGenerationService {
 		}
 	}
 
+	@Transactional
+	public GeneratedDocumentResponse generateInvoice(InvoiceGenerationRequest request, Long userId) {
+		log.info("Generating Invoice for order: {}", request.orderId());
+
+		try {
+			String documentNumber = generateDocumentNumber("INV");
+			byte[] pdfContent = createInvoicePdf(request, documentNumber);
+
+			String fileKey = uploadPdf(pdfContent, "invoice", request.orderId(), documentNumber);
+
+			GeneratedDocument document = GeneratedDocument.builder()
+					.templateType(GeneratedDocument.TemplateType.INVOICE)
+					.orderId(request.orderId())
+					.fileKey(fileKey)
+					.generatedBy(userId)
+					.documentNumber(documentNumber)
+					.documentDate(request.documentDate())
+					.build();
+
+			document = generatedDocumentRepository.save(document);
+			log.info("Invoice generated successfully: {}", document.getId());
+
+			return toResponse(document);
+		} catch (Exception e) {
+			log.error("Failed to generate Invoice: {}", e.getMessage(), e);
+			throw new RuntimeException("Failed to generate Invoice: " + e.getMessage(), e);
+		}
+	}
+
 	public InputStream downloadGeneratedDocument(Long documentId) {
 		GeneratedDocument document = generatedDocumentRepository.findById(documentId)
 				.orElseThrow(() -> new RuntimeException("Generated document not found: " + documentId));
@@ -162,6 +191,83 @@ public class PdfGenerationService {
 		addDiscrepancyTable(document, font, boldFont, request.items());
 		addDiscrepancyConclusion(document, font, boldFont, request);
 		addDiscrepancySignatures(document, font, request);
+
+		document.close();
+		return outputStream.toByteArray();
+	}
+
+	private byte[] createInvoicePdf(InvoiceGenerationRequest request, String documentNumber) throws Exception {
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		PdfWriter writer = new PdfWriter(outputStream);
+		PdfDocument pdf = new PdfDocument(writer);
+		Document document = new Document(pdf, PageSize.A4);
+
+		PdfFont font = createFont();
+		PdfFont boldFont = createFont();
+
+		document.setFont(font);
+		document.setFontSize(10);
+
+
+		if (request.bankDetails() != null) {
+			document.add(new Paragraph(request.bankDetails()).setFontSize(8).setMarginBottom(5));
+		}
+
+
+		String dateStr = request.documentDate().format(DATE_FORMATTER);
+		document.add(new Paragraph("СЧЕТ НА ОПЛАТУ № " + documentNumber + " от " + dateStr)
+				.setFont(boldFont).setFontSize(14).setTextAlignment(TextAlignment.CENTER).setMarginTop(10).setMarginBottom(15));
+
+
+		Table infoTable = new Table(UnitValue.createPercentArray(new float[]{25, 75}))
+				.useAllAvailableWidth().setMarginBottom(10);
+		addInfoRow(infoTable, font, "Поставщик:", formatCompanyInfo(request.seller()));
+		addInfoRow(infoTable, font, "Покупатель:", formatCompanyInfo(request.buyer()));
+		if (request.paymentTerms() != null) {
+			addInfoRow(infoTable, font, "Условия оплаты:", request.paymentTerms());
+		}
+		addInfoRow(infoTable, font, "Основание:", "Заказ " + request.orderNumber());
+		document.add(infoTable);
+
+
+		Table itemsTable = new Table(UnitValue.createPercentArray(new float[]{5, 30, 8, 8, 12, 10, 12, 15}))
+				.useAllAvailableWidth().setMarginTop(10);
+
+		String[] headers = {"№", "Наименование", "Ед.", "Кол-во", "Цена", "Ставка НДС", "Сумма НДС", "Сумма с НДС"};
+		for (String h : headers) {
+			itemsTable.addHeaderCell(createHeaderCell(h, boldFont));
+		}
+
+		int idx = 1;
+		for (ProductItemDto item : request.items()) {
+			itemsTable.addCell(createDataCell(String.valueOf(idx++), font));
+			itemsTable.addCell(createDataCell(item.name(), font));
+			itemsTable.addCell(createDataCell(item.unitOfMeasure(), font));
+			itemsTable.addCell(createDataCell(String.valueOf(item.quantity()), font));
+			itemsTable.addCell(createDataCell(formatMoney(item.priceWithoutVat()), font));
+			itemsTable.addCell(createDataCell(item.vatRate() != null ? item.vatRate() + "%" : "-", font));
+			itemsTable.addCell(createDataCell(formatMoney(item.vatAmount()), font));
+			itemsTable.addCell(createDataCell(formatMoney(item.totalWithVat()), font));
+		}
+		document.add(itemsTable);
+
+
+		Table totalsTable = new Table(UnitValue.createPercentArray(new float[]{70, 30}))
+				.useAllAvailableWidth().setMarginTop(10);
+		addTotalRow(totalsTable, font, "Итого без НДС:", formatMoney(request.totalWithoutVat()) + " BYN");
+		addTotalRow(totalsTable, font, "Итого НДС:", formatMoney(request.totalVat()) + " BYN");
+		addTotalRow(totalsTable, boldFont, "Итого к оплате:", formatMoney(request.totalWithVat()) + " BYN");
+		document.add(totalsTable);
+
+
+		document.add(new Paragraph("\n").setMarginTop(30));
+		Table sigTable = new Table(UnitValue.createPercentArray(new float[]{50, 50}))
+				.useAllAvailableWidth().setMarginTop(20);
+		String directorName = request.seller().directorName() != null ? request.seller().directorName() : "________________";
+		String accountantName = request.seller().accountantName() != null ? request.seller().accountantName() : "________________";
+		sigTable.addCell(new Cell().add(new Paragraph("Руководитель: " + directorName).setFontSize(9)).setBorder(Border.NO_BORDER));
+		sigTable.addCell(new Cell().add(new Paragraph("Гл. бухгалтер: " + accountantName).setFontSize(9)).setBorder(Border.NO_BORDER));
+		document.add(sigTable);
 
 		document.close();
 		return outputStream.toByteArray();

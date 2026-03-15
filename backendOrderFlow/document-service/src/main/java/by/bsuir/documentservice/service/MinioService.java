@@ -78,9 +78,9 @@ public class MinioService {
 		log.info("Deleted file: {}", fileKey);
 	}
 
-	/**
-	 * Загрузить PDF из byte array
-	 */
+
+
+
 	public String uploadPdfBytes(byte[] content, String folder, String fileName) throws Exception {
 		String objectName = folder + "/" + fileName;
 

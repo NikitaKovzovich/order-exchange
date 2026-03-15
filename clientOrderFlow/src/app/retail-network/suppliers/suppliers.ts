@@ -1,6 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
+import { SupplierDirectoryItem } from '../../models/api.models';
+import { PartnershipService } from '../../services/partnership.service';
 
 @Component({
   selector: 'app-retail-suppliers',
@@ -8,80 +12,121 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './suppliers.html',
   styleUrl: './suppliers.css'
 })
-export class Suppliers {
+export class Suppliers implements OnInit {
   searchQuery: string = '';
-  selectedCategory: string = '';
-  selectedRating: string = '';
+  suppliers: SupplierDirectoryItem[] = [];
+  filteredSuppliers: SupplierDirectoryItem[] = [];
+  isLoading: boolean = false;
+  isSubmitting: Record<number, boolean> = {};
+  errorMessage: string = '';
+  customerCompanyName: string = '';
+  customerUnp: string = '';
 
-  suppliers = [
-    {
-      id: 1,
-      name: 'Продукты Оптом',
-      category: 'Молочные продукты, Сыры',
-      rating: 4.8,
-      products: 156,
-      status: 'active',
-      contact: '+375 29 123-45-67'
-    },
-    {
-      id: 2,
-      name: 'Хлебозавод №1',
-      category: 'Хлеб и выпечка',
-      rating: 4.9,
-      products: 45,
-      status: 'active',
-      contact: '+375 29 234-56-78'
-    },
-    {
-      id: 3,
-      name: 'Молочная Ферма',
-      category: 'Молочные продукты',
-      rating: 4.7,
-      products: 89,
-      status: 'active',
-      contact: '+375 29 345-67-89'
-    },
-    {
-      id: 4,
-      name: 'Мясная Лавка',
-      category: 'Мясная продукция',
-      rating: 4.6,
-      products: 67,
-      status: 'active',
-      contact: '+375 29 456-78-90'
-    }
-  ];
+  constructor(
+    private partnershipService: PartnershipService,
+    private authService: AuthService,
+    private router: Router
+  ) {}
 
-  filteredSuppliers = [...this.suppliers];
+  ngOnInit(): void {
+    this.loadCurrentCompanyProfile();
+    this.loadSuppliers();
+  }
 
-  categories = ['Все категории', 'Молочные продукты', 'Хлеб и выпечка', 'Мясная продукция', 'Сыры'];
-  ratings = ['Все рейтинги', '4.5+', '4.7+', '4.9+'];
+  loadSuppliers(): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    this.partnershipService.getCustomerSuppliers(this.searchQuery.trim() || undefined).subscribe({
+      next: suppliers => {
+        this.suppliers = suppliers;
+        this.filteredSuppliers = [...suppliers];
+        this.isLoading = false;
+      },
+      error: error => {
+        console.error('Error loading suppliers:', error);
+        this.errorMessage = 'Не удалось загрузить базу поставщиков';
+        this.isLoading = false;
+      }
+    });
+  }
 
   applyFilters() {
-    this.filteredSuppliers = this.suppliers.filter(supplier => {
-      let match = true;
-
-      if (this.searchQuery) {
-        match = match && supplier.name.toLowerCase().includes(this.searchQuery.toLowerCase());
-      }
-
-      if (this.selectedCategory && this.selectedCategory !== 'Все категории') {
-        match = match && supplier.category.includes(this.selectedCategory);
-      }
-
-      if (this.selectedRating && this.selectedRating !== 'Все рейтинги') {
-        const minRating = parseFloat(this.selectedRating.replace('+', ''));
-        match = match && supplier.rating >= minRating;
-      }
-
-      return match;
-    });
+    this.loadSuppliers();
   }
 
   resetFilters() {
     this.searchQuery = '';
-    this.selectedCategory = '';
-    this.selectedRating = '';
-    this.filteredSuppliers = [...this.suppliers];
+    this.loadSuppliers();
+  }
+
+  requestPartnership(supplier: SupplierDirectoryItem): void {
+    this.isSubmitting[supplier.companyId] = true;
+
+    const today = new Date();
+    const nextYear = new Date(today);
+    nextYear.setFullYear(today.getFullYear() + 1);
+
+    this.partnershipService.createPartnershipRequest({
+      supplierId: supplier.companyId,
+      contractNumber: `DOG-${today.getFullYear()}-${supplier.companyId}`,
+      contractDate: today.toISOString().slice(0, 10),
+      contractEndDate: nextYear.toISOString().slice(0, 10),
+      customerCompanyName: this.customerCompanyName || 'Текущая торговая сеть',
+      customerUnp: this.customerUnp || '000000000'
+    }).subscribe({
+      next: response => {
+        supplier.partnershipId = response.id;
+        supplier.partnershipStatus = response.status;
+        this.isSubmitting[supplier.companyId] = false;
+      },
+      error: error => {
+        console.error('Error creating partnership:', error);
+        this.isSubmitting[supplier.companyId] = false;
+      }
+    });
+  }
+
+  openSupplierCatalog(supplier: SupplierDirectoryItem): void {
+    this.router.navigate(['/retail/suppliers', supplier.companyId, 'catalog']);
+  }
+
+  getStatusLabel(status: string): string {
+    switch (status) {
+      case 'ACTIVE':
+        return 'Активный партнёр';
+      case 'PENDING':
+        return 'Запрос отправлен';
+      default:
+        return 'Доступен для запроса';
+    }
+  }
+
+  getStatusClass(status: string): string {
+    switch (status) {
+      case 'ACTIVE':
+        return 'bg-green-100 text-green-700';
+      case 'PENDING':
+        return 'bg-yellow-100 text-yellow-700';
+      default:
+        return 'bg-gray-100 text-gray-700';
+    }
+  }
+
+  private loadCurrentCompanyProfile(): void {
+    const companyId = this.authService.getCompanyId();
+    if (!companyId) {
+      return;
+    }
+
+    this.authService.getCompanyProfile(companyId).subscribe({
+      next: profile => {
+        this.customerCompanyName = profile.legalName || profile.name || '';
+        this.customerUnp = profile.taxId || '';
+      },
+      error: error => {
+        console.error('Error loading retail company profile:', error);
+      }
+    });
   }
 }

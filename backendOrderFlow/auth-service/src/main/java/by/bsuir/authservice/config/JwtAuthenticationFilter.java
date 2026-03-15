@@ -26,8 +26,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 			String authHeader = request.getHeader("Authorization");
 			String userEmail = request.getHeader("X-User-Email");
 			String userRole = request.getHeader("X-User-Role");
-
-			// First, try to authenticate via X-User-* headers (from API Gateway)
 			if (userEmail != null && !userEmail.isEmpty() && userRole != null && !userRole.isEmpty()) {
 				UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
 						userEmail,
@@ -36,7 +34,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 				);
 				SecurityContextHolder.getContext().setAuthentication(auth);
 			}
-			// Otherwise, try JWT token authentication
 			else if (authHeader != null && authHeader.startsWith("Bearer ")) {
 				String token = authHeader.substring(7);
 

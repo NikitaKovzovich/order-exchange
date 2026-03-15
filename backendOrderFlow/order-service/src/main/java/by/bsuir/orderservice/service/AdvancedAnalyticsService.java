@@ -1,8 +1,7 @@
 package by.bsuir.orderservice.service;
 
-import by.bsuir.orderservice.dto.RetailAnalyticsResponse;
+import by.bsuir.orderservice.dto.*;
 import by.bsuir.orderservice.dto.RetailAnalyticsResponse.*;
-import by.bsuir.orderservice.dto.SupplierAnalyticsResponse;
 import by.bsuir.orderservice.dto.SupplierAnalyticsResponse.*;
 import by.bsuir.orderservice.entity.Order;
 import by.bsuir.orderservice.entity.OrderItem;
@@ -25,6 +24,7 @@ import java.util.stream.Collectors;
 public class AdvancedAnalyticsService {
 
 	private final OrderRepository orderRepository;
+	private final by.bsuir.orderservice.client.AuthServiceClient authServiceClient;
 	private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
 	public SupplierAnalyticsResponse getSupplierAnalytics(Long supplierId, String period) {
@@ -68,7 +68,7 @@ public class AdvancedAnalyticsService {
 				PurchaseRecord record = new PurchaseRecord(
 						order.getCreatedAt().format(DATE_FORMAT),
 						order.getSupplierId(),
-						"Supplier #" + order.getSupplierId(),
+						authServiceClient.getCompanyName(order.getSupplierId()),
 						item.getQuantity(),
 						item.getUnitPrice(),
 						item.getLineTotal()
@@ -163,9 +163,10 @@ public class AdvancedAnalyticsService {
 				statusCounts.getOrDefault(OrderStatus.Codes.AWAITING_PAYMENT, 0L),
 				statusCounts.getOrDefault(OrderStatus.Codes.PENDING_PAYMENT_VERIFICATION, 0L),
 				statusCounts.getOrDefault(OrderStatus.Codes.PAID, 0L),
-				statusCounts.getOrDefault("PAYMENT_PROBLEM", 0L),
+				statusCounts.getOrDefault(OrderStatus.Codes.PAYMENT_PROBLEM, 0L),
 				statusCounts.getOrDefault(OrderStatus.Codes.AWAITING_SHIPMENT, 0L),
 				statusCounts.getOrDefault(OrderStatus.Codes.SHIPPED, 0L),
+				statusCounts.getOrDefault(OrderStatus.Codes.AWAITING_CORRECTION, 0L),
 				statusCounts.getOrDefault(OrderStatus.Codes.DELIVERED, 0L),
 				statusCounts.getOrDefault(OrderStatus.Codes.CLOSED, 0L)
 		);
@@ -317,7 +318,7 @@ public class AdvancedAnalyticsService {
 							: BigDecimal.ZERO;
 					return new CustomerStats(
 							e.getKey(),
-							"Customer #" + e.getKey(),
+							authServiceClient.getCompanyName(e.getKey()),
 							e.getValue().orderCount,
 							e.getValue().totalRevenue,
 							avg,
@@ -347,7 +348,7 @@ public class AdvancedAnalyticsService {
 					double percent = total.compareTo(BigDecimal.ZERO) > 0
 							? e.getValue().doubleValue() / total.doubleValue() * 100
 							: 0;
-					return new SupplierExpense(e.getKey(), "Supplier #" + e.getKey(), e.getValue(),
+					return new SupplierExpense(e.getKey(), authServiceClient.getCompanyName(e.getKey()), e.getValue(),
 							Math.round(percent * 100.0) / 100.0);
 				})
 				.toList();
@@ -377,7 +378,7 @@ public class AdvancedAnalyticsService {
 							: BigDecimal.ZERO;
 					return new RetailAnalyticsResponse.SupplierStats(
 							e.getKey(),
-							"Supplier #" + e.getKey(),
+							authServiceClient.getCompanyName(e.getKey()),
 							e.getValue().orderCount,
 							e.getValue().totalAmount,
 							avg,
@@ -391,12 +392,14 @@ public class AdvancedAnalyticsService {
 		return statusCode.equals(OrderStatus.Codes.PAID) ||
 				statusCode.equals(OrderStatus.Codes.AWAITING_SHIPMENT) ||
 				statusCode.equals(OrderStatus.Codes.SHIPPED) ||
+				statusCode.equals(OrderStatus.Codes.AWAITING_CORRECTION) ||
 				statusCode.equals(OrderStatus.Codes.DELIVERED) ||
 				statusCode.equals(OrderStatus.Codes.CLOSED);
 	}
 
 	private boolean isShipped(String statusCode) {
 		return statusCode.equals(OrderStatus.Codes.SHIPPED) ||
+				statusCode.equals(OrderStatus.Codes.AWAITING_CORRECTION) ||
 				statusCode.equals(OrderStatus.Codes.DELIVERED) ||
 				statusCode.equals(OrderStatus.Codes.CLOSED);
 	}
@@ -429,5 +432,115 @@ public class AdvancedAnalyticsService {
 		long orderCount = 0;
 		BigDecimal totalAmount = BigDecimal.ZERO;
 		LocalDateTime lastOrderDate = null;
+	}
+
+
+
+
+
+
+
+	public SupplierDashboardResponse getSupplierDashboard(Long supplierId) {
+		List<Order> allOrders = orderRepository.findAllBySupplierId(supplierId);
+		LocalDateTime weekAgo = getStartDate("week");
+		LocalDateTime monthAgo = getStartDate("month");
+		LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+
+		List<Order> monthOrders = filterByPeriod(allOrders, monthAgo);
+		List<Order> weekOrders = filterByPeriod(allOrders, weekAgo);
+
+
+		BigDecimal revenueThisMonth = monthOrders.stream()
+				.filter(o -> isPaid(o.getStatus().getCode()))
+				.map(Order::getTotalAmount)
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
+
+
+		long newOrdersToday = allOrders.stream()
+				.filter(o -> o.getCreatedAt() != null && o.getCreatedAt().isAfter(todayStart))
+				.count();
+
+
+		BigDecimal averageCheck = BigDecimal.ZERO;
+		List<Order> paidMonthOrders = monthOrders.stream()
+				.filter(o -> isPaid(o.getStatus().getCode()))
+				.toList();
+		if (!paidMonthOrders.isEmpty()) {
+			averageCheck = revenueThisMonth.divide(BigDecimal.valueOf(paidMonthOrders.size()), 2, java.math.RoundingMode.HALF_UP);
+		}
+
+
+		long ordersInTransit = allOrders.stream()
+				.filter(o -> "SHIPPED".equals(o.getStatus().getCode()))
+				.count();
+
+
+		long pendingCount = allOrders.stream()
+				.filter(o -> OrderStatus.Codes.PENDING_CONFIRMATION.equals(o.getStatus().getCode()))
+				.count();
+
+
+		List<SupplierAnalyticsResponse.DailyStats> salesDynamics = calculateSalesDynamics(weekOrders, weekAgo);
+
+		return new SupplierDashboardResponse(
+				revenueThisMonth,
+				newOrdersToday,
+				averageCheck,
+				ordersInTransit,
+				pendingCount,
+				List.of(),
+				salesDynamics
+		);
+	}
+
+
+
+
+	public CustomerDashboardResponse getCustomerDashboard(Long customerId) {
+		List<Order> allOrders = orderRepository.findAllByCustomerId(customerId);
+		LocalDateTime weekAgo = getStartDate("week");
+		LocalDateTime monthAgo = getStartDate("month");
+
+		List<Order> monthOrders = filterByPeriod(allOrders, monthAgo);
+		List<Order> weekOrders = filterByPeriod(allOrders, weekAgo);
+
+
+		BigDecimal expensesThisMonth = monthOrders.stream()
+				.filter(o -> isPaid(o.getStatus().getCode()))
+				.map(Order::getTotalAmount)
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
+
+
+		long orderCount = monthOrders.size();
+
+
+		long activeContracts = allOrders.stream()
+				.filter(o -> !"CANCELLED".equals(o.getStatus().getCode()) && !"REJECTED".equals(o.getStatus().getCode()))
+				.map(Order::getSupplierId)
+				.distinct()
+				.count();
+
+
+		BigDecimal averageCheck = BigDecimal.ZERO;
+		List<Order> paidMonthOrders = monthOrders.stream()
+				.filter(o -> isPaid(o.getStatus().getCode()))
+				.toList();
+		if (!paidMonthOrders.isEmpty()) {
+			averageCheck = expensesThisMonth.divide(BigDecimal.valueOf(paidMonthOrders.size()), 2, java.math.RoundingMode.HALF_UP);
+		}
+
+
+		ExpenseStructure expenseStructure = calculateExpenseStructure(monthOrders);
+		List<DailyExpenses> expensesDynamics = calculateExpensesDynamics(weekOrders, weekAgo);
+
+		return new CustomerDashboardResponse(
+				expensesThisMonth,
+				orderCount,
+				activeContracts,
+				averageCheck,
+				List.of(),
+				expenseStructure,
+				expensesDynamics
+		);
 	}
 }

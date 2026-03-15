@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { CanActivate, CanActivateFn, Router, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { inject } from '@angular/core';
+import { UserRole } from '../models/api.models';
 
 @Injectable({
   providedIn: 'root'
@@ -10,24 +11,17 @@ export class AuthGuard implements CanActivate {
   constructor(private authService: AuthService, private router: Router) {}
 
   canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean {
-    if (this.authService.isAuthenticated()) {
-      // Проверяем требуемые роли если указаны
-      const requiredRoles = route.data['roles'] as string[];
-      if (requiredRoles && requiredRoles.length > 0) {
-        const userRole = this.authService.getUserRole();
-        if (userRole && requiredRoles.includes(userRole)) {
-          return true;
-        } else {
-          // Доступ запрещен - недостаточно прав
-          this.router.navigate(['/login']);
-          return false;
-        }
-      }
+    if (!this.authService.isAuthenticated()) {
+      this.router.navigate(['/login'], { queryParams: { returnUrl: state.url } });
+      return false;
+    }
+
+    const requiredRoles = (route.data['roles'] as UserRole[] | undefined) ?? [];
+    if (requiredRoles.length === 0 || this.authService.hasAnyRole(requiredRoles)) {
       return true;
     }
 
-    // Перенаправляем на login если не авторизован
-    this.router.navigate(['/login'], { queryParams: { returnUrl: state.url } });
+    this.router.navigateByUrl(this.authService.getDefaultRoute());
     return false;
   }
 }
@@ -39,20 +33,16 @@ export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot, state: R
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  if (authService.isAuthenticated()) {
-    const requiredRoles = route.data['roles'] as string[];
-    if (requiredRoles && requiredRoles.length > 0) {
-      const userRole = authService.getUserRole();
-      if (userRole && requiredRoles.includes(userRole)) {
-        return true;
-      } else {
-        router.navigate(['/login']);
-        return false;
-      }
-    }
+  if (!authService.isAuthenticated()) {
+    router.navigate(['/login'], { queryParams: { returnUrl: state.url } });
+    return false;
+  }
+
+  const requiredRoles = (route.data['roles'] as UserRole[] | undefined) ?? [];
+  if (requiredRoles.length === 0 || authService.hasAnyRole(requiredRoles)) {
     return true;
   }
 
-  router.navigate(['/login'], { queryParams: { returnUrl: state.url } });
+  router.navigateByUrl(authService.getDefaultRoute());
   return false;
 };

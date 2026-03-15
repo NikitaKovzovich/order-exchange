@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { Header } from '../shared/header/header';
 import { AdminService, VerificationRequest } from '../../services/admin.service';
 
@@ -9,6 +9,11 @@ interface RequestDisplay extends VerificationRequest {
   roleClass: string;
   statusClass: string;
   displayDate: string;
+}
+
+interface UiNotification {
+  type: 'success' | 'error' | 'info' | 'warning';
+  message: string;
 }
 
 @Component({
@@ -21,27 +26,47 @@ interface RequestDisplay extends VerificationRequest {
 export class VerificationList implements OnInit {
   searchQuery: string = '';
   selectedRole: string = '';
-  selectedStatus: string = '';
+  selectedStatus: '' | 'PENDING' | 'APPROVED' | 'REJECTED' = '';
 
   requests: RequestDisplay[] = [];
-  filteredRequests: RequestDisplay[] = [];
   isLoading: boolean = false;
   errorMessage: string = '';
+  notification: UiNotification | null = null;
+  currentPage: number = 0;
+  totalPages: number = 0;
+  totalElements: number = 0;
+  readonly pageSize: number = 20;
 
-  constructor(private adminService: AdminService) {}
+  constructor(
+    private adminService: AdminService,
+    private router: Router
+  ) {}
 
   ngOnInit() {
+    this.consumeFlashNotification();
     this.loadRequests();
+  }
+
+  clearNotification(): void {
+    this.notification = null;
   }
 
   loadRequests() {
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.adminService.getVerificationRequests().subscribe({
+    this.adminService.searchVerificationRequests({
+      status: this.selectedStatus || undefined,
+      role: this.selectedRole || undefined,
+      search: this.searchQuery || undefined,
+      page: this.currentPage,
+      size: this.pageSize
+    }).subscribe({
       next: (data) => {
-        this.requests = data.map(req => this.mapToDisplay(req));
-        this.filteredRequests = [...this.requests];
+        this.requests = data.content.map(req => this.mapToDisplay(req));
+        this.currentPage = data.number;
+        this.totalPages = data.totalPages;
+        this.totalElements = data.totalElements;
         this.isLoading = false;
       },
       error: (error) => {
@@ -53,7 +78,7 @@ export class VerificationList implements OnInit {
   }
 
   private mapToDisplay(req: VerificationRequest): RequestDisplay {
-    const roleClass = this.getRoleClass(req.companyName);
+    const roleClass = this.getRoleClass(req.role);
     const statusClass = this.getStatusClass(req.status);
     const displayDate = this.formatDate(req.submittedAt);
 
@@ -65,10 +90,12 @@ export class VerificationList implements OnInit {
     };
   }
 
-  private getRoleClass(companyName: string): string {
-    // Определяем тип по названию компании (временно, пока API не возвращает role)
-    // В будущем это должно приходить из API
-    return 'bg-green-100 text-green-800'; // По умолчанию поставщик
+  private getRoleClass(role?: string): string {
+    if (role === 'RETAIL_CHAIN') {
+      return 'bg-blue-100 text-blue-800';
+    }
+
+    return 'bg-green-100 text-green-800';
   }
 
   private getStatusClass(status: string): string {
@@ -86,27 +113,34 @@ export class VerificationList implements OnInit {
   }
 
   applyFilters() {
-    this.filteredRequests = this.requests.filter(request => {
-      let match = true;
+    this.currentPage = 0;
+    this.loadRequests();
+  }
 
-      if (this.searchQuery) {
-        match = match && (
-          request.companyName.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-          request.taxId.includes(this.searchQuery)
-        );
-      }
+  clearFilters(): void {
+    this.searchQuery = '';
+    this.selectedRole = '';
+    this.selectedStatus = '';
+    this.currentPage = 0;
+    this.loadRequests();
+  }
 
-      if (this.selectedStatus) {
-        const statusMap: { [key: string]: string } = {
-          'Ожидает проверки': 'PENDING',
-          'Одобрена': 'APPROVED',
-          'Отклонена': 'REJECTED'
-        };
-        match = match && request.status === statusMap[this.selectedStatus];
-      }
+  goToPreviousPage(): void {
+    if (this.currentPage === 0) {
+      return;
+    }
 
-      return match;
-    });
+    this.currentPage -= 1;
+    this.loadRequests();
+  }
+
+  goToNextPage(): void {
+    if (this.currentPage >= this.totalPages - 1) {
+      return;
+    }
+
+    this.currentPage += 1;
+    this.loadRequests();
   }
 
   getStatusDisplayName(status: string): string {
@@ -116,5 +150,35 @@ export class VerificationList implements OnInit {
       'REJECTED': 'Отклонена'
     };
     return statusMap[status] || status;
+  }
+
+  get rangeStart(): number {
+    if (this.totalElements === 0) {
+      return 0;
+    }
+
+    return this.currentPage * this.pageSize + 1;
+  }
+
+  get rangeEnd(): number {
+    return Math.min((this.currentPage + 1) * this.pageSize, this.totalElements);
+  }
+
+  private consumeFlashNotification(): void {
+    const navigationState = this.router.getCurrentNavigation()?.extras.state;
+    const historyState = window.history.state;
+    const state = navigationState || historyState;
+    const notification = state?.['verificationNotification'] as UiNotification | undefined;
+
+    if (!notification?.message) {
+      return;
+    }
+
+    this.notification = notification;
+
+    if (historyState?.verificationNotification) {
+      const { verificationNotification, ...restState } = historyState;
+      window.history.replaceState(restState, '', this.router.url);
+    }
   }
 }

@@ -2,6 +2,21 @@
   <admin-header [title]="'Управление пользователями'"></admin-header>
 
   <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
+    <div
+      *ngIf="notification"
+      class="mb-6 rounded-lg border px-4 py-3"
+      [ngClass]="{
+        'border-green-200 bg-green-50 text-green-800': notification.type === 'success',
+        'border-red-200 bg-red-50 text-red-800': notification.type === 'error',
+        'border-blue-200 bg-blue-50 text-blue-800': notification.type === 'info',
+        'border-amber-200 bg-amber-50 text-amber-800': notification.type === 'warning'
+      }">
+      <div class="flex items-start justify-between gap-4">
+        <p class="text-sm font-medium">{{ notification.message }}</p>
+        <button type="button" class="text-current opacity-70 hover:opacity-100" (click)="clearNotification()">✕</button>
+      </div>
+    </div>
+
     <!-- Tabs -->
     <div class="border-b border-gray-200 mb-6">
       <nav class="-mb-px flex space-x-8" aria-label="Tabs">
@@ -26,23 +41,36 @@
         <input
           type="text"
           [(ngModel)]="searchTerm"
-          (input)="filterUsers()"
+          (keyup.enter)="applyFilters()"
           placeholder="Поиск по названию или УНП..."
           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
         <select
           [(ngModel)]="selectedStatus"
-          (change)="filterUsers()"
+          (change)="applyFilters()"
           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white">
           <option value="">Все статусы</option>
-          <option value="active">Активен</option>
-          <option value="blocked">Заблокирован</option>
+          <option value="ACTIVE">Активен</option>
+          <option value="BLOCKED">Заблокирован</option>
+          <option value="DELETED">Удалён</option>
         </select>
-        <button
-          (click)="filterUsers()"
-          class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700">
-          Применить
-        </button>
+        <div class="flex gap-3">
+          <button
+            (click)="applyFilters()"
+            class="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700">
+            Применить
+          </button>
+          <button
+            type="button"
+            (click)="clearFilters()"
+            class="flex-1 border border-gray-300 bg-gray-100 py-2 px-4 rounded-md hover:bg-gray-200">
+            Сбросить
+          </button>
+        </div>
       </div>
+    </div>
+
+    <div *ngIf="errorMessage" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+      {{ errorMessage }}
     </div>
 
     <!-- Providers Table -->
@@ -59,14 +87,20 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let user of filteredProviders" class="bg-white border-b hover:bg-gray-50">
-              <td class="px-6 py-4 font-medium text-gray-900">{{ user.company?.legalName }}</td>
-              <td class="px-6 py-4">{{ user.company?.taxId }}</td>
+            <tr *ngIf="isLoading">
+              <td colspan="5" class="px-6 py-10 text-center text-gray-500">Загрузка пользователей...</td>
+            </tr>
+            <tr *ngIf="!isLoading && users.length === 0">
+              <td colspan="5" class="px-6 py-10 text-center text-gray-500">Пользователи не найдены.</td>
+            </tr>
+            <tr *ngFor="let user of users" class="bg-white border-b hover:bg-gray-50">
+              <td class="px-6 py-4 font-medium text-gray-900">{{ user.company.legalName }}</td>
+              <td class="px-6 py-4">{{ user.company.taxId }}</td>
               <td class="px-6 py-4">{{ formatDate(user.createdAt) }}</td>
               <td class="px-6 py-4">
-                <span [ngClass]="user.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                <span [ngClass]="getStatusClass(user.status)"
                       class="text-xs font-semibold px-2 py-1 rounded-full">
-                  {{ user.status === 'ACTIVE' ? 'Активен' : 'Заблокирован' }}
+                  {{ getStatusLabel(user.status) }}
                 </span>
               </td>
               <td class="px-6 py-4 text-right">
@@ -75,6 +109,17 @@
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <div class="flex items-center justify-between px-6 py-4 border-t bg-gray-50" *ngIf="totalPages > 0">
+        <div class="text-sm text-gray-500">
+          Показано {{ rangeStart }}–{{ rangeEnd }} из {{ totalElements }}
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-500 mr-2">Страница {{ currentPage + 1 }} из {{ totalPages }}</span>
+          <button (click)="goToPreviousPage()" [disabled]="currentPage === 0" class="px-4 py-2 border rounded-md bg-white disabled:opacity-50">Назад</button>
+          <button (click)="goToNextPage()" [disabled]="currentPage >= totalPages - 1" class="px-4 py-2 border rounded-md bg-white disabled:opacity-50">Вперёд</button>
+        </div>
       </div>
     </div>
 
@@ -92,14 +137,20 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let user of filteredRetailers" class="bg-white border-b hover:bg-gray-50">
-              <td class="px-6 py-4 font-medium text-gray-900">{{ user.company?.legalName }}</td>
-              <td class="px-6 py-4">{{ user.company?.taxId }}</td>
+            <tr *ngIf="isLoading">
+              <td colspan="5" class="px-6 py-10 text-center text-gray-500">Загрузка пользователей...</td>
+            </tr>
+            <tr *ngIf="!isLoading && users.length === 0">
+              <td colspan="5" class="px-6 py-10 text-center text-gray-500">Пользователи не найдены.</td>
+            </tr>
+            <tr *ngFor="let user of users" class="bg-white border-b hover:bg-gray-50">
+              <td class="px-6 py-4 font-medium text-gray-900">{{ user.company.legalName }}</td>
+              <td class="px-6 py-4">{{ user.company.taxId }}</td>
               <td class="px-6 py-4">{{ formatDate(user.createdAt) }}</td>
               <td class="px-6 py-4">
-                <span [ngClass]="user.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                <span [ngClass]="getStatusClass(user.status)"
                       class="text-xs font-semibold px-2 py-1 rounded-full">
-                  {{ user.status === 'ACTIVE' ? 'Активен' : 'Заблокирован' }}
+                  {{ getStatusLabel(user.status) }}
                 </span>
               </td>
               <td class="px-6 py-4 text-right">
@@ -108,6 +159,17 @@
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <div class="flex items-center justify-between px-6 py-4 border-t bg-gray-50" *ngIf="totalPages > 0">
+        <div class="text-sm text-gray-500">
+          Показано {{ rangeStart }}–{{ rangeEnd }} из {{ totalElements }}
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-500 mr-2">Страница {{ currentPage + 1 }} из {{ totalPages }}</span>
+          <button (click)="goToPreviousPage()" [disabled]="currentPage === 0" class="px-4 py-2 border rounded-md bg-white disabled:opacity-50">Назад</button>
+          <button (click)="goToNextPage()" [disabled]="currentPage >= totalPages - 1" class="px-4 py-2 border rounded-md bg-white disabled:opacity-50">Вперёд</button>
+        </div>
       </div>
     </div>
   </main>

@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Map;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -31,66 +29,72 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class CartIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+	@Autowired
+	private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+	@Autowired
+	private ObjectMapper objectMapper;
 
-    @Autowired
-    private CartRepository cartRepository;
+	@Autowired
+	private CartRepository cartRepository;
 
-    @MockBean
-    private EventPublisher eventPublisher;
+	@MockBean
+	private EventPublisher eventPublisher;
 
-    private Cart testCart;
+	@MockBean
+	private by.bsuir.orderservice.client.AuthServiceClient authServiceClient;
 
-    @BeforeEach
-    void setUp() {
-        cartRepository.deleteAll();
+	@MockBean
+	private by.bsuir.orderservice.client.DocumentServiceClient documentServiceClient;
 
-        testCart = Cart.builder()
-                .customerId(1L)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .items(new ArrayList<>())
-                .build();
+	private Cart testCart;
 
-        CartItem testCartItem = CartItem.builder()
-                .cart(testCart)
-                .productId(1L)
-                .supplierId(2L)
-                .productName("Test Product")
-                .productSku("TEST-001")
-                .quantity(5)
-                .unitPrice(new BigDecimal("100.00"))
-                .build();
-        testCartItem.calculateTotal();
-        testCart.getItems().add(testCartItem);
+	@BeforeEach
+	void setUp() {
+		cartRepository.deleteAll();
 
-        testCart = cartRepository.save(testCart);
-    }
+		testCart = Cart.builder()
+				.customerId(1L)
+				.createdAt(LocalDateTime.now())
+				.updatedAt(LocalDateTime.now())
+				.items(new ArrayList<>())
+				.build();
 
-    @Test
-    @DisplayName("Should get cart")
-    void shouldGetCart() throws Exception {
-        mockMvc.perform(get("/api/cart")
-                        .header("X-User-Id", "1")
-                        .header("X-User-Company-Id", "1")
-                        .header("X-User-Role", "RETAIL_CHAIN"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
-    }
+		CartItem testCartItem = CartItem.builder()
+				.cart(testCart)
+				.productId(1L)
+				.supplierId(2L)
+				.productName("Test Product")
+				.productSku("TEST-001")
+				.quantity(5)
+				.unitPrice(new BigDecimal("100.00"))
+				.build();
+		testCartItem.calculateTotal();
+		testCart.getItems().add(testCartItem);
+
+		testCart = cartRepository.save(testCart);
+	}
+
+	@Test
+	@DisplayName("Should get cart")
+	void shouldGetCart() throws Exception {
+		mockMvc.perform(get("/api/cart")
+						.header("X-User-Id", "1")
+						.header("X-User-Company-Id", "1")
+						.header("X-User-Role", "RETAIL_CHAIN"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true));
+	}
 
 
-    @Test
-    @DisplayName("Should clear cart")
-    void shouldClearCart() throws Exception {
-        mockMvc.perform(delete("/api/cart")
-                        .header("X-User-Id", "1")
-                        .header("X-User-Company-Id", "1")
-                        .header("X-User-Role", "RETAIL_CHAIN"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
-    }
+	@Test
+	@DisplayName("Should clear cart")
+	void shouldClearCart() throws Exception {
+		mockMvc.perform(delete("/api/cart")
+						.header("X-User-Id", "1")
+						.header("X-User-Company-Id", "1")
+						.header("X-User-Role", "RETAIL_CHAIN"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true));
+	}
 }

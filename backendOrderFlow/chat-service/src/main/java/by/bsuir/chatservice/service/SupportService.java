@@ -7,9 +7,9 @@ import by.bsuir.chatservice.exception.AccessDeniedException;
 import by.bsuir.chatservice.exception.ResourceNotFoundException;
 import by.bsuir.chatservice.repository.SupportTicketRepository;
 import by.bsuir.chatservice.repository.TicketMessageRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,7 +22,6 @@ import java.util.Map;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class SupportService {
 
 	private static final String SUPPORT_EXCHANGE = "support.events";
@@ -30,6 +29,18 @@ public class SupportService {
 	private final SupportTicketRepository ticketRepository;
 	private final TicketMessageRepository messageRepository;
 	private final RabbitTemplate rabbitTemplate;
+	private final FileStorageService fileStorageService;
+
+	@Autowired
+	public SupportService(SupportTicketRepository ticketRepository,
+						TicketMessageRepository messageRepository,
+						@Autowired(required = false) RabbitTemplate rabbitTemplate,
+						FileStorageService fileStorageService) {
+		this.ticketRepository = ticketRepository;
+		this.messageRepository = messageRepository;
+		this.rabbitTemplate = rabbitTemplate;
+		this.fileStorageService = fileStorageService;
+	}
 
 	@Transactional
 	public TicketResponse createTicket(Long companyId, Long userId, CreateTicketRequest request) {
@@ -47,6 +58,8 @@ public class SupportService {
 				.ticket(ticket)
 				.senderId(userId)
 				.messageText(request.message())
+				.attachmentKeys(request.resolvedAttachmentKeys())
+				.attachmentKey(request.resolvedAttachmentKeys().isEmpty() ? null : request.resolvedAttachmentKeys().getFirst())
 				.isAdminReply(false)
 				.build();
 
@@ -97,15 +110,14 @@ public class SupportService {
 	}
 
 	@Transactional(readOnly = true)
-	public PageResponse<TicketResponse> getAllTickets(String status, int page, int size) {
+	public PageResponse<TicketResponse> getAllTickets(String status, String search, int page, int size) {
 		Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-		Page<SupportTicket> tickets;
-
-		if (status != null && !status.isEmpty()) {
-			tickets = ticketRepository.findByStatus(SupportTicket.TicketStatus.valueOf(status.toUpperCase()), pageable);
-		} else {
-			tickets = ticketRepository.findAllOpen(pageable);
+		SupportTicket.TicketStatus statusFilter = null;
+		if (status != null && !status.isBlank()) {
+			statusFilter = SupportTicket.TicketStatus.valueOf(status.toUpperCase());
 		}
+		String searchTerm = (search != null && !search.isBlank()) ? search.trim() : null;
+		Page<SupportTicket> tickets = ticketRepository.searchAdminTickets(statusFilter, searchTerm, pageable);
 
 		List<TicketResponse> responses = tickets.getContent().stream()
 				.map(ticket -> {
@@ -156,10 +168,16 @@ public class SupportService {
 				.ticket(ticket)
 				.senderId(senderId)
 				.messageText(request.message())
+				.attachmentKeys(request.resolvedAttachmentKeys())
 				.attachmentKey(request.attachmentKey())
 				.isAdminReply(isAdmin)
 				.isInternalNote(isAdmin && Boolean.TRUE.equals(request.isInternalNote()))
 				.build();
+
+		if ((message.getAttachmentKey() == null || message.getAttachmentKey().isBlank())
+				&& !message.getAttachmentKeys().isEmpty()) {
+			message.setAttachmentKey(message.getAttachmentKeys().getFirst());
+		}
 
 		message = messageRepository.save(message);
 
@@ -253,6 +271,10 @@ public class SupportService {
 	}
 
 	private void publishEvent(String eventType, Map<String, Object> payload) {
+		if (rabbitTemplate == null) {
+			log.debug("RabbitTemplate not available, skipping event {}", eventType);
+			return;
+		}
 		try {
 			rabbitTemplate.convertAndSend(SUPPORT_EXCHANGE, eventType.toLowerCase(), payload);
 		} catch (Exception e) {
@@ -285,9 +307,14 @@ public class SupportService {
 				message.getSenderId(),
 				message.getIsAdminReply(),
 				message.getMessageText(),
+				message.resolveAttachmentKeys(),
 				message.getAttachmentKey(),
 				message.getIsInternalNote(),
 				message.getSentAt()
 		);
+	}
+
+	public String storeAttachment(org.springframework.web.multipart.MultipartFile file, Long ownerId) {
+		return fileStorageService.storeFile(file, "support/" + ownerId, ownerId, "SupportTicket");
 	}
 }

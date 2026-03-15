@@ -12,6 +12,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,8 +31,15 @@ class EventPublisherTest {
 	@Spy
 	private ObjectMapper objectMapper = new ObjectMapper();
 
+	@Mock
+	private PlatformTransactionManager transactionManager;
+
 	@InjectMocks
 	private EventPublisher eventPublisher;
+
+	private void stubTransaction() {
+		when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
+	}
 
 	@Nested
 	@DisplayName("Publish Tests")
@@ -39,6 +48,7 @@ class EventPublisherTest {
 		@Test
 		@DisplayName("Should publish event with payload")
 		void shouldPublishEventWithPayload() {
+			stubTransaction();
 			when(eventRepository.findMaxVersionByAggregateId("1")).thenReturn(null);
 			when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -62,6 +72,7 @@ class EventPublisherTest {
 		@Test
 		@DisplayName("Should increment version for existing aggregate")
 		void shouldIncrementVersionForExistingAggregate() {
+			stubTransaction();
 			when(eventRepository.findMaxVersionByAggregateId("1")).thenReturn(5);
 			when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -79,6 +90,7 @@ class EventPublisherTest {
 		@Test
 		@DisplayName("Should handle null payload")
 		void shouldHandleNullPayload() {
+			stubTransaction();
 			when(eventRepository.findMaxVersionByAggregateId("1")).thenReturn(null);
 			when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -90,6 +102,7 @@ class EventPublisherTest {
 		@Test
 		@DisplayName("Should not throw exception on error")
 		void shouldNotThrowExceptionOnError() {
+			stubTransaction();
 			when(eventRepository.findMaxVersionByAggregateId(any())).thenThrow(new RuntimeException("DB error"));
 
 			eventPublisher.publish("User", "1", "UserCreated", Map.of("test", "value"));
@@ -103,6 +116,7 @@ class EventPublisherTest {
 		@Test
 		@DisplayName("Should publish simple event with message")
 		void shouldPublishSimpleEventWithMessage() {
+			stubTransaction();
 			when(eventRepository.findMaxVersionByAggregateId("1")).thenReturn(null);
 			when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -124,6 +138,7 @@ class EventPublisherTest {
 		@Test
 		@DisplayName("Should publish empty event")
 		void shouldPublishEmptyEvent() {
+			stubTransaction();
 			when(eventRepository.findMaxVersionByAggregateId("1")).thenReturn(null);
 			when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
