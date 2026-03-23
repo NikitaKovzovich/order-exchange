@@ -74,17 +74,20 @@ public class GlobalJwtFilter implements GlobalFilter, Ordered {
 
     private boolean isPublicPath(String path) {
         if (path == null) return false;
-        return path.equals("/api/auth/login") ||
-               path.equals("/api/auth/register") ||
-               path.equals("/api/auth/validate") ||
-               path.startsWith("/api/auth/company") ||
-               path.startsWith("/api/addresses/company") ||
-               path.startsWith("/actuator") ||
-               path.startsWith("/eureka") ||
-               path.startsWith("/swagger-ui") ||
-               path.startsWith("/api-docs") ||
-               path.startsWith("/v3/api-docs") ||
-               path.contains("/api-docs");
+        String p = path;
+        // normalize trailing slash
+        if (p.endsWith("/")) p = p.substring(0, p.length() - 1);
+        return p.startsWith("/api/auth/login") ||
+               p.startsWith("/api/auth/register") ||
+               p.startsWith("/api/auth/validate") ||
+               p.startsWith("/api/auth/company") ||
+               p.startsWith("/api/addresses/company") ||
+               p.startsWith("/actuator") ||
+               p.startsWith("/eureka") ||
+               p.startsWith("/swagger-ui") ||
+               p.startsWith("/api-docs") ||
+               p.startsWith("/v3/api-docs") ||
+               p.contains("/api-docs");
     }
 
     @Override

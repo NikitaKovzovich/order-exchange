@@ -302,7 +302,8 @@ services:
       SPRING_RABBITMQ_USERNAME: orderflow
       SPRING_RABBITMQ_PASSWORD: orderflow123
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
-      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+      EUREKA_INSTANCE_HOSTNAME: auth-service
       JWT_SECRET: 2a442e4cec2e697d12a41e5e8c6aa19cdf0dd009e75cd8ba1433d72b27dc9926
       GATEWAY_AUTH_INTERNAL_SECRET: orderflow-gateway-internal-2026
     depends_on:
@@ -332,7 +333,8 @@ services:
       SPRING_RABBITMQ_USERNAME: orderflow
       SPRING_RABBITMQ_PASSWORD: orderflow123
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
-      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+      EUREKA_INSTANCE_HOSTNAME: catalog-service
       GATEWAY_AUTH_ENABLED: "true"
       GATEWAY_AUTH_INTERNAL_SECRET: orderflow-gateway-internal-2026
     depends_on:
@@ -362,7 +364,8 @@ services:
       SPRING_RABBITMQ_USERNAME: orderflow
       SPRING_RABBITMQ_PASSWORD: orderflow123
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
-      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+      EUREKA_INSTANCE_HOSTNAME: order-service
       GATEWAY_AUTH_ENABLED: "true"
       GATEWAY_AUTH_INTERNAL_SECRET: orderflow-gateway-internal-2026
     depends_on:
@@ -392,7 +395,8 @@ services:
       SPRING_RABBITMQ_USERNAME: orderflow
       SPRING_RABBITMQ_PASSWORD: orderflow123
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
-      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+      EUREKA_INSTANCE_HOSTNAME: chat-service
       GATEWAY_AUTH_ENABLED: "true"
       GATEWAY_AUTH_INTERNAL_SECRET: orderflow-gateway-internal-2026
     depends_on:
@@ -426,7 +430,8 @@ services:
       MINIO_SECRET_KEY: minioadmin123
       MINIO_BUCKET_NAME: orderflow-documents
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
-      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+      EUREKA_INSTANCE_HOSTNAME: document-service
       GATEWAY_AUTH_ENABLED: "true"
       GATEWAY_AUTH_INTERNAL_SECRET: orderflow-gateway-internal-2026
     depends_on:
@@ -438,6 +443,22 @@ services:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
+    networks:
+      - orderflow-network
+
+  client-service:
+    build:
+      context: ../clientOrderFlow
+      dockerfile: Dockerfile
+    container_name: client-service
+    ports:
+      - "80:80"
+    environment:
+      API_GATEWAY_HOST: api-gateway
+      API_GATEWAY_PORT: 8765
+    depends_on:
+      api-gateway:
+        condition: service_started
     networks:
       - orderflow-network
 

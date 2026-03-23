@@ -56,7 +56,7 @@ function Start-Services {
     Create-PrometheusConfig
     Write-Info "Запуск всех сервисов..."
     Write-Warning "Это может занять несколько минут при первом запуске..."
-    docker-compose -f "$ProjectRoot\docker-compose.yaml" up -d --build
+    docker-compose -f "$ProjectRoot\backendOrderFlow\docker-compose.yaml" up -d --build
     if ($LASTEXITCODE -eq 0) {
         Write-Success "Все сервисы запущены!"
         Start-Sleep -Seconds 10
@@ -70,7 +70,7 @@ function Start-Services {
 function Stop-Services {
     Write-Header "Остановка Order Exchange"
     Write-Info "Остановка всех сервисов..."
-    docker-compose -f "$ProjectRoot\docker-compose.yaml" down
+    docker-compose -f "$ProjectRoot\backendOrderFlow\docker-compose.yaml" down
     if ($LASTEXITCODE -eq 0) {
         Write-Success "Все сервисы остановлены"
     } else {
@@ -86,18 +86,18 @@ function Restart-Services {
 }
 function Show-ServiceStatus {
     Write-Header "Статус сервисов"
-    docker-compose -f "$ProjectRoot\docker-compose.yaml" ps
+    docker-compose -f "$ProjectRoot\backendOrderFlow\docker-compose.yaml" ps
 }
 function Show-ServiceLogs {
     Write-Header "Логи сервисов"
     Write-Info "Показ последних логов (Ctrl+C для выхода)..."
-    docker-compose -f "$ProjectRoot\docker-compose.yaml" logs -f --tail=100
+    docker-compose -f "$ProjectRoot\backendOrderFlow\docker-compose.yaml" logs -f --tail=100
 }
 function Build-Services {
     Write-Header "Сборка Docker образов"
     Test-Docker
     Write-Info "Сборка всех сервисов..."
-    docker-compose -f "$ProjectRoot\docker-compose.yaml" build
+    docker-compose -f "$ProjectRoot\backendOrderFlow\docker-compose.yaml" build
     if ($LASTEXITCODE -eq 0) {
         Write-Success "Все образы собраны успешно"
     } else {
@@ -114,7 +114,7 @@ function Clean-All {
         return
     }
     Write-Info "Остановка и удаление контейнеров..."
-    docker-compose -f "$ProjectRoot\docker-compose.yaml" down -v
+    docker-compose -f "$ProjectRoot\backendOrderFlow\docker-compose.yaml" down -v
     Write-Info "Удаление Docker образов..."
     $images = docker images | Select-String "order-exchange"
     if ($images) {
@@ -129,7 +129,7 @@ function Show-AccessInfo {
     Write-Header "Информация о доступе"
     Write-Info "Веб-сервисы:"
     Write-Output "  Frontend:        http://localhost"
-    Write-Output "  API Gateway:     http://localhost:8080"
+    Write-Output "  API Gateway:     http://localhost:8765"
     Write-Output "  Eureka Server:   http://localhost:8761"
     Write-Output ""
     Write-Info "Микросервисы:"
@@ -172,7 +172,7 @@ scrape_configs:
   - job_name: 'api-gateway'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['api-gateway:8080']
+      - targets: ['api-gateway:8765']
   - job_name: 'auth-service'
     metrics_path: '/actuator/prometheus'
     static_configs:

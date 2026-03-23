@@ -50,6 +50,7 @@ public class JwtProvider {
     }
 
     private Claims getClaims(String token) {
+        // Use parser with verification key and parse signed claims
         return Jwts.parser()
                 .verifyWith(secretKey)
                 .build()

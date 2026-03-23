@@ -1,5 +1,26 @@
-
 services:
+  # MinIO
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin123
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - order-exchange-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
   # Базы данных
   user-db:
     image: mysql:8.0
@@ -385,4 +406,5 @@ volumes:
   document_storage:
   prometheus_data:
   grafana_data:
+  minio_data:
 
