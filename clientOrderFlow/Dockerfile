@@ -1,15 +1,18 @@
-# Build stage
-CMD ["nginx", "-g", "daemon off;"]
-EXPOSE 80
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/dist/client-order-flow/browser /usr/share/nginx/html
-FROM nginx:alpine
-# Production stage
-
-RUN npm run build
-COPY . .
-RUN npm ci
-COPY package*.json ./
-WORKDIR /app
 FROM node:20-alpine AS build
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run build -- --configuration production
+
+FROM nginx:alpine
+ENV API_GATEWAY_HOST=host.docker.internal
+ENV API_GATEWAY_PORT=8080
+COPY nginx.conf /etc/nginx/templates/default.conf.template
+COPY --from=build /app/dist/orderflow/browser /usr/share/nginx/html
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
 
