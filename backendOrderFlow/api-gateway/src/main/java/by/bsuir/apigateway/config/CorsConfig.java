@@ -13,7 +13,7 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
-    private static final String DEFAULT_ALLOWED_ORIGIN_PATTERNS = "http://*,http://*:[*],https://*,https://*:[*]";
+    private static final String DEFAULT_ALLOWED_ORIGIN_PATTERNS = "*";
 
     @Value("${app.cors.allowed-origin-patterns:" + DEFAULT_ALLOWED_ORIGIN_PATTERNS + "}")
     private String allowedOriginPatterns;

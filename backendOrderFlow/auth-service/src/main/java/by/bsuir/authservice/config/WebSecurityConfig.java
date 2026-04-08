@@ -22,7 +22,7 @@ import java.util.Arrays;
 @EnableMethodSecurity
 public class WebSecurityConfig {
 
-	private static final String DEFAULT_ALLOWED_ORIGIN_PATTERNS = "http://*,http://*:[*],https://*,https://*:[*]";
+	private static final String DEFAULT_ALLOWED_ORIGIN_PATTERNS = "*";
 
 	@Autowired
 	private JwtProvider jwtProvider;
