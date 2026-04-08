@@ -1,5 +1,6 @@
 package by.bsuir.apigateway.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
@@ -12,18 +13,18 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
+    private static final String DEFAULT_ALLOWED_ORIGIN_PATTERNS = "http://*,http://*:[*],https://*,https://*:[*]";
+
+    @Value("${app.cors.allowed-origin-patterns:" + DEFAULT_ALLOWED_ORIGIN_PATTERNS + "}")
+    private String allowedOriginPatterns;
+
     @Bean
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfig = new CorsConfiguration();
-        corsConfig.setAllowedOrigins(Arrays.asList(
-                "http://localhost",
-                "http://localhost:80",
-                "http://localhost:4200",
-                "http://localhost:3000",
-                "http://localhost:4201",
-                "http://127.0.0.1",
-                "http://127.0.0.1:80"
-        ));
+        corsConfig.setAllowedOriginPatterns(Arrays.stream(allowedOriginPatterns.split(","))
+                .map(String::trim)
+                .filter(pattern -> !pattern.isEmpty())
+                .toList());
         corsConfig.setMaxAge(3600L);
         corsConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"));
         corsConfig.addAllowedHeader("*");

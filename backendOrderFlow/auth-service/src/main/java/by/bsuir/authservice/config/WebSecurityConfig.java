@@ -2,6 +2,7 @@ package by.bsuir.authservice.config;
 
 import by.bsuir.authservice.service.JwtProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -21,8 +22,13 @@ import java.util.Arrays;
 @EnableMethodSecurity
 public class WebSecurityConfig {
 
+	private static final String DEFAULT_ALLOWED_ORIGIN_PATTERNS = "http://*,http://*:[*],https://*,https://*:[*]";
+
 	@Autowired
 	private JwtProvider jwtProvider;
+
+	@Value("${app.cors.allowed-origin-patterns:" + DEFAULT_ALLOWED_ORIGIN_PATTERNS + "}")
+	private String allowedOriginPatterns;
 
 	@Bean
 	public JwtAuthenticationFilter jwtAuthenticationFilter() {
@@ -32,7 +38,10 @@ public class WebSecurityConfig {
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
-		configuration.setAllowedOrigins(Arrays.asList("http://localhost", "http://localhost:80", "http://localhost:4200", "http://localhost:3000", "http://localhost:4201", "http://127.0.0.1", "http://127.0.0.1:80"));
+		configuration.setAllowedOriginPatterns(Arrays.stream(allowedOriginPatterns.split(","))
+			.map(String::trim)
+			.filter(pattern -> !pattern.isEmpty())
+			.toList());
 		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"));
 		configuration.setAllowedHeaders(Arrays.asList("*"));
 		configuration.setAllowCredentials(true);

@@ -69,30 +69,30 @@ $Containers = @(
 # ---------------------------------------------------------------------------
 function Show-Help {
     Write-Host ""
-    Write-Host "OrderFlow — Запуск ТОЛЬКО баз данных и инфраструктуры" -ForegroundColor Cyan
+    Write-Host "OrderFlow - Databases and Infrastructure Only" -ForegroundColor Cyan
     Write-Host "======================================================" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "Использование: .\start-databases-only.ps1 [опция]" -ForegroundColor White
+    Write-Host "Usage: .\start-databases-only.ps1 [option]" -ForegroundColor White
     Write-Host ""
-    Write-Host "Опции:" -ForegroundColor Yellow
-    Write-Host "  (без опций)      Запустить все БД + RabbitMQ + MinIO + мониторинг"
-    Write-Host "  -Stop            Остановить все контейнеры инфраструктуры"
-    Write-Host "  -Restart         Перезапустить все контейнеры инфраструктуры"
-    Write-Host "  -Status          Показать статус контейнеров"
-    Write-Host "  -Logs            Показать логи контейнеров"
-    Write-Host "  -Clean           Остановить и удалить контейнеры + тома"
-    Write-Host "  -Help            Показать эту справку"
+    Write-Host "Options:" -ForegroundColor Yellow
+    Write-Host "  (no options)     Start all DBs + RabbitMQ + MinIO + monitoring"
+    Write-Host "  -Stop            Stop all infrastructure containers"
+    Write-Host "  -Restart         Restart all infrastructure containers"
+    Write-Host "  -Status          Show container status"
+    Write-Host "  -Logs            Show container logs"
+    Write-Host "  -Clean           Stop and remove containers + volumes"
+    Write-Host "  -Help            Show this help"
     Write-Host ""
-    Write-Host "Сервисы и порты:" -ForegroundColor Yellow
-    Write-Host "  auth-mysql       -> MySQL порт 3306  (user_db)"
-    Write-Host "  catalog-mysql    -> MySQL порт 3307  (catalog_db)"
-    Write-Host "  order-mysql      -> MySQL порт 3308  (order_db)"
-    Write-Host "  chat-mysql       -> MySQL порт 3309  (chat_db)"
-    Write-Host "  document-mysql   -> MySQL порт 3310  (document_db)"
-    Write-Host "  minio            -> S3 порт 9000, консоль 9001"
-    Write-Host "  rabbitmq         -> AMQP порт 5672, консоль 15672"
-    Write-Host "  prometheus       -> порт 9090"
-    Write-Host "  grafana          -> порт 3001"
+    Write-Host "Services and ports:" -ForegroundColor Yellow
+    Write-Host "  auth-mysql       -> MySQL port 3306  (user_db)"
+    Write-Host "  catalog-mysql    -> MySQL port 3307  (catalog_db)"
+    Write-Host "  order-mysql      -> MySQL port 3308  (order_db)"
+    Write-Host "  chat-mysql       -> MySQL port 3309  (chat_db)"
+    Write-Host "  document-mysql   -> MySQL port 3310  (document_db)"
+    Write-Host "  minio            -> S3 port 9000, console 9001"
+    Write-Host "  rabbitmq         -> AMQP port 5672, console 15672"
+    Write-Host "  prometheus       -> port 9090"
+    Write-Host "  grafana          -> port 3001"
     Write-Host ""
 }
 
@@ -101,7 +101,7 @@ function Show-Help {
 # ---------------------------------------------------------------------------
 function Get-ContainerStatus {
     Write-Host ""
-    Write-Host "OrderFlow — Статус инфраструктуры" -ForegroundColor Cyan
+    Write-Host "OrderFlow - Infrastructure Status" -ForegroundColor Cyan
     Write-Host "==================================" -ForegroundColor Cyan
     Write-Host ""
 
@@ -126,19 +126,19 @@ function Get-ContainerStatus {
 # Запуск только БД + инфраструктуры
 # ---------------------------------------------------------------------------
 function Start-Databases {
-    Write-Info "Запуск баз данных и инфраструктуры..."
+    Write-Info "Starting databases and infrastructure..."
 
     Push-Location $ProjectRoot
     try {
         # Запускаем только указанные сервисы (без микросервисов)
         $cmd = "docker-compose up -d $ServiceList"
-        Write-Info "Выполняю: $cmd"
+        Write-Info "Running: $cmd"
         Invoke-Expression $cmd
 
         if ($LASTEXITCODE -eq 0) {
-            Write-Success "Все базы данных и инфраструктура запущены!"
+            Write-Success "Databases and infrastructure started."
         } else {
-            Write-Err "Не удалось запустить некоторые сервисы"
+            Write-Err "Some services failed to start."
         }
     } finally {
         Pop-Location
@@ -149,13 +149,13 @@ function Start-Databases {
 # Остановка
 # ---------------------------------------------------------------------------
 function Stop-Databases {
-    Write-Info "Остановка баз данных и инфраструктуры..."
+    Write-Info "Stopping databases and infrastructure..."
 
     Push-Location $ProjectRoot
     try {
         $cmd = "docker-compose stop $ServiceList"
         Invoke-Expression $cmd
-        Write-Success "Все контейнеры остановлены"
+        Write-Success "All containers stopped."
     } finally {
         Pop-Location
     }
@@ -165,13 +165,13 @@ function Stop-Databases {
 # Полная очистка
 # ---------------------------------------------------------------------------
 function Clean-Databases {
-    Write-Warn "Остановка и удаление контейнеров + томов..."
+    Write-Warn "Stopping and removing containers + volumes..."
 
     Push-Location $ProjectRoot
     try {
         $cmd = "docker-compose rm -s -v -f $ServiceList"
         Invoke-Expression $cmd
-        Write-Success "Контейнеры и тома удалены"
+        Write-Success "Containers and volumes removed."
     } finally {
         Pop-Location
     }
@@ -195,7 +195,7 @@ function Show-Logs {
 # ---------------------------------------------------------------------------
 function Show-ConnectionInfo {
     Write-Host ""
-    Write-Host "Информация для подключения:" -ForegroundColor Yellow
+    Write-Host "Connection info:" -ForegroundColor Yellow
     Write-Host "  MySQL:" -ForegroundColor Cyan
     Write-Host "    Username: app_user"
     Write-Host "    Password: app_password"
@@ -233,7 +233,7 @@ if ($Help) {
 
 Write-Host ""
 Write-Host "=============================================" -ForegroundColor Cyan
-Write-Host "  OrderFlow — Databases & Infrastructure Only" -ForegroundColor Cyan
+Write-Host "  OrderFlow - Databases & Infrastructure Only" -ForegroundColor Cyan
 Write-Host "=============================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -255,7 +255,7 @@ if ($Restart) {
 # По умолчанию: запустить БД
 Start-Databases
 Write-Host ""
-Write-Info "Ожидание готовности сервисов..."
+Write-Info "Waiting for services to become ready..."
 Start-Sleep -Seconds 15
 Get-ContainerStatus
 Show-ConnectionInfo

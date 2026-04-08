@@ -88,33 +88,33 @@ $Containers = @(
 # ---------------------------------------------------------------------------
 function Show-Help {
     Write-Host ""
-    Write-Host "OrderFlow — Запуск бэкенда + БД (полный стек)" -ForegroundColor Cyan
+    Write-Host "OrderFlow - Backend + DB Full Stack" -ForegroundColor Cyan
     Write-Host "================================================" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "Использование: .\start-backend-with-db.ps1 [опция]" -ForegroundColor White
+    Write-Host "Usage: .\start-backend-with-db.ps1 [option]" -ForegroundColor White
     Write-Host ""
-    Write-Host "Опции:" -ForegroundColor Yellow
-    Write-Host "  (без опций)       Запустить всё: БД -> собрать бэкенд -> запустить в Docker"
-    Write-Host "  -NoBuild          Запустить без пересборки Docker-образов"
-    Write-Host "  -LocalBackend     Запустить только БД в Docker, бэкенд запускать из IDE"
-    Write-Host "  -Stop             Остановить всё"
-    Write-Host "  -Restart          Перезапустить всё"
-    Write-Host "  -Status           Показать статус всех контейнеров"
-    Write-Host "  -Logs             Показать логи"
-    Write-Host "  -Clean            Удалить все контейнеры и тома"
-    Write-Host "  -Help             Показать эту справку"
+    Write-Host "Options:" -ForegroundColor Yellow
+    Write-Host "  (no options)      Start all: DB -> build backend -> run in Docker"
+    Write-Host "  -NoBuild          Start without rebuilding Docker images"
+    Write-Host "  -LocalBackend     Start only DB/infra in Docker, run backend from IDE"
+    Write-Host "  -Stop             Stop everything"
+    Write-Host "  -Restart          Restart everything"
+    Write-Host "  -Status           Show container status"
+    Write-Host "  -Logs             Show logs"
+    Write-Host "  -Clean            Remove all containers and volumes"
+    Write-Host "  -Help             Show this help"
     Write-Host ""
-    Write-Host "Режимы работы:" -ForegroundColor Yellow
-    Write-Host "  1. Полный стек в Docker (по умолчанию):"
+    Write-Host "Modes:" -ForegroundColor Yellow
+    Write-Host "  1. Full stack in Docker (default):"
     Write-Host "     .\start-backend-with-db.ps1"
     Write-Host ""
-    Write-Host "  2. Только БД в Docker, бэкенд из IDE:"
+    Write-Host "  2. Only DB/infra in Docker, backend from IDE:"
     Write-Host "     .\start-backend-with-db.ps1 -LocalBackend"
     Write-Host ""
-    Write-Host "  3. Запуск без пересборки (быстро):"
+    Write-Host "  3. Start without rebuild (fast):"
     Write-Host "     .\start-backend-with-db.ps1 -NoBuild"
     Write-Host ""
-    Write-Host "Порты сервисов:" -ForegroundColor Yellow
+    Write-Host "Service ports:" -ForegroundColor Yellow
     Write-Host "  eureka-server    -> 8761"
     Write-Host "  api-gateway      -> 8765"
     Write-Host "  auth-service     -> 8081"
@@ -130,11 +130,11 @@ function Show-Help {
 # ---------------------------------------------------------------------------
 function Get-ContainerStatus {
     Write-Host ""
-    Write-Host "OrderFlow — Статус всех сервисов" -ForegroundColor Cyan
+    Write-Host "OrderFlow - All Services Status" -ForegroundColor Cyan
     Write-Host "=================================" -ForegroundColor Cyan
     Write-Host ""
 
-    Write-Host "  БАЗЫ ДАННЫХ:" -ForegroundColor Yellow
+    Write-Host "  DATABASES:" -ForegroundColor Yellow
     foreach ($c in $Containers | Where-Object { $_.Service -match "mysql" }) {
         $status = docker ps --filter "name=$($c.Name)" --format "{{.Status}}" 2>$null
         Write-Host "    $($c.Name.PadRight(20))" -NoNewline -ForegroundColor White
@@ -147,7 +147,7 @@ function Get-ContainerStatus {
     }
 
     Write-Host ""
-    Write-Host "  ИНФРАСТРУКТУРА:" -ForegroundColor Yellow
+    Write-Host "  INFRASTRUCTURE:" -ForegroundColor Yellow
     foreach ($c in $Containers | Where-Object { $_.Service -match "minio|rabbitmq|prometheus|grafana" }) {
         $status = docker ps --filter "name=$($c.Name)" --format "{{.Status}}" 2>$null
         Write-Host "    $($c.Name.PadRight(20))" -NoNewline -ForegroundColor White
@@ -160,7 +160,7 @@ function Get-ContainerStatus {
     }
 
     Write-Host ""
-    Write-Host "  МИКРОСЕРВИСЫ:" -ForegroundColor Yellow
+    Write-Host "  MICROSERVICES:" -ForegroundColor Yellow
     foreach ($c in $Containers | Where-Object { $_.Service -match "eureka|gateway|auth-service|catalog-service|order-service|chat-service|document-service" }) {
         $status = docker ps --filter "name=$($c.Name)" --format "{{.Status}}" 2>$null
         Write-Host "    $($c.Name.PadRight(20))" -NoNewline -ForegroundColor White
@@ -178,7 +178,7 @@ function Get-ContainerStatus {
 # Ожидание готовности БД
 # ---------------------------------------------------------------------------
 function Wait-ForDatabases {
-    Write-Info "Ожидание готовности баз данных..."
+    Write-Info "Waiting for databases to become healthy..."
     $maxAttempts = 30
     $attempt = 0
 
@@ -195,7 +195,7 @@ function Wait-ForDatabases {
         }
 
         if ($allHealthy) {
-            Write-Success "Все базы данных готовы!"
+            Write-Success "All databases are healthy."
             return $true
         }
 
@@ -204,7 +204,7 @@ function Wait-ForDatabases {
     }
 
     Write-Host ""
-    Write-Warn "Некоторые БД могут быть ещё не готовы, но продолжаем..."
+    Write-Warn "Some databases may still be starting, continuing anyway..."
     return $false
 }
 
@@ -212,7 +212,7 @@ function Wait-ForDatabases {
 # Ожидание готовности RabbitMQ
 # ---------------------------------------------------------------------------
 function Wait-ForRabbitMQ {
-    Write-Info "Ожидание готовности RabbitMQ..."
+    Write-Info "Waiting for RabbitMQ to become healthy..."
     $maxAttempts = 20
     $attempt = 0
 
@@ -220,7 +220,7 @@ function Wait-ForRabbitMQ {
         $attempt++
         $health = docker inspect --format='{{.State.Health.Status}}' rabbitmq 2>$null
         if ($health -eq "healthy") {
-            Write-Success "RabbitMQ готов!"
+            Write-Success "RabbitMQ is healthy."
             return $true
         }
         Write-Host "." -NoNewline -ForegroundColor Gray
@@ -228,7 +228,7 @@ function Wait-ForRabbitMQ {
     }
 
     Write-Host ""
-    Write-Warn "RabbitMQ может быть ещё не готов..."
+    Write-Warn "RabbitMQ may still be starting..."
     return $false
 }
 
@@ -238,17 +238,17 @@ function Wait-ForRabbitMQ {
 function Start-FullStack {
     param([bool]$Build = $true)
 
-    Write-Info "========== ЭТАП 1: Запуск баз данных и инфраструктуры =========="
+    Write-Info "========== STEP 1: Start databases and infrastructure =========="
 
     Push-Location $ProjectRoot
     try {
         $dbList = ($AllDbInfra -join " ")
         $cmd = "docker-compose up -d $dbList"
-        Write-Info "Выполняю: $cmd"
+        Write-Info "Running: $cmd"
         Invoke-Expression $cmd
 
         if ($LASTEXITCODE -ne 0) {
-            Write-Err "Не удалось запустить инфраструктуру!"
+            Write-Err "Failed to start infrastructure."
             return
         }
     } finally {
@@ -259,7 +259,7 @@ function Start-FullStack {
     Wait-ForDatabases
     Wait-ForRabbitMQ
 
-    Write-Info "========== ЭТАП 2: Запуск микросервисов =========="
+    Write-Info "========== STEP 2: Start backend services =========="
 
     Push-Location $ProjectRoot
     try {
@@ -271,13 +271,13 @@ function Start-FullStack {
             $cmd = "docker-compose up -d $backendList"
         }
 
-        Write-Info "Выполняю: $cmd"
+        Write-Info "Running: $cmd"
         Invoke-Expression $cmd
 
         if ($LASTEXITCODE -eq 0) {
-            Write-Success "Все микросервисы запущены!"
+            Write-Success "All backend services started."
         } else {
-            Write-Err "Не удалось запустить некоторые микросервисы"
+            Write-Err "Some backend services failed to start."
         }
     } finally {
         Pop-Location
@@ -288,19 +288,19 @@ function Start-FullStack {
 # Запуск только БД (для локальной разработки из IDE)
 # ---------------------------------------------------------------------------
 function Start-DatabasesOnly {
-    Write-Info "Запуск только БД и инфраструктуры (бэкенд запускайте из IDE)..."
+    Write-Info "Starting only databases and infrastructure (run backend from IDE)..."
 
     Push-Location $ProjectRoot
     try {
         $dbList = ($AllDbInfra -join " ")
         $cmd = "docker-compose up -d $dbList"
-        Write-Info "Выполняю: $cmd"
+        Write-Info "Running: $cmd"
         Invoke-Expression $cmd
 
         if ($LASTEXITCODE -eq 0) {
-            Write-Success "Инфраструктура запущена!"
+            Write-Success "Infrastructure started."
         } else {
-            Write-Err "Не удалось запустить некоторые сервисы"
+            Write-Err "Some infrastructure services failed to start."
         }
     } finally {
         Pop-Location
@@ -314,12 +314,12 @@ function Start-DatabasesOnly {
 # Остановка
 # ---------------------------------------------------------------------------
 function Stop-FullStack {
-    Write-Info "Остановка всех сервисов..."
+    Write-Info "Stopping all services..."
 
     Push-Location $ProjectRoot
     try {
         docker-compose down
-        Write-Success "Все сервисы остановлены"
+        Write-Success "All services stopped."
     } finally {
         Pop-Location
     }
@@ -329,12 +329,12 @@ function Stop-FullStack {
 # Очистка
 # ---------------------------------------------------------------------------
 function Clean-FullStack {
-    Write-Warn "Остановка и удаление всех контейнеров + томов..."
+    Write-Warn "Stopping and removing all containers and volumes..."
 
     Push-Location $ProjectRoot
     try {
         docker-compose down -v --remove-orphans
-        Write-Success "Все контейнеры и тома удалены"
+        Write-Success "All containers and volumes removed."
     } finally {
         Pop-Location
     }
@@ -357,7 +357,7 @@ function Show-Logs {
 # ---------------------------------------------------------------------------
 function Show-ConnectionInfo {
     Write-Host ""
-    Write-Host "Информация для подключения:" -ForegroundColor Yellow
+    Write-Host "Connection info:" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "  MySQL:" -ForegroundColor Cyan
     Write-Host "    Username: app_user"
@@ -389,14 +389,14 @@ if ($Help) {
 
 Write-Host ""
 Write-Host "=============================================" -ForegroundColor Cyan
-Write-Host "  OrderFlow — Backend + Databases Full Stack" -ForegroundColor Cyan
+Write-Host "  OrderFlow - Backend + Databases Full Stack" -ForegroundColor Cyan
 Write-Host "=============================================" -ForegroundColor Cyan
 Write-Host ""
 
 # Проверяем Docker
 $dockerVersion = docker --version 2>$null
 if (-not $dockerVersion) {
-    Write-Err "Docker не найден или не запущен! Установите и запустите Docker Desktop."
+    Write-Err "Docker was not found or is not running. Start Docker Desktop first."
     exit 1
 }
 Write-Info "Docker: $dockerVersion"
@@ -422,23 +422,23 @@ if ($Restart) {
 
 # По умолчанию
 if ($LocalBackend) {
-    Write-Info "Режим: только БД в Docker, бэкенд из IDE"
+    Write-Info "Mode: only DB/infra in Docker, backend from IDE"
     Start-DatabasesOnly
 } else {
-    Write-Info "Режим: полный стек в Docker"
+    Write-Info "Mode: full stack in Docker"
     Start-FullStack -Build (-not $NoBuild)
 }
 
 Write-Host ""
-Write-Info "Ожидание стабилизации сервисов..."
+Write-Info "Waiting for services to stabilize..."
 Start-Sleep -Seconds 10
 Get-ContainerStatus
 Show-ConnectionInfo
 
 if ($LocalBackend) {
     Write-Host ""
-    Write-Host "  >>> Теперь запустите микросервисы из IDE (IntelliJ IDEA) <<<" -ForegroundColor Magenta
-    Write-Host "  >>> Порядок запуска: eureka-server -> api-gateway -> остальные сервисы <<<" -ForegroundColor Magenta
+    Write-Host "  NOTE: now start microservices from IDE (IntelliJ IDEA)" -ForegroundColor Magenta
+    Write-Host "  Order: eureka-server -> api-gateway -> remaining services" -ForegroundColor Magenta
     Write-Host ""
 }
 
