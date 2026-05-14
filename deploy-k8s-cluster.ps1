@@ -85,10 +85,10 @@ function Setup-ClusterNodes {
     foreach ($node in $nodes.items) {
         $nodeName = $node.metadata.name
         Write-Info "Настройка ноды: $nodeName"
-        kubectl label nodes $nodeName node-role=frontend --overwrite | Out-Null
-        kubectl label nodes $nodeName node-role=backend --overwrite | Out-Null
-        kubectl label nodes $nodeName node-role=database --overwrite | Out-Null
-        kubectl label nodes $nodeName node-role=services --overwrite | Out-Null
+        kubectl label nodes $nodeName node-role-frontend=true --overwrite | Out-Null
+        kubectl label nodes $nodeName node-role-backend=true --overwrite | Out-Null
+        kubectl label nodes $nodeName node-role-database=true --overwrite | Out-Null
+        kubectl label nodes $nodeName node-role-services=true --overwrite | Out-Null
         Write-Success "Метки установлены на ноде: $nodeName"
     }
     Write-Info "`nАрхитектура кластера (логическое разделение):"

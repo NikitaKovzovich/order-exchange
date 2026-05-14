@@ -16,7 +16,7 @@ spec:
         tier: backend
     spec:
       nodeSelector:
-        node-role: backend
+        node-role-backend: "true"
       containers:
       - name: eureka-server
         image: order-exchange/eureka-server:latest
@@ -79,7 +79,7 @@ spec:
         tier: backend
     spec:
       nodeSelector:
-        node-role: backend
+        node-role-backend: "true"
       containers:
       - name: auth-service
         image: order-exchange/auth-service:latest
@@ -89,6 +89,8 @@ spec:
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: "k8s"
+        - name: MANAGEMENT_HEALTH_MAIL_ENABLED
+          value: "false"
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
           valueFrom:
             configMapKeyRef:
@@ -192,7 +194,7 @@ spec:
         tier: backend
     spec:
       nodeSelector:
-        node-role: backend
+        node-role-backend: "true"
       containers:
       - name: catalog-service
         image: order-exchange/catalog-service:latest
@@ -295,7 +297,7 @@ spec:
         tier: backend
     spec:
       nodeSelector:
-        node-role: backend
+        node-role-backend: "true"
       containers:
       - name: order-service
         image: order-exchange/order-service:latest
@@ -398,7 +400,7 @@ spec:
         tier: backend
     spec:
       nodeSelector:
-        node-role: backend
+        node-role-backend: "true"
       containers:
       - name: chat-service
         image: order-exchange/chat-service:latest
@@ -501,7 +503,7 @@ spec:
         tier: backend
     spec:
       nodeSelector:
-        node-role: backend
+        node-role-backend: "true"
       containers:
       - name: document-service
         image: order-exchange/document-service:latest
@@ -516,6 +518,21 @@ spec:
             configMapKeyRef:
               name: common-config
               key: EUREKA_URL
+        - name: SPRING_DATASOURCE_URL
+          valueFrom:
+            secretKeyRef:
+              name: db-secrets
+              key: DOCUMENT_DB_URL
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: db-secrets
+              key: DB_USERNAME
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-secrets
+              key: DB_PASSWORD
         - name: SPRING_RABBITMQ_HOST
           valueFrom:
             configMapKeyRef:
@@ -536,6 +553,26 @@ spec:
             secretKeyRef:
               name: rabbitmq-secrets
               key: RABBITMQ_PASSWORD
+        - name: MINIO_ENDPOINT
+          valueFrom:
+            secretKeyRef:
+              name: minio-secrets
+              key: MINIO_ENDPOINT
+        - name: MINIO_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: minio-secrets
+              key: MINIO_ROOT_USER
+        - name: MINIO_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: minio-secrets
+              key: MINIO_ROOT_PASSWORD
+        - name: MINIO_BUCKET_NAME
+          valueFrom:
+            secretKeyRef:
+              name: minio-secrets
+              key: MINIO_BUCKET_NAME
         resources:
           requests:
             memory: "512Mi"
@@ -589,13 +626,13 @@ spec:
         tier: backend
     spec:
       nodeSelector:
-        node-role: backend
+        node-role-backend: "true"
       containers:
       - name: api-gateway
         image: order-exchange/api-gateway:latest
         imagePullPolicy: Never
         ports:
-        - containerPort: 8080
+        - containerPort: 8765
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: "k8s"
@@ -619,13 +656,13 @@ spec:
         livenessProbe:
           httpGet:
             path: /actuator/health
-            port: 8080
+            port: 8765
           initialDelaySeconds: 90
           periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /actuator/health
-            port: 8080
+            port: 8765
           initialDelaySeconds: 60
           periodSeconds: 10
 ---
@@ -641,6 +678,6 @@ spec:
     app: api-gateway
   ports:
   - protocol: TCP
-    port: 8080
-    targetPort: 8080
+    port: 8765
+    targetPort: 8765
 

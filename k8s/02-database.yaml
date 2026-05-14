@@ -46,7 +46,7 @@ spec:
         tier: database
     spec:
       nodeSelector:
-        node-role: database
+        node-role-database: "true"
       containers:
       - name: mysql
         image: mysql:8.0
@@ -105,11 +105,13 @@ data:
     CREATE DATABASE IF NOT EXISTS catalog_db;
     CREATE DATABASE IF NOT EXISTS order_db;
     CREATE DATABASE IF NOT EXISTS chat_db;
-    
+    CREATE DATABASE IF NOT EXISTS document_db;
+
     CREATE USER IF NOT EXISTS 'app_user'@'%' IDENTIFIED BY 'app_password';
     GRANT ALL PRIVILEGES ON user_db.* TO 'app_user'@'%';
     GRANT ALL PRIVILEGES ON catalog_db.* TO 'app_user'@'%';
     GRANT ALL PRIVILEGES ON order_db.* TO 'app_user'@'%';
     GRANT ALL PRIVILEGES ON chat_db.* TO 'app_user'@'%';
+    GRANT ALL PRIVILEGES ON document_db.* TO 'app_user'@'%';
     FLUSH PRIVILEGES;
 

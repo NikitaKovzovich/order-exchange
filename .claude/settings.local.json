@@ -3,7 +3,15 @@
     "allow": [
       "Bash(./gradlew --version)",
       "Bash(./gradlew dependencies *)",
-      "Bash(./gradlew bootJar --no-daemon -x test -x spotbugsMain -x spotbugsTest)"
+      "Bash(./gradlew bootJar --no-daemon -x test -x spotbugsMain -x spotbugsTest)",
+      "Bash(kubectl get *)",
+      "Bash(kubectl describe *)",
+      "Bash(kubectl label nodes *)",
+      "Bash(kubectl logs *)",
+      "Bash(kubectl apply *)",
+      "Bash(kubectl exec *)",
+      "Bash(kubectl delete pod *)",
+      "Bash(kubectl rollout restart *)"
     ]
   }
 }
