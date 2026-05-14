@@ -1,12 +1,10 @@
-FROM eclipse-temurin:21-jdk-alpine AS build
+FROM gradle:8.14.3-jdk21 AS build
 WORKDIR /app
-COPY gradlew gradlew
-COPY gradle gradle
 COPY build.gradle settings.gradle ./
 COPY src src
-RUN chmod +x gradlew && ./gradlew bootJar --no-daemon -x test -x spotbugsMain -x spotbugsTest -x spotlessJavaCheck
+RUN gradle bootJar --no-daemon -x test -x spotbugsMain -x spotbugsTest -x spotlessJavaCheck
 
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /app/build/libs/*-SNAPSHOT.jar app.jar
 EXPOSE 8083

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew --version)",
+      "Bash(./gradlew dependencies *)",
+      "Bash(./gradlew bootJar --no-daemon -x test -x spotbugsMain -x spotbugsTest)"
+    ]
+  }
+}
