@@ -10,6 +10,7 @@ public record CartItemResponse(
 	Long id,
 	Long productId,
 	Long supplierId,
+	String supplierName,
 	String productName,
 	String productSku,
 	Integer quantity,

@@ -1,5 +1,5 @@
 <header class="bg-white shadow-sm h-16 flex justify-between items-center px-6">
-  <div class="text-xl font-semibold text-gray-800">{{ pageTitle }}</div>
+  <div class="text-xl font-semibold text-gray-800">{{ resolvedTitle }}</div>
   <div class="flex items-center">
     <div class="relative mr-4">
       <button routerLink="/supplier/notifications" class="p-2 bg-gray-100 rounded-full hover:bg-gray-200">
@@ -10,11 +10,11 @@
       <span *ngIf="hasNotifications" class="absolute top-0 right-0 h-3 w-3 bg-red-500 rounded-full border-2 border-white"></span>
     </div>
     <div class="flex items-center">
-      <img class="h-10 w-10 rounded-full object-cover" [src]="companyLogo" [alt]="companyName">
-      <div class="ml-3">
-        <p class="text-sm font-semibold text-gray-800">{{ companyName }}</p>
-        <a routerLink="/" class="text-xs text-indigo-600 hover:underline">Выйти</a>
-      </div>
+      <a routerLink="/supplier/profile" class="flex items-center group">
+        <img class="h-10 w-10 rounded-full object-cover" [src]="companyLogo" [alt]="companyName">
+        <p class="ml-3 text-sm font-semibold text-gray-800 group-hover:text-indigo-600 max-w-[14rem] truncate">{{ companyName }}</p>
+      </a>
+      <a routerLink="/" class="ml-3 text-xs text-indigo-600 hover:underline">Выйти</a>
     </div>
   </div>
 </header>

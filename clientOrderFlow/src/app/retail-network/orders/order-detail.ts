@@ -4,8 +4,11 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { OrderService } from '../../services/order.service';
 import { DocumentService } from '../../services/document.service';
+import { ChatService } from '../../services/chat.service';
+import { AuthService } from '../../services/auth.service';
 import { OrderDocumentDownloadService } from '../../services/order-document-download.service';
-import { DiscrepancyReport, Order, OrderDocument, OrderHistoryEntry, OrderStatus } from '../../models/api.models';
+import { ChatMessage, DiscrepancyReport, GeneratedDocument, Order, OrderDocument, OrderHistoryEntry, OrderStatus } from '../../models/api.models';
+import { formatChatDateTime } from '../../utils/chat-datetime.util';
 
 interface DiscrepancyFormItem {
   orderItemId: number;
@@ -18,6 +21,19 @@ interface DiscrepancyFormItem {
 interface UiNotification {
   type: 'success' | 'error' | 'info' | 'warning';
   message: string;
+}
+
+interface TimelineItem {
+  label: string;
+  timestamp: string;
+  current: boolean;
+}
+
+interface UnifiedDocument {
+  key: string;
+  name: string;
+  generated: boolean;
+  ref: OrderDocument | GeneratedDocument;
 }
 
 @Component({
@@ -43,17 +59,30 @@ export class OrderDetail implements OnInit {
   discrepancyNotes: string = '';
   discrepancyItems: DiscrepancyFormItem[] = [];
 
+  readonly role: 'retail' = 'retail';
+  supplierUnp: string = '';
+  customerUnp: string = '';
+  generatedDocuments: GeneratedDocument[] = [];
+  currentUserId: number | null = null;
+  chatMessages: ChatMessage[] = [];
+  newMessage: string = '';
+  isSendingMessage: boolean = false;
+
   constructor(
     private route: ActivatedRoute,
     private orderService: OrderService,
     private documentService: DocumentService,
-    private orderDocumentDownloadService: OrderDocumentDownloadService
+    private orderDocumentDownloadService: OrderDocumentDownloadService,
+    private chatService: ChatService,
+    private authService: AuthService
   ) {}
 
   ngOnInit() {
+    this.currentUserId = this.authService.getUserId();
     this.route.params.subscribe(params => {
       this.orderId = parseInt(params['id']);
       this.loadOrder();
+      this.loadChat();
     });
   }
 
@@ -64,6 +93,7 @@ export class OrderDetail implements OnInit {
         this.order = order;
         this.initializeDiscrepancyItems(order);
         this.loadRelatedData();
+        this.loadCompanyUnps();
         this.isLoading = false;
       },
       error: (error) => {
@@ -287,8 +317,7 @@ export class OrderDetail implements OnInit {
   }
 
   formatDateTime(dateStr: string): string {
-    if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleString('ru-RU');
+    return formatChatDateTime(dateStr);
   }
 
   formatAmount(amount: number): string {
@@ -306,10 +335,173 @@ export class OrderDetail implements OnInit {
       error: error => console.error('Error loading order documents:', error)
     });
 
+    this.documentService.getGeneratedDocumentsByOrder(this.orderId).subscribe({
+      next: documents => this.generatedDocuments = documents,
+      error: error => console.error('Error loading generated documents:', error)
+    });
+
     this.orderService.getOrderDiscrepancies(this.orderId).subscribe({
       next: discrepancies => this.discrepancies = discrepancies,
       error: error => console.error('Error loading order discrepancies:', error)
     });
+
+    this.loadChat();
+  }
+
+  private loadCompanyUnps(): void {
+    if (!this.order) {
+      return;
+    }
+    this.authService.getCompanyProfile(this.order.supplierId).subscribe({
+      next: profile => this.supplierUnp = profile.taxId || '',
+      error: () => {}
+    });
+    this.authService.getCompanyProfile(this.order.customerId).subscribe({
+      next: profile => this.customerUnp = profile.taxId || '',
+      error: () => {}
+    });
+  }
+
+  private loadChat(): void {
+    this.chatService.getMessages(this.orderId).subscribe({
+      next: page => {
+        this.chatMessages = [...page.content].sort(
+          (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
+        );
+      },
+      error: () => this.chatMessages = []
+    });
+  }
+
+  get isChatDisabled(): boolean {
+    return this.order?.statusCode === 'CLOSED';
+  }
+
+  isOwnMessage(message: ChatMessage): boolean {
+    return this.currentUserId != null && message.senderId === this.currentUserId;
+  }
+
+  sendMessage(): void {
+    const text = this.newMessage.trim();
+    if (!text || this.isChatDisabled) {
+      return;
+    }
+    this.isSendingMessage = true;
+    this.chatService.sendMessage(this.orderId, { messageText: text }).subscribe({
+      next: message => {
+        this.chatMessages = [...this.chatMessages, message];
+        this.newMessage = '';
+        this.isSendingMessage = false;
+      },
+      error: error => {
+        console.error('Error sending message:', error);
+        this.isSendingMessage = false;
+      }
+    });
+  }
+
+  get nextActionText(): string {
+    switch (this.order?.statusCode) {
+      case 'PENDING_CONFIRMATION':
+        return 'Ваш заказ отправлен поставщику. Ожидайте подтверждения.';
+      case 'REJECTED':
+        return 'Поставщик отклонил ваш заказ. Причина указана в чате.';
+      case 'AWAITING_PAYMENT':
+        return 'Поставщик подтвердил ваш заказ и выставил счёт на оплату. Пожалуйста, оплатите заказ и загрузите подтверждающий документ (платёжное поручение).';
+      case 'PENDING_PAYMENT_VERIFICATION':
+        return 'Подтверждение оплаты загружено. Ожидайте проверки поступления средств со стороны поставщика.';
+      case 'PAYMENT_PROBLEM':
+        return 'Возникла проблема с подтверждением оплаты. Пожалуйста, проверьте чат заказа для получения подробностей от поставщика и загрузите корректный документ.';
+      case 'AWAITING_SHIPMENT':
+        return this.order?.ttnGenerated
+          ? 'Поставщик сформировал отгрузочные документы (ТТН). Ожидается передача товара перевозчику.'
+          : 'Оплата подтверждена. Поставщик готовит отгрузочные документы (ТТН).';
+      case 'SHIPPED':
+        return 'Товар отгружен. После физического получения товара нажмите кнопку «Принять товар».';
+      case 'AWAITING_CORRECTION':
+        return 'Вы заявили о расхождениях. Акт отправлен поставщику. Ожидайте, пока поставщик сформирует корректировочную накладную.';
+      case 'DELIVERED':
+        return 'Товар доставлен.';
+      case 'CLOSED':
+        return 'Заказ выполнен и закрыт.';
+      default:
+        return '';
+    }
+  }
+
+  get isPaymentUploadStatus(): boolean {
+    return this.order?.statusCode === 'AWAITING_PAYMENT' || this.order?.statusCode === 'PAYMENT_PROBLEM';
+  }
+
+  get timeline(): TimelineItem[] {
+    const items = [...this.orderHistory]
+      .map(entry => ({
+        label: this.getHistoryDescription(entry),
+        timestamp: this.getHistoryTimestamp(entry)
+      }))
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    return items.map((item, index) => ({ ...item, current: index === 0 }));
+  }
+
+  get unifiedDocuments(): UnifiedDocument[] {
+    const generated = this.generatedDocuments
+      .filter(doc => doc.orderId === this.orderId)
+      .map(doc => ({ key: `gen-${doc.id}`, name: this.generatedDocumentName(doc), generated: true, ref: doc }));
+    const uploaded = this.orderDocuments.map(doc => ({
+      key: `doc-${doc.id}`,
+      name: doc.documentName || doc.documentTypeName || doc.originalFilename || doc.fileName || `Документ #${doc.id}`,
+      generated: false,
+      ref: doc
+    }));
+    return [...generated, ...uploaded];
+  }
+
+  private generatedDocumentName(doc: GeneratedDocument): string {
+    const labels: { [key: string]: string } = {
+      INVOICE: 'Счёт на оплату',
+      TTN: 'ТТН',
+      DISCREPANCY_ACT: 'Акт о расхождении',
+      CORRECTION_TTN: 'Корректировочная ТТН'
+    };
+    const base = labels[doc.templateType] || doc.templateType;
+    return doc.documentNumber ? `${base} № ${doc.documentNumber}` : base;
+  }
+
+  downloadUnifiedDocument(doc: UnifiedDocument): void {
+    if (doc.generated) {
+      this.documentService.downloadGeneratedDocument((doc.ref as GeneratedDocument).id).subscribe({
+        next: blob => this.saveBlob(blob, doc.name + '.pdf'),
+        error: error => console.error('Error downloading generated document:', error)
+      });
+    } else {
+      this.downloadDocument(doc.ref as OrderDocument);
+    }
+  }
+
+  private saveBlob(blob: Blob, fileName: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const anchor = window.document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    anchor.click();
+    window.URL.revokeObjectURL(url);
+  }
+
+  get hasAcceptanceChanges(): boolean {
+    return this.discrepancyItems.some(item => item.actualQuantity !== item.expectedQuantity);
+  }
+
+  get acceptanceButtonLabel(): string {
+    return this.hasAcceptanceChanges ? 'Сформировать Акт о расхождении' : 'Подтвердить получение (Без расхождений)';
+  }
+
+  submitAcceptance(): void {
+    if (this.hasAcceptanceChanges) {
+      this.submitDiscrepancy();
+    } else {
+      this.closeDiscrepancyModal();
+      this.confirmDelivery();
+    }
   }
 
   private initializeDiscrepancyItems(order: Order): void {

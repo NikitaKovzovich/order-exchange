@@ -95,7 +95,9 @@
             </thead>
             <tbody>
               <tr *ngFor="let product of products" class="bg-white border-b hover:bg-gray-50">
-                <td class="px-6 py-4 font-medium text-gray-900">{{ product.name }}</td>
+                <td class="px-6 py-4 font-medium">
+                  <a [routerLink]="['/admin/content/product', product.id]" class="text-indigo-600 hover:underline">{{ product.name }}</a>
+                </td>
                 <td class="px-6 py-4">{{ product.supplier }}</td>
                 <td class="px-6 py-4">{{ product.category }}</td>
                 <td class="px-6 py-4">{{ product.price }}</td>

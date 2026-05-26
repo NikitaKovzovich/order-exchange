@@ -1,10 +1,15 @@
-<div class="flex h-screen">
-  <div class="flex-1 flex flex-col overflow-hidden">
-    <header class="bg-white shadow-sm h-16 flex justify-between items-center px-6 flex-shrink-0">
-      <h1 class="text-xl font-semibold text-gray-800">{{ isEditMode ? 'Редактирование товара' : 'Создание нового товара' }}</h1>
-    </header>
+<div>
+  <div>
+    <div class="flex justify-end mb-4">
+      <button (click)="cancel()" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+        </svg>
+        Отмена
+      </button>
+    </div>
 
-    <main class="flex-1 overflow-y-auto p-6">
+    <div>
       <div *ngIf="isLoading" class="text-center py-12">
         <p class="text-gray-500">Загрузка...</p>
       </div>
@@ -23,7 +28,7 @@
               <span [class.bg-indigo-600]="currentStep >= 2" [class.text-white]="currentStep >= 2" [class.bg-gray-300]="currentStep < 2" class="w-6 h-6 rounded-full inline-flex items-center justify-center mr-2 text-xs">2</span> Цена и остатки
             </a>
             <a (click)="currentStep = 3" [class.border-indigo-500]="currentStep === 3" [class.text-indigo-600]="currentStep === 3" [class.border-transparent]="currentStep !== 3" [class.text-gray-500]="currentStep !== 3" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm cursor-pointer">
-              <span [class.bg-indigo-600]="currentStep >= 3" [class.text-white]="currentStep >= 3" [class.bg-gray-300]="currentStep < 3" class="w-6 h-6 rounded-full inline-flex items-center justify-center mr-2 text-xs">3</span> Логистика
+              <span [class.bg-indigo-600]="currentStep >= 3" [class.text-white]="currentStep >= 3" [class.bg-gray-300]="currentStep < 3" class="w-6 h-6 rounded-full inline-flex items-center justify-center mr-2 text-xs">3</span> Характеристики и логистика
             </a>
           </nav>
         </div>
@@ -104,7 +109,7 @@
         </div>
 
         <div *ngIf="currentStep === 3" class="bg-white p-8 rounded-lg shadow-sm">
-          <h3 class="text-lg font-semibold mb-6">Шаг 3: Логистика</h3>
+          <h3 class="text-lg font-semibold mb-6">Шаг 3: Характеристики и логистика</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700">Вес (кг)</label>
@@ -118,6 +123,22 @@
               <label class="block text-sm font-medium text-gray-700">Штрих-код</label>
               <input type="text" [(ngModel)]="product.barcode" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2" placeholder="4810000000000">
             </div>
+            <div class="col-span-2">
+              <label class="block text-sm font-medium text-gray-700">Габариты упаковки, см (Длина × Ширина × Высота)</label>
+              <div class="mt-1 grid grid-cols-3 gap-3">
+                <input type="number" [(ngModel)]="product.packageLength" min="0" step="0.1" class="block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2" placeholder="Длина">
+                <input type="number" [(ngModel)]="product.packageWidth" min="0" step="0.1" class="block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2" placeholder="Ширина">
+                <input type="number" [(ngModel)]="product.packageHeight" min="0" step="0.1" class="block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2" placeholder="Высота">
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Дата производства</label>
+              <input type="date" [(ngModel)]="product.productionDate" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Срок годности</label>
+              <input type="date" [(ngModel)]="product.expiryDate" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2">
+            </div>
           </div>
         </div>
 
@@ -130,7 +151,7 @@
           </button>
         </div>
       </div>
-    </main>
+    </div>
   </div>
 </div>
 

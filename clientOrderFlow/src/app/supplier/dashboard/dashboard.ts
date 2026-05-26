@@ -1,5 +1,6 @@
 import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AnalyticsService } from '../../services/analytics.service';
 import { CatalogService } from '../../services/catalog.service';
@@ -10,7 +11,7 @@ type ChartInstance = { destroy(): void };
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css'
 })
@@ -28,6 +29,14 @@ export class Dashboard implements OnInit, AfterViewInit {
 
   lowStockProducts: Array<{ name: string; stock: number; unit: string }> = [];
   salesDynamics: Array<{ date: string; revenue: number }> = [];
+
+  salesPeriod: string = 'week';
+  periods: { value: string; label: string }[] = [
+    { value: 'week', label: 'Неделя' },
+    { value: 'month', label: 'Месяц' },
+    { value: 'quarter', label: 'Квартал' },
+    { value: 'year', label: 'Год' }
+  ];
 
   private chart?: ChartInstance;
   private chartModulePromise?: Promise<ChartModule>;
@@ -87,8 +96,13 @@ export class Dashboard implements OnInit, AfterViewInit {
     });
   }
 
+  onSalesPeriodChange(period: string): void {
+    this.salesPeriod = period;
+    this.loadDashboard();
+  }
+
   private loadDashboard(): void {
-    this.analyticsService.getSupplierDashboard().subscribe({
+    this.analyticsService.getSupplierDashboard(this.salesPeriod).subscribe({
       next: dashboard => {
         this.stats = {
           revenue: Number(dashboard.revenueThisMonth || 0).toLocaleString('ru-RU'),

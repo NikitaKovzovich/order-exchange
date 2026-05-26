@@ -76,31 +76,56 @@ export class Cart implements OnInit {
   }
 
   groupBySupplier() {
-    if (!this.cart) return;
+    if (!this.cart) {
+      this.ordersBySupplier = [];
+      return;
+    }
 
+    const previous = new Map(this.ordersBySupplier.map(group => [group.supplierId, group]));
     const groups = new Map<number, SupplierGroup>();
 
     this.cart.items.forEach(item => {
       if (!groups.has(item.supplierId)) {
+        const prior = previous.get(item.supplierId);
         groups.set(item.supplierId, {
           supplierId: item.supplierId,
-          supplierName: `Поставщик #${item.supplierId}`,
+          supplierName: item.supplierName || `Поставщик #${item.supplierId}`,
           items: [],
-          deliveryDate: '',
-          deliveryAddress: this.deliveryAddresses[0] || '',
+          deliveryDate: prior?.deliveryDate || '',
+          deliveryAddress: prior?.deliveryAddress || this.deliveryAddresses[0] || '',
           total: 0
         });
       }
       const group = groups.get(item.supplierId)!;
       group.items.push(item);
-      group.total += item.totalPrice;
+      group.total += item.totalPrice + (item.vatAmount || 0);
     });
 
     this.ordersBySupplier = Array.from(groups.values());
   }
 
   get grandTotal(): number {
-    return this.cart?.totalAmount || 0;
+    return (this.cart?.totalAmount || 0) + (this.cart?.totalVat || 0);
+  }
+
+  get totalPositions(): number {
+    return this.ordersBySupplier.reduce((sum, group) => sum + group.items.length, 0);
+  }
+
+  get pluralizedOrders(): string {
+    return this.pluralize(this.ordersBySupplier.length, 'заказ', 'заказа', 'заказов');
+  }
+
+  get pluralizedPositions(): string {
+    return this.pluralize(this.totalPositions, 'позиция', 'позиции', 'позиций');
+  }
+
+  private pluralize(count: number, one: string, few: string, many: string): string {
+    const mod10 = count % 10;
+    const mod100 = count % 100;
+    if (mod10 === 1 && mod100 !== 11) return `${count} ${one}`;
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return `${count} ${few}`;
+    return `${count} ${many}`;
   }
 
   updateQuantity(item: CartItem, quantity: number) {
@@ -133,51 +158,102 @@ export class Cart implements OnInit {
     });
   }
 
-  submitOrder(group: SupplierGroup) {
+  private validateGroup(group: SupplierGroup): string | null {
     if (!group.deliveryDate) {
-      this.notification = {
-        type: 'warning',
-        message: 'Пожалуйста, выберите дату доставки.'
-      };
-      return;
+      return `Выберите дату доставки для заказа поставщику «${group.supplierName}».`;
     }
-
     if (!group.deliveryAddress) {
-      this.notification = {
-        type: 'warning',
-        message: 'Пожалуйста, выберите адрес доставки.'
-      };
+      return `Выберите адрес доставки для заказа поставщику «${group.supplierName}».`;
+    }
+    return null;
+  }
+
+  submitOrder(group: SupplierGroup) {
+    const validationError = this.validateGroup(group);
+    if (validationError) {
+      this.notification = { type: 'warning', message: validationError };
       return;
     }
 
     this.notification = null;
-    this.checkout(group.deliveryAddress, group.deliveryDate);
-  }
-
-  checkout(deliveryAddress: string, desiredDeliveryDate: string) {
     this.isCheckingOut = true;
 
-    this.cartService.checkout({
-      deliveryAddress,
-      desiredDeliveryDate
+    this.cartService.checkoutSupplier(group.supplierId, {
+      deliveryAddress: group.deliveryAddress,
+      desiredDeliveryDate: group.deliveryDate
     }).subscribe({
-      next: (response) => {
+      next: () => {
         this.isCheckingOut = false;
         this.notification = {
           type: 'success',
-          message: `Создано заказов: ${response.totalOrders}. Общая сумма: ${response.totalAmount.toFixed(2)} BYN.`
+          message: `Заказ отправлен поставщику «${group.supplierName}». Статус: «Ожидает подтверждения».`
         };
-        this.router.navigate(['/retail/orders']);
+        this.cartService.getCart().subscribe({
+          next: (cart) => {
+            this.cart = cart;
+            this.groupBySupplier();
+            if (this.ordersBySupplier.length === 0) {
+              this.router.navigate(['/retail/orders']);
+            }
+          },
+          error: () => this.loadCart()
+        });
       },
+      error: (error) => {
+        console.error('Error during checkout:', error);
+        this.isCheckingOut = false;
+        this.notification = { type: 'error', message: 'Ошибка при оформлении заказа.' };
+      }
+    });
+  }
+
+  submitAllOrders() {
+    if (this.ordersBySupplier.length === 0) {
+      return;
+    }
+
+    for (const group of this.ordersBySupplier) {
+      const validationError = this.validateGroup(group);
+      if (validationError) {
+        this.notification = { type: 'warning', message: validationError };
+        return;
+      }
+    }
+
+    this.notification = null;
+    this.isCheckingOut = true;
+    this.submitGroupsSequentially([...this.ordersBySupplier], 0);
+  }
+
+  private submitGroupsSequentially(groups: SupplierGroup[], index: number) {
+    if (index >= groups.length) {
+      this.isCheckingOut = false;
+      this.cartSubjectReset();
+      this.router.navigate(['/retail/orders']);
+      return;
+    }
+
+    const group = groups[index];
+    this.cartService.checkoutSupplier(group.supplierId, {
+      deliveryAddress: group.deliveryAddress,
+      desiredDeliveryDate: group.deliveryDate
+    }).subscribe({
+      next: () => this.submitGroupsSequentially(groups, index + 1),
       error: (error) => {
         console.error('Error during checkout:', error);
         this.isCheckingOut = false;
         this.notification = {
           type: 'error',
-          message: 'Ошибка при оформлении заказа.'
+          message: `Ошибка при отправке заказа поставщику «${group.supplierName}».`
         };
+        this.loadCart();
       }
     });
+  }
+
+  private cartSubjectReset() {
+    this.cart = null;
+    this.ordersBySupplier = [];
   }
 
   formatPrice(price: number): string {

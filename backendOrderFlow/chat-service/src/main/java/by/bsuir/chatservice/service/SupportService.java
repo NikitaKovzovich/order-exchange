@@ -25,6 +25,10 @@ import java.util.Map;
 public class SupportService {
 
 	private static final String SUPPORT_EXCHANGE = "support.events";
+	private static final String RPC_EXCHANGE = "rpc.exchange";
+	private static final String RPC_GET_COMPANY_NAME = "rpc.auth.getCompanyName";
+
+	private final java.util.Map<Long, String> companyNameCache = new java.util.concurrent.ConcurrentHashMap<>();
 
 	private final SupportTicketRepository ticketRepository;
 	private final TicketMessageRepository messageRepository;
@@ -282,11 +286,41 @@ public class SupportService {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
+	private String resolveCompanyName(Long companyId) {
+		if (companyId == null) {
+			return null;
+		}
+		return companyNameCache.computeIfAbsent(companyId, id -> {
+			if (rabbitTemplate == null) {
+				return "Компания #" + id;
+			}
+			try {
+				Object response = rabbitTemplate.convertSendAndReceive(RPC_EXCHANGE, RPC_GET_COMPANY_NAME,
+						java.util.Map.of("companyId", id));
+				if (response instanceof java.util.Map<?, ?> map && Boolean.TRUE.equals(map.get("success"))) {
+					Object legalName = map.get("legalName");
+					if (legalName != null && !legalName.toString().isEmpty()) {
+						return legalName.toString();
+					}
+					Object name = map.get("name");
+					if (name != null && !name.toString().isEmpty()) {
+						return name.toString();
+					}
+				}
+			} catch (Exception e) {
+				log.warn("Failed to resolve company name for {}: {}", id, e.getMessage());
+			}
+			return "Компания #" + id;
+		});
+	}
+
 	private TicketResponse toResponse(SupportTicket ticket, long messageCount, TicketMessageResponse lastMessage) {
 		return new TicketResponse(
 				ticket.getId(),
 				ticket.getRequesterCompanyId(),
 				ticket.getRequesterUserId(),
+				resolveCompanyName(ticket.getRequesterCompanyId()),
 				ticket.getSubject(),
 				ticket.getStatus().name(),
 				ticket.getPriority().name(),

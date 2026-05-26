@@ -103,15 +103,17 @@
         <div class="lg:col-span-2 space-y-6">
           <!-- Main Info -->
           <div class="bg-white p-6 rounded-lg shadow-sm">
-            <h3 class="text-lg font-semibold text-gray-800 mb-6 border-b pb-4">Основная информация</h3>
-            <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 text-sm">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-4">Основная информация</h3>
+
+            <h4 class="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">Компания</h4>
+            <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm mb-6">
               <div class="col-span-2">
                 <dt class="font-medium text-gray-500">Полное юридическое наименование</dt>
                 <dd class="mt-1 text-gray-900 font-semibold">{{ request.company.legalName || request.companyName }}</dd>
               </div>
               <div>
                 <dt class="font-medium text-gray-500">Форма собственности</dt>
-                <dd class="mt-1 text-gray-900">{{ request.company.legalForm || '-' }}</dd>
+                <dd class="mt-1 text-gray-900">{{ getLegalFormLabel(request.company.legalForm) }}</dd>
               </div>
               <div>
                 <dt class="font-medium text-gray-500">УНП</dt>
@@ -135,11 +137,49 @@
                           'bg-red-100 text-red-800': request.company.status === 'REJECTED',
                           'bg-gray-100 text-gray-800': request.company.status === 'BLOCKED'
                         }">
-                    {{ request.company.status || '-' }}
+                    {{ getCompanyStatusLabel(request.company.status) }}
                   </span>
                 </dd>
               </div>
             </dl>
+
+            <!-- Реквизиты (Поставщик) -->
+            <div *ngIf="request.role === 'SUPPLIER'">
+              <h4 class="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">Реквизиты</h4>
+              <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                <div>
+                  <dt class="font-medium text-gray-500">Банк</dt>
+                  <dd class="mt-1 text-gray-900">{{ request.requisites?.bankName || '—' }}</dd>
+                </div>
+                <div>
+                  <dt class="font-medium text-gray-500">БИК</dt>
+                  <dd class="mt-1 text-gray-900">{{ request.requisites?.bic || '—' }}</dd>
+                </div>
+                <div>
+                  <dt class="font-medium text-gray-500">Расчётный счёт</dt>
+                  <dd class="mt-1 text-gray-900">{{ request.requisites?.accountNumber || '—' }}</dd>
+                </div>
+                <div>
+                  <dt class="font-medium text-gray-500">Директор</dt>
+                  <dd class="mt-1 text-gray-900">{{ request.requisites?.directorName || '—' }}</dd>
+                </div>
+                <div>
+                  <dt class="font-medium text-gray-500">Главный бухгалтер</dt>
+                  <dd class="mt-1 text-gray-900">{{ request.requisites?.chiefAccountantName || '—' }}</dd>
+                </div>
+              </dl>
+            </div>
+
+            <!-- Адреса (Торговая сеть) -->
+            <div *ngIf="request.role === 'RETAIL_CHAIN'">
+              <h4 class="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">Адреса</h4>
+              <ul *ngIf="((request.addresses || {}) | keyvalue).length" class="space-y-2 text-sm">
+                <li *ngFor="let addr of (request.addresses || {}) | keyvalue" class="text-gray-900">
+                  <span class="text-xs uppercase text-gray-400 mr-2">{{ getAddressTypeLabel(addr.key) }}</span>{{ addr.value }}
+                </li>
+              </ul>
+              <p *ngIf="!((request.addresses || {}) | keyvalue).length" class="text-sm text-gray-500">Адреса не указаны</p>
+            </div>
           </div>
         </div>
 

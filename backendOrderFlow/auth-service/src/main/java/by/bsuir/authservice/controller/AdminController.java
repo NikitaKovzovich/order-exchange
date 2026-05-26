@@ -37,6 +37,7 @@ public class AdminController {
 	private final EventRepository eventRepository;
 	private final FileStorageService fileStorageService;
 	private final NotificationService notificationService;
+	private final EmailService emailService;
 	private final OrderServiceClient orderServiceClient;
 	private final ChatServiceClient chatServiceClient;
 
@@ -372,6 +373,10 @@ public class AdminController {
 				Notification.NotificationType.USER_BLOCKED,
 				"User", id);
 
+		if (user.getEmail() != null) {
+			emailService.sendUserBlockedEmail(user.getEmail(), "нарушение правил платформы");
+		}
+
 		return ResponseEntity.ok(Map.of("message", "User blocked"));
 	}
 
@@ -402,6 +407,10 @@ public class AdminController {
 				"Ваш аккаунт был разблокирован. Вы снова можете пользоваться платформой.",
 				Notification.NotificationType.USER_UNBLOCKED,
 				"User", id);
+
+		if (user.getEmail() != null) {
+			emailService.sendUserUnblockedEmail(user.getEmail());
+		}
 
 		return ResponseEntity.ok(Map.of("message", "User unblocked"));
 	}

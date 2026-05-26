@@ -1,7 +1,11 @@
 import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { forkJoin } from 'rxjs';
 import { AnalyticsService, SupplierAnalyticsResponse } from '../../services/analytics.service';
 import { AnalyticsPeriod } from '../../models/api.models';
+import { CatalogService } from '../../services/catalog.service';
+import { AuthService } from '../../services/auth.service';
 
 type ChartModule = typeof import('chart.js/auto');
 type ChartInstance = { destroy(): void };
@@ -26,12 +30,98 @@ export class Analytics implements OnInit, AfterViewInit, OnDestroy {
 
   analytics: SupplierAnalyticsResponse | null = null;
   isLoading: boolean = false;
+  isGeneratingReport: boolean = false;
+  reportError: string = '';
 
   private salesChartInstance?: ChartInstance;
   private topProductsChartInstance?: ChartInstance;
   private chartModulePromise?: Promise<ChartModule>;
 
-  constructor(private analyticsService: AnalyticsService) {}
+  constructor(
+    private analyticsService: AnalyticsService,
+    private catalogService: CatalogService,
+    private authService: AuthService,
+    private http: HttpClient
+  ) {}
+
+  get funnelStages(): Array<{ label: string; value: number }> {
+    const f = this.analytics?.funnel;
+    if (!f) {
+      return [];
+    }
+    return [
+      { label: 'Ожидает подтверждения', value: f.pendingConfirmation },
+      { label: 'Отклонён', value: f.rejected },
+      { label: 'Ожидает оплаты', value: f.awaitingPayment },
+      { label: 'Ожидает проверки оплаты', value: f.pendingPaymentVerification },
+      { label: 'Проблема с оплатой', value: f.paymentProblem },
+      { label: 'Ожидает отгрузки', value: f.awaitingShipment },
+      { label: 'В пути', value: f.shipped },
+      { label: 'Ожидает корректировки', value: f.awaitingCorrection },
+      { label: 'Доставлен', value: f.delivered },
+      { label: 'Закрыт', value: f.closed }
+    ];
+  }
+
+  funnelStageWidth(index: number, total: number): number {
+    if (total <= 1) {
+      return 100;
+    }
+    return Math.max(40, 100 - (index * (60 / (total - 1))));
+  }
+
+  downloadCriticalStockReport() {
+    const companyId = this.authService.getCompanyId();
+    if (!companyId) {
+      this.reportError = 'Не удалось определить текущую компанию.';
+      return;
+    }
+
+    this.isGeneratingReport = true;
+    this.reportError = '';
+
+    forkJoin({
+      profile: this.authService.getCompanyProfile(companyId),
+      lowStock: this.catalogService.getLowStockProducts(10)
+    }).subscribe({
+      next: ({ profile, lowStock }) => {
+        const items = lowStock.map(inv => ({
+          sku: inv.sku,
+          name: inv.productName,
+          currentStock: inv.quantityAvailable,
+          minThreshold: 10,
+          deficit: Math.max(0, 10 - inv.quantityAvailable)
+        }));
+
+        const payload = {
+          supplierName: profile.legalName || profile.name || 'Поставщик',
+          items
+        };
+
+        this.http.post('/api/documents/reports/critical-stock', payload, { responseType: 'blob' }).subscribe({
+          next: blob => {
+            const url = window.URL.createObjectURL(blob);
+            const anchor = window.document.createElement('a');
+            anchor.href = url;
+            anchor.download = 'critical-stock-report.pdf';
+            anchor.click();
+            window.URL.revokeObjectURL(url);
+            this.isGeneratingReport = false;
+          },
+          error: error => {
+            console.error('Failed to download critical stock report:', error);
+            this.reportError = 'Не удалось сформировать отчёт.';
+            this.isGeneratingReport = false;
+          }
+        });
+      },
+      error: error => {
+        console.error('Failed to prepare critical stock report:', error);
+        this.reportError = 'Не удалось подготовить данные для отчёта.';
+        this.isGeneratingReport = false;
+      }
+    });
+  }
 
   ngOnInit() {
     this.loadAnalytics();

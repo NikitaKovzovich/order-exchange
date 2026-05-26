@@ -225,11 +225,13 @@
               <div>
                 <label class="block text-gray-700 font-medium mb-2">Логотип компании</label>
                 <input type="file" accept="image/png,image/jpeg,image/jpg" (change)="onFileSelect($event, 'logo')" name="logo" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+                <p *ngIf="errors['logo']" class="mt-1 text-sm text-red-600">{{ errors['logo'] }}</p>
                 <p *ngIf="fileNames.logo" class="mt-1 text-xs text-green-600">✓ Выбран: {{ fileNames.logo }}</p>
               </div>
               <div>
                 <label class="block text-gray-700 font-medium mb-2">Скан-копия свидетельства о регистрации</label>
                 <input type="file" accept="application/pdf,image/jpeg,image/jpg" (change)="onFileSelect($event, 'registrationCert')" name="registrationCert" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+                <p *ngIf="errors['registrationCert']" class="mt-1 text-sm text-red-600">{{ errors['registrationCert'] }}</p>
                 <p *ngIf="fileNames.registrationCert" class="mt-1 text-xs text-green-600">✓ Выбран: {{ fileNames.registrationCert }}</p>
               </div>
             </div>

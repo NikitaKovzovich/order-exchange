@@ -6,6 +6,7 @@ import {
   CompanyProfile,
   LoginRequest,
   LoginResponse,
+  ProfileUpdateRequest,
   UserProfile,
   UserRole
 } from '../models/api.models';
@@ -74,6 +75,15 @@ export class AuthService {
     return this.authApi.getCompanyProfile(companyId).pipe(
       catchError(error => {
         console.error('Get company profile error:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  updateProfile(request: ProfileUpdateRequest): Observable<{ message: string }> {
+    return this.authApi.updateProfile(request).pipe(
+      catchError(error => {
+        console.error('Update profile error:', error);
         return throwError(() => error);
       })
     );

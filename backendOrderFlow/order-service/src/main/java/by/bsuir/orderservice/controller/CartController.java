@@ -93,4 +93,16 @@ public class CartController {
 		CheckoutResponse response = cartService.checkout(customerId, request);
 		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
 	}
+
+	@PostMapping("/checkout/{supplierId}")
+	@Operation(summary = "Оформить заказ одному поставщику",
+			description = "Создает заказ только для указанного поставщика, остальные товары остаются в корзине")
+	public ResponseEntity<ApiResponse<CheckoutResponse>> checkoutSupplier(
+			@RequestHeader("X-User-Company-Id") Long customerId,
+			@PathVariable Long supplierId,
+			@Valid @RequestBody CheckoutRequest request) {
+
+		CheckoutResponse response = cartService.checkoutSupplier(customerId, supplierId, request);
+		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
+	}
 }

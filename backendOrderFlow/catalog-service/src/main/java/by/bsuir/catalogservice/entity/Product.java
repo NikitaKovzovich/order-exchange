@@ -93,7 +93,8 @@ public class Product {
 	public enum ProductStatus {
 		DRAFT,
 		PUBLISHED,
-		ARCHIVED
+		ARCHIVED,
+		HIDDEN
 	}
 
 
@@ -124,6 +125,16 @@ public class Product {
 
 	public void archive() {
 		this.status = ProductStatus.ARCHIVED;
+	}
+
+
+
+
+	public void hide() {
+		if (status == ProductStatus.ARCHIVED) {
+			throw new IllegalStateException("Cannot hide archived product");
+		}
+		this.status = ProductStatus.HIDDEN;
 	}
 
 

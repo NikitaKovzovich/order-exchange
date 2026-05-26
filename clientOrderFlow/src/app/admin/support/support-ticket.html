@@ -14,6 +14,15 @@
       </div>
     </div>
 
+    <div class="mb-4">
+      <a routerLink="/admin/support" class="inline-flex items-center text-sm text-indigo-600 hover:text-indigo-800">
+        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+        </svg>
+        Назад
+      </a>
+    </div>
+
     <div *ngIf="isLoading" class="rounded-lg bg-white p-8 text-center text-gray-500 shadow-sm mb-6">
       Загрузка обращения...
     </div>
@@ -23,7 +32,7 @@
         <div>
           <h2 class="text-2xl font-bold text-gray-800">Тема: {{ ticket.subject }}</h2>
           <div class="mt-2 text-sm text-gray-500">
-            <span>Пользователь ID: <span class="font-semibold text-indigo-600">{{ ticket.userId }}</span></span>
+            <span>Пользователь: <span class="font-semibold text-indigo-600">{{ ticket.requesterCompanyName || ('Компания #' + ticket.companyId) }}</span></span>
             <span class="mx-2">|</span>
             <span>Дата: {{ formatDateTime(ticket.createdAt) }}</span>
           </div>
@@ -36,7 +45,6 @@
             </span>
           </div>
           <div class="flex flex-wrap gap-2 justify-end">
-            <button *ngIf="!ticket.assignedAdminId && ticket.status === 'OPEN'" (click)="assignTicket()" [disabled]="isProcessing" class="rounded-md bg-indigo-600 px-3 py-2 text-sm text-white hover:bg-indigo-700 disabled:opacity-50">Назначить</button>
             <button *ngIf="ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS' || ticket.status === 'WAITING_USER'" (click)="resolveTicket()" [disabled]="isProcessing" class="rounded-md bg-green-600 px-3 py-2 text-sm text-white hover:bg-green-700 disabled:opacity-50">Решить</button>
             <button *ngIf="ticket.status !== 'CLOSED'" (click)="closeTicket()" [disabled]="isProcessing" class="rounded-md bg-gray-700 px-3 py-2 text-sm text-white hover:bg-gray-800 disabled:opacity-50">Закрыть</button>
             <button *ngIf="ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'" (click)="reopenTicket()" [disabled]="isProcessing" class="rounded-md bg-yellow-500 px-3 py-2 text-sm text-white hover:bg-yellow-600 disabled:opacity-50">Переоткрыть</button>

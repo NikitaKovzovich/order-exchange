@@ -1,5 +1,6 @@
 import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AnalyticsService } from '../../services/analytics.service';
 import { Order } from '../../models/api.models';
@@ -9,7 +10,7 @@ type ChartInstance = { destroy(): void };
 
 @Component({
   selector: 'app-retail-dashboard',
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css'
 })
@@ -23,6 +24,14 @@ export class Dashboard implements OnInit, AfterViewInit {
     activeSuppliers: 0,
     avgOrderAmount: '0'
   };
+
+  expensesPeriod: string = 'week';
+  periods: { value: string; label: string }[] = [
+    { value: 'week', label: 'Неделя' },
+    { value: 'month', label: 'Месяц' },
+    { value: 'quarter', label: 'Квартал' },
+    { value: 'year', label: 'Год' }
+  ];
 
   recentOrders: Array<{ id: string; supplier: string; amount: string; status: string; statusLabel: string }> = [];
   expensesDynamics: Array<{ date: string; expenses: number }> = [];
@@ -109,8 +118,13 @@ export class Dashboard implements OnInit, AfterViewInit {
     return classes[status] || 'text-gray-600 bg-gray-200';
   }
 
+  onExpensesPeriodChange(period: string): void {
+    this.expensesPeriod = period;
+    this.loadDashboard();
+  }
+
   private loadDashboard(): void {
-    this.analyticsService.getCustomerDashboard().subscribe({
+    this.analyticsService.getCustomerDashboard(this.expensesPeriod).subscribe({
       next: dashboard => {
         this.stats = {
           totalExpenses: Number(dashboard.expensesThisMonth || 0).toLocaleString('ru-RU'),
@@ -127,8 +141,11 @@ export class Dashboard implements OnInit, AfterViewInit {
           statusLabel: order.statusName
         }));
 
-        this.expenseStructure = (dashboard.expenseStructure?.byCategory || []).map((item: { categoryName?: string; amount: number }) => ({
-          label: item.categoryName || 'Без категории',
+        const structureSource = (dashboard.expenseStructure?.byCategory?.length
+          ? dashboard.expenseStructure.byCategory
+          : dashboard.expenseStructure?.bySupplier) || [];
+        this.expenseStructure = structureSource.map((item: { categoryName?: string; supplierName?: string; amount: number }) => ({
+          label: item.categoryName || item.supplierName || 'Без категории',
           value: Number(item.amount || 0)
         }));
 

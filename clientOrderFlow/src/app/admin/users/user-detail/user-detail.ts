@@ -182,6 +182,24 @@ export class UserDetail implements OnInit {
     return this.user.role === 'SUPPLIER' ? 'Поставщик' : this.user.role === 'RETAIL_CHAIN' ? 'Торговая сеть' : this.user.role;
   }
 
+  get isSupplier(): boolean {
+    return this.user?.role === 'SUPPLIER';
+  }
+
+  get isRetail(): boolean {
+    return this.user?.role === 'RETAIL_CHAIN';
+  }
+
+  get partnerCountTitle(): string {
+    return this.isSupplier ? 'Кол-во клиентов:' : 'Кол-во поставщиков:';
+  }
+
+  get partnerCount(): string {
+    const stats = this.user?.orderStats as Record<string, unknown> | undefined;
+    const value = stats?.['partnerCount'] ?? stats?.['uniquePartners'] ?? stats?.['clientCount'] ?? stats?.['supplierCount'];
+    return value != null ? String(value) : '—';
+  }
+
   get roleClass(): string {
     if (this.user?.role === 'RETAIL_CHAIN') {
       return 'bg-blue-100 text-blue-800';
@@ -194,6 +212,17 @@ export class UserDetail implements OnInit {
     return 'bg-gray-100 text-gray-800';
   }
 
+  getPaymentTermsLabel(value?: string | null): string {
+    switch ((value || '').toUpperCase()) {
+      case 'PREPAYMENT': return 'Предоплата';
+      case 'POSTPAYMENT': return 'Постоплата';
+      case 'PARTIAL_PREPAYMENT': return 'Частичная предоплата';
+      case 'CREDIT': return 'Кредит';
+      case 'CASH_ON_DELIVERY': return 'Оплата при получении';
+      default: return value || '—';
+    }
+  }
+
   get statusLabel(): string {
     switch (this.user?.status) {
       case 'ACTIVE':
@@ -202,6 +231,12 @@ export class UserDetail implements OnInit {
         return 'Заблокирован';
       case 'DELETED':
         return 'Удалён';
+      case 'PENDING_VERIFICATION':
+        return 'Ожидает проверки';
+      case 'REJECTED':
+        return 'Отклонён';
+      case 'SUSPENDED':
+        return 'Приостановлен';
       default:
         return this.user?.status || '—';
     }
@@ -215,6 +250,12 @@ export class UserDetail implements OnInit {
         return 'bg-red-100 text-red-800';
       case 'DELETED':
         return 'bg-gray-200 text-gray-800';
+      case 'PENDING_VERIFICATION':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'REJECTED':
+        return 'bg-red-100 text-red-800';
+      case 'SUSPENDED':
+        return 'bg-orange-100 text-orange-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }

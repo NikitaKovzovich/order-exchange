@@ -161,9 +161,13 @@ public class VerificationController {
 		});
 		response.put("requisites", requisites);
 		List<Map<String, Object>> documents = new ArrayList<>();
+		java.util.Set<String> seenKeys = new java.util.HashSet<>();
 
 		List<CompanyDocument> companyDocs = companyDocumentRepository.findByCompanyId(companyId);
 		for (CompanyDocument doc : companyDocs) {
+			if (doc.getFilePath() != null && !seenKeys.add(doc.getFilePath())) {
+				continue;
+			}
 			Map<String, Object> d = new LinkedHashMap<>();
 			d.put("id", doc.getId());
 			d.put("type", doc.getDocumentType().name());
@@ -175,6 +179,9 @@ public class VerificationController {
 		List<VerificationDocument> verDocs = request.getDocuments();
 		if (verDocs != null) {
 			for (VerificationDocument doc : verDocs) {
+				if (doc.getDocumentPath() != null && !seenKeys.add(doc.getDocumentPath())) {
+					continue;
+				}
 				Map<String, Object> d = new LinkedHashMap<>();
 				d.put("id", doc.getId());
 				d.put("type", doc.getDocumentType());

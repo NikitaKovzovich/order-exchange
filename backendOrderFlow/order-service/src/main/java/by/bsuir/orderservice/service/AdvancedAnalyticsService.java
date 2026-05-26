@@ -441,13 +441,17 @@ public class AdvancedAnalyticsService {
 
 
 	public SupplierDashboardResponse getSupplierDashboard(Long supplierId) {
+		return getSupplierDashboard(supplierId, "week");
+	}
+
+	public SupplierDashboardResponse getSupplierDashboard(Long supplierId, String period) {
 		List<Order> allOrders = orderRepository.findAllBySupplierId(supplierId);
-		LocalDateTime weekAgo = getStartDate("week");
+		LocalDateTime dynamicsStart = getStartDate(period);
 		LocalDateTime monthAgo = getStartDate("month");
 		LocalDateTime todayStart = LocalDate.now().atStartOfDay();
 
 		List<Order> monthOrders = filterByPeriod(allOrders, monthAgo);
-		List<Order> weekOrders = filterByPeriod(allOrders, weekAgo);
+		List<Order> weekOrders = filterByPeriod(allOrders, dynamicsStart);
 
 
 		BigDecimal revenueThisMonth = monthOrders.stream()
@@ -475,12 +479,18 @@ public class AdvancedAnalyticsService {
 				.count();
 
 
-		long pendingCount = allOrders.stream()
+		List<Order> pendingOrders = allOrders.stream()
 				.filter(o -> OrderStatus.Codes.PENDING_CONFIRMATION.equals(o.getStatus().getCode()))
-				.count();
+				.sorted(Comparator.comparing(Order::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+				.toList();
+		long pendingCount = pendingOrders.size();
+
+		List<OrderResponse> pendingOrderResponses = pendingOrders.stream()
+				.map(this::mapToSummaryResponse)
+				.toList();
 
 
-		List<SupplierAnalyticsResponse.DailyStats> salesDynamics = calculateSalesDynamics(weekOrders, weekAgo);
+		List<SupplierAnalyticsResponse.DailyStats> salesDynamics = calculateSalesDynamics(weekOrders, dynamicsStart);
 
 		return new SupplierDashboardResponse(
 				revenueThisMonth,
@@ -488,8 +498,35 @@ public class AdvancedAnalyticsService {
 				averageCheck,
 				ordersInTransit,
 				pendingCount,
-				List.of(),
+				pendingOrderResponses,
 				salesDynamics
+		);
+	}
+
+	private OrderResponse mapToSummaryResponse(Order order) {
+		return new OrderResponse(
+				order.getId(),
+				order.getOrderNumber(),
+				order.getSupplierId(),
+				authServiceClient.getCompanyName(order.getSupplierId()),
+				order.getCustomerId(),
+				authServiceClient.getCompanyName(order.getCustomerId()),
+				order.getStatus().getCode(),
+				OrderStatus.getDisplayName(order.getStatus().getCode()),
+				order.getDeliveryAddress(),
+				order.getDesiredDeliveryDate(),
+				order.getTotalAmount(),
+				order.getVatAmount(),
+				order.getContractNumber(),
+				order.getContractDate(),
+				order.getContractEndDate(),
+				order.getTtnGenerated(),
+				List.of(),
+				List.of(),
+				List.of(),
+				List.of(),
+				order.getCreatedAt(),
+				order.getUpdatedAt()
 		);
 	}
 
@@ -497,12 +534,16 @@ public class AdvancedAnalyticsService {
 
 
 	public CustomerDashboardResponse getCustomerDashboard(Long customerId) {
+		return getCustomerDashboard(customerId, "week");
+	}
+
+	public CustomerDashboardResponse getCustomerDashboard(Long customerId, String period) {
 		List<Order> allOrders = orderRepository.findAllByCustomerId(customerId);
-		LocalDateTime weekAgo = getStartDate("week");
+		LocalDateTime dynamicsStart = getStartDate(period);
 		LocalDateTime monthAgo = getStartDate("month");
 
 		List<Order> monthOrders = filterByPeriod(allOrders, monthAgo);
-		List<Order> weekOrders = filterByPeriod(allOrders, weekAgo);
+		List<Order> weekOrders = filterByPeriod(allOrders, dynamicsStart);
 
 
 		BigDecimal expensesThisMonth = monthOrders.stream()
@@ -531,14 +572,20 @@ public class AdvancedAnalyticsService {
 
 
 		ExpenseStructure expenseStructure = calculateExpenseStructure(monthOrders);
-		List<DailyExpenses> expensesDynamics = calculateExpensesDynamics(weekOrders, weekAgo);
+		List<DailyExpenses> expensesDynamics = calculateExpensesDynamics(weekOrders, dynamicsStart);
+
+		List<OrderResponse> recentOrders = allOrders.stream()
+				.sorted(Comparator.comparing(Order::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+				.limit(5)
+				.map(this::mapToSummaryResponse)
+				.toList();
 
 		return new CustomerDashboardResponse(
 				expensesThisMonth,
 				orderCount,
 				activeContracts,
 				averageCheck,
-				List.of(),
+				recentOrders,
 				expenseStructure,
 				expensesDynamics
 		);

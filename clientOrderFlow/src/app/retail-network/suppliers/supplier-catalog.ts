@@ -16,6 +16,7 @@ import { Category, Product } from '../../models/api.models';
 export class SupplierCatalog implements OnInit {
   supplierId: number = 0;
   supplierName: string = '';
+  contractNumber: string = '';
 
   searchQuery: string = '';
   selectedCategoryId: string = '';
@@ -51,6 +52,7 @@ export class SupplierCatalog implements OnInit {
       this.supplierId = Number(params['id']);
       this.currentPage = 0;
       this.loadSupplierName();
+      this.loadContract();
       this.loadProducts();
     });
   }
@@ -220,6 +222,16 @@ export class SupplierCatalog implements OnInit {
         }
       },
       error: error => console.error('Error loading supplier name:', error)
+    });
+  }
+
+  private loadContract(): void {
+    this.partnershipService.getCustomerPartnerships().subscribe({
+      next: partnerships => {
+        const partnership = partnerships.find(item => item.supplierId === this.supplierId);
+        this.contractNumber = partnership?.contractNumber || '';
+      },
+      error: error => console.error('Error loading contract number:', error)
     });
   }
 

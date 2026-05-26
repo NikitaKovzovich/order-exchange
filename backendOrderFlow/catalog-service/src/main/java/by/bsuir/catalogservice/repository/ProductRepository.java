@@ -26,6 +26,19 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 			@Param("search") String search,
 			Pageable pageable);
 
+	@Query("SELECT p FROM Product p WHERE p.supplierId = :supplierId " +
+		"AND (:status IS NULL OR p.status = :status) " +
+		"AND (:categoryId IS NULL OR p.category.id = :categoryId) " +
+		"AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')) " +
+		"OR LOWER(COALESCE(p.description, '')) LIKE LOWER(CONCAT('%', :search, '%')) " +
+		"OR LOWER(p.sku) LIKE LOWER(CONCAT('%', :search, '%')))")
+	Page<Product> filterSupplierProducts(
+			@Param("supplierId") Long supplierId,
+			@Param("status") Product.ProductStatus status,
+			@Param("categoryId") Long categoryId,
+			@Param("search") String search,
+			Pageable pageable);
+
 	List<Product> findBySupplierIdAndStatus(Long supplierId, Product.ProductStatus status);
 	Page<Product> findByStatus(Product.ProductStatus status, Pageable pageable);
 

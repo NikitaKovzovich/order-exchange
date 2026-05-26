@@ -119,6 +119,12 @@ export class Users implements OnInit {
         return 'Заблокирован';
       case 'DELETED':
         return 'Удалён';
+      case 'PENDING_VERIFICATION':
+        return 'Ожидает проверки';
+      case 'REJECTED':
+        return 'Отклонён';
+      case 'SUSPENDED':
+        return 'Приостановлен';
       default:
         return status || '—';
     }
@@ -132,6 +138,12 @@ export class Users implements OnInit {
         return 'bg-red-100 text-red-800';
       case 'DELETED':
         return 'bg-gray-200 text-gray-800';
+      case 'PENDING_VERIFICATION':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'REJECTED':
+        return 'bg-red-100 text-red-800';
+      case 'SUSPENDED':
+        return 'bg-orange-100 text-orange-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }

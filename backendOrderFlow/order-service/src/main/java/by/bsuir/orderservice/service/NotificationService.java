@@ -77,6 +77,45 @@ public class NotificationService {
 
 
 
+	@Transactional
+	public void createChatNotification(Long recipientId, Long orderId, String orderNumber) {
+		if (recipientId == null) {
+			return;
+		}
+		Notification notification = Notification.builder()
+				.recipientId(recipientId)
+				.type(NotificationType.CHAT_MESSAGE)
+				.title("Новое сообщение в чате")
+				.message("Новое сообщение по заказу №" + (orderNumber != null ? orderNumber : orderId))
+				.orderId(orderId)
+				.orderNumber(orderNumber)
+				.createdAt(LocalDateTime.now())
+				.build();
+		notificationRepository.save(notification);
+	}
+
+	@Transactional
+	public void createPartnershipNotification(Long recipientId, String typeName, String title, String message) {
+		if (recipientId == null) {
+			return;
+		}
+		NotificationType type;
+		try {
+			type = NotificationType.valueOf(typeName);
+		} catch (IllegalArgumentException | NullPointerException e) {
+			type = NotificationType.PARTNERSHIP_REQUEST;
+		}
+		Notification notification = Notification.builder()
+				.recipientId(recipientId)
+				.type(type)
+				.title(title)
+				.message(message)
+				.createdAt(LocalDateTime.now())
+				.build();
+		notificationRepository.save(notification);
+		log.debug("Partnership notification created: type={}, recipient={}", type, recipientId);
+	}
+
 	private void createNotification(Long recipientId, NotificationType type, String title, String message,
 			Long orderId, String orderNumber) {
 		try {

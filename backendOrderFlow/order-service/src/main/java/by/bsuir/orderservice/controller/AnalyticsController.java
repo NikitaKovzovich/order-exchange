@@ -70,8 +70,9 @@ public class AnalyticsController {
 	@Operation(summary = "Aggregated supplier dashboard (ТЗ стр. 2)",
 			description = "Returns all data for supplier home page in a single request")
 	public ResponseEntity<ApiResponse<SupplierDashboardResponse>> getSupplierDashboard(
-			@RequestHeader("X-User-Company-Id") @Parameter(hidden = true) Long supplierId) {
-		SupplierDashboardResponse dashboard = advancedAnalyticsService.getSupplierDashboard(supplierId);
+			@RequestHeader("X-User-Company-Id") @Parameter(hidden = true) Long supplierId,
+			@RequestParam(defaultValue = "week") String period) {
+		SupplierDashboardResponse dashboard = advancedAnalyticsService.getSupplierDashboard(supplierId, period);
 		return ResponseEntity.ok(ApiResponse.success(dashboard));
 	}
 
@@ -79,8 +80,9 @@ public class AnalyticsController {
 	@Operation(summary = "Aggregated customer dashboard (ТЗ стр. 19)",
 			description = "Returns all data for retail chain home page in a single request")
 	public ResponseEntity<ApiResponse<CustomerDashboardResponse>> getCustomerDashboard(
-			@RequestHeader("X-User-Company-Id") @Parameter(hidden = true) Long customerId) {
-		CustomerDashboardResponse dashboard = advancedAnalyticsService.getCustomerDashboard(customerId);
+			@RequestHeader("X-User-Company-Id") @Parameter(hidden = true) Long customerId,
+			@RequestParam(defaultValue = "week") String period) {
+		CustomerDashboardResponse dashboard = advancedAnalyticsService.getCustomerDashboard(customerId, period);
 		return ResponseEntity.ok(ApiResponse.success(dashboard));
 	}
 }

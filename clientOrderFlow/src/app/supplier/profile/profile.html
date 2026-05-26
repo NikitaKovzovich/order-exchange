@@ -1,0 +1,97 @@
+<div class="max-w-4xl mx-auto">
+  <div *ngIf="notification" class="mb-4 rounded-lg border px-4 py-3" [ngClass]="{
+    'border-green-200 bg-green-50 text-green-800': notification.type === 'success',
+    'border-red-200 bg-red-50 text-red-800': notification.type === 'error'
+  }">
+    <div class="flex items-start justify-between gap-4">
+      <p class="text-sm font-medium">{{ notification.message }}</p>
+      <button type="button" class="text-current opacity-70 hover:opacity-100" (click)="notification = null">✕</button>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">Профиль компании</h2>
+    <div class="flex gap-2">
+      <button *ngIf="!editMode && profile" (click)="startEdit()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Редактировать данные</button>
+      <button *ngIf="editMode" (click)="cancelEdit()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Отмена</button>
+      <button *ngIf="editMode" (click)="save()" [disabled]="isSaving" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">{{ isSaving ? 'Сохранение…' : 'Сохранить' }}</button>
+    </div>
+  </div>
+
+  <div *ngIf="isLoading" class="bg-white p-8 rounded-lg shadow-sm text-center text-gray-500">Загрузка профиля...</div>
+
+  <div *ngIf="profile && !isLoading" class="space-y-6">
+    <!-- Блок: Компания -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <h3 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Компания</h3>
+      <dl class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div>
+          <dt class="text-gray-500">Наименование</dt>
+          <dd *ngIf="!editMode" class="font-medium text-gray-900">{{ profile.legalName }}</dd>
+          <input *ngIf="editMode" type="text" [(ngModel)]="editForm.name" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md">
+        </div>
+        <div>
+          <dt class="text-gray-500">Форма собственности</dt>
+          <dd class="font-medium text-gray-900">{{ getLegalFormLabel(profile.legalForm) }}</dd>
+        </div>
+        <div>
+          <dt class="text-gray-500">УНП</dt>
+          <dd class="font-medium text-gray-900">{{ profile.taxId }}</dd>
+        </div>
+        <div>
+          <dt class="text-gray-500">Дата регистрации</dt>
+          <dd class="font-medium text-gray-900">{{ formatDate(profile.registrationDate) }}</dd>
+        </div>
+        <div>
+          <dt class="text-gray-500">Контактный телефон</dt>
+          <dd *ngIf="!editMode" class="font-medium text-gray-900">{{ profile.contactPhone || '—' }}</dd>
+          <input *ngIf="editMode" type="text" [(ngModel)]="editForm.contactPhone" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md">
+        </div>
+      </dl>
+    </div>
+
+    <!-- Блок: Реквизиты -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <h3 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Реквизиты</h3>
+      <dl class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div>
+          <dt class="text-gray-500">Банк</dt>
+          <dd *ngIf="!editMode" class="font-medium text-gray-900">{{ profile.bankName || '—' }}</dd>
+          <input *ngIf="editMode" type="text" [(ngModel)]="editForm.bankName" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md">
+        </div>
+        <div>
+          <dt class="text-gray-500">БИК</dt>
+          <dd *ngIf="!editMode" class="font-medium text-gray-900">{{ profile.bic || '—' }}</dd>
+          <input *ngIf="editMode" type="text" [(ngModel)]="editForm.bic" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md">
+        </div>
+        <div>
+          <dt class="text-gray-500">Расчётный счёт (IBAN)</dt>
+          <dd *ngIf="!editMode" class="font-medium text-gray-900">{{ profile.accountNumber || '—' }}</dd>
+          <input *ngIf="editMode" type="text" [(ngModel)]="editForm.accountNumber" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md">
+        </div>
+        <div>
+          <dt class="text-gray-500">Руководитель</dt>
+          <dd *ngIf="!editMode" class="font-medium text-gray-900">{{ profile.directorName || '—' }}</dd>
+          <input *ngIf="editMode" type="text" [(ngModel)]="editForm.directorName" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md">
+        </div>
+        <div>
+          <dt class="text-gray-500">Главный бухгалтер</dt>
+          <dd *ngIf="!editMode" class="font-medium text-gray-900">{{ profile.chiefAccountantName || '—' }}</dd>
+          <input *ngIf="editMode" type="text" [(ngModel)]="editForm.chiefAccountantName" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md">
+        </div>
+      </dl>
+    </div>
+
+    <!-- Блок: Документы (не редактируется) -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <h3 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Документы</h3>
+      <ul *ngIf="profile.documents && profile.documents.length > 0" class="divide-y divide-gray-100">
+        <li *ngFor="let doc of profile.documents" class="flex items-center justify-between py-2">
+          <span class="text-sm text-gray-700">{{ doc.originalFilename }}</span>
+          <a [href]="doc.downloadUrl" target="_blank" class="text-sm text-indigo-600 hover:underline">Открыть</a>
+        </li>
+      </ul>
+      <p *ngIf="!profile.documents || profile.documents.length === 0" class="text-sm text-gray-500">Документы не приложены</p>
+    </div>
+  </div>
+</div>

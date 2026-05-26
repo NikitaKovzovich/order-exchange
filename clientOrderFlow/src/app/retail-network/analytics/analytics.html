@@ -26,6 +26,62 @@
   </div>
 
   <div *ngIf="analytics && !isLoading" class="space-y-6">
+    <section class="rounded-lg bg-white p-4 shadow-sm">
+      <div class="flex flex-wrap items-center gap-3">
+        <button (click)="downloadSupplierSummary()" [disabled]="isGeneratingSupplierSummary"
+                class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg">
+          <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          {{ isGeneratingSupplierSummary ? 'Формируется…' : 'Сводка по поставщикам (PDF)' }}
+        </button>
+
+        <div class="flex items-center gap-2 ml-auto">
+          <label class="text-sm text-gray-600 whitespace-nowrap">История по товару:</label>
+          <select [(ngModel)]="selectedProductId" class="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[14rem]">
+            <option [ngValue]="null">— выберите товар —</option>
+            <option *ngFor="let product of analytics.productHistory" [ngValue]="product.productId">
+              {{ product.productName }}
+            </option>
+          </select>
+          <button (click)="downloadProductHistory()" [disabled]="isGeneratingProductHistory || selectedProductId == null"
+                  class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg whitespace-nowrap">
+            {{ isGeneratingProductHistory ? 'Формируется…' : 'История закупок (PDF)' }}
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="reportError" class="mt-3 rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+        {{ reportError }}
+      </div>
+
+      <div *ngIf="selectedProductHistory" class="mt-4 overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr class="text-left text-xs uppercase text-gray-500 border-b">
+              <th class="py-2 pr-4">Дата</th>
+              <th class="py-2 pr-4">Поставщик</th>
+              <th class="py-2 px-3 text-right">Кол-во</th>
+              <th class="py-2 px-3 text-right">Цена за ед.</th>
+              <th class="py-2 pl-3 text-right">Сумма</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of selectedProductHistory.purchases" class="border-b last:border-0">
+              <td class="py-2 pr-4">{{ formatDate(p.date) }}</td>
+              <td class="py-2 pr-4">{{ p.supplierName }}</td>
+              <td class="py-2 px-3 text-right">{{ p.quantity }}</td>
+              <td class="py-2 px-3 text-right">{{ formatCurrency(p.unitPrice) }} BYN</td>
+              <td class="py-2 pl-3 text-right font-semibold">{{ formatCurrency(p.totalPrice) }} BYN</td>
+            </tr>
+            <tr *ngIf="selectedProductHistory.purchases.length === 0">
+              <td colspan="5" class="py-4 text-center text-gray-500">Закупок за выбранный период не было</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
       <div class="rounded-lg bg-white p-5 shadow-sm">
         <p class="text-sm text-gray-500">Общие расходы</p>

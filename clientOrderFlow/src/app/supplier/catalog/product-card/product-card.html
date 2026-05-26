@@ -1,26 +1,6 @@
-<div class="flex h-screen bg-gray-100">
-  <div class="flex-1 flex flex-col overflow-hidden">
-    <header class="bg-white shadow-sm h-16 flex justify-between items-center px-6">
-      <h1 class="text-xl font-semibold text-gray-800">Карточка товара</h1>
-      <div class="flex items-center">
-        <div class="relative mr-4">
-          <button class="p-2 bg-gray-100 rounded-full hover:bg-gray-200">
-            <svg class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-            </svg>
-          </button>
-        </div>
-        <div class="flex items-center">
-          <img class="h-10 w-10 rounded-full" src="https://placehold.co/100x100/E2E8F0/4A5568?text=Лого" alt="Logo">
-          <div class="ml-3">
-            <p class="text-sm font-semibold text-gray-800">Продукты Оптом</p>
-            <a routerLink="/" class="text-xs text-indigo-600 hover:underline">Выйти</a>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <main class="flex-1 overflow-y-auto p-6">
+<div>
+  <div>
+    <div>
       <div *ngIf="isLoading" class="rounded-lg bg-white p-8 text-center text-gray-500 shadow-sm">
         Загрузка карточки товара...
       </div>
@@ -50,9 +30,9 @@
         </a>
       </div>
 
-      <div *ngIf="product && !isLoading" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div *ngIf="product && !isLoading" class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
         <div class="lg:col-span-2">
-          <div class="bg-white p-6 rounded-lg shadow-sm relative">
+          <div class="bg-white p-6 rounded-lg shadow-sm relative h-full">
             <span class="absolute top-4 right-4 text-xs font-semibold py-1 px-2 uppercase rounded-full"
                   [ngClass]="getStatusClass(product.status)">
               {{ getStatusLabel(product.status) }}
@@ -92,6 +72,11 @@
                   </svg>
                   Редактировать всю информацию
                 </button>
+                <div class="mt-2 flex gap-2">
+                  <button *ngIf="product.status === 'PUBLISHED'" (click)="hideProduct()" class="flex-1 border border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold py-2 px-4 rounded-lg">Скрыть</button>
+                  <button *ngIf="product.status === 'HIDDEN' || product.status === 'DRAFT'" (click)="publishProduct()" class="flex-1 border border-green-300 text-green-700 hover:bg-green-50 font-semibold py-2 px-4 rounded-lg">Опубликовать</button>
+                  <button (click)="askDeleteProduct()" class="flex-1 border border-red-300 text-red-700 hover:bg-red-50 font-semibold py-2 px-4 rounded-lg">Удалить</button>
+                </div>
               </div>
             </div>
           </div>
@@ -123,7 +108,7 @@
               <li class="flex justify-between"><span>Категория:</span> <span class="font-semibold">{{ product.category.name || '—' }}</span></li>
               <li class="flex justify-between"><span>Ставка НДС:</span> <span class="font-semibold">{{ product.vatRateName || (product.vatRateValue + '%') }}</span></li>
               <li class="flex justify-between"><span>Вес:</span> <span class="font-semibold">{{ product.weight ? product.weight + ' кг' : '—' }}</span></li>
-              <li class="flex justify-between"><span>Габариты:</span> <span class="font-semibold">{{ product.packageDimensions || '—' }}</span></li>
+              <li class="flex justify-between"><span>Габариты:</span> <span class="font-semibold">{{ formatDimensions(product.packageDimensions) }}</span></li>
               <li class="flex justify-between"><span>Дата производства:</span> <span class="font-semibold">{{ formatDate(product.productionDate) }}</span></li>
               <li class="flex justify-between"><span>Срок годности:</span> <span class="font-semibold">{{ formatDate(product.expiryDate) }}</span></li>
               <li class="flex justify-between"><span>Страна:</span> <span class="font-semibold">{{ product.countryOfOrigin || '—' }}</span></li>
@@ -131,7 +116,22 @@
           </div>
         </div>
       </div>
-    </main>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно подтверждения удаления -->
+<div *ngIf="showDeleteConfirm" class="fixed inset-0 z-30 flex items-center justify-center bg-black/40 px-4">
+  <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+    <div class="px-6 py-4 border-b"><h3 class="text-lg font-semibold text-gray-800">Удаление товара</h3></div>
+    <div class="px-6 py-4">
+      <p class="text-sm text-gray-600">Вы уверены, что хотите удалить этот товар из каталога?</p>
+      <p class="mt-2 text-sm font-medium text-gray-800" *ngIf="product">{{ product.name }}</p>
+    </div>
+    <div class="px-6 py-4 border-t flex justify-end gap-3">
+      <button (click)="cancelDelete()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Отмена</button>
+      <button (click)="confirmDelete()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Удалить</button>
+    </div>
   </div>
 </div>
 

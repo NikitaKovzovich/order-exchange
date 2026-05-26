@@ -24,55 +24,78 @@ export const retailNetworkRoutes: Routes = [
     children: [
       {
         path: 'dashboard',
-        loadComponent: () => import('./dashboard/dashboard').then(m => m.Dashboard)
+        loadComponent: () => import('./dashboard/dashboard').then(m => m.Dashboard),
+        data: { title: 'Главная' }
       },
       {
         path: 'catalog',
-        loadComponent: () => import('./catalog/catalog').then(m => m.Catalog)
+        loadComponent: () => import('./catalog/catalog').then(m => m.Catalog),
+        data: { title: 'Каталог товаров' }
+      },
+      {
+        path: 'catalog/:id',
+        loadComponent: () => import('./catalog/product-view/product-view').then(m => m.ProductView),
+        data: { title: 'Карточка товара' }
       },
       {
         path: 'cart',
-        loadComponent: () => import('./cart/cart').then(m => m.Cart)
+        loadComponent: () => import('./cart/cart').then(m => m.Cart),
+        data: { title: 'Формирование заказа' }
       },
       {
         path: 'suppliers',
-        loadComponent: () => import('./suppliers/suppliers').then(m => m.Suppliers)
+        loadComponent: () => import('./suppliers/suppliers').then(m => m.Suppliers),
+        data: { title: 'База поставщиков' }
       },
       {
         path: 'suppliers/:id/catalog',
-        loadComponent: () => import('./suppliers/supplier-catalog').then(m => m.SupplierCatalog)
+        loadComponent: () => import('./suppliers/supplier-catalog').then(m => m.SupplierCatalog),
+        data: { title: 'Каталог поставщика' }
       },
       {
         path: 'orders',
-        loadComponent: () => import('./orders/orders').then(m => m.Orders)
+        loadComponent: () => import('./orders/orders').then(m => m.Orders),
+        data: { title: 'Заказы' }
       },
       {
         path: 'orders/:id',
-        loadComponent: () => import('./orders/order-detail').then(m => m.OrderDetail)
+        loadComponent: () => import('./orders/order-detail').then(m => m.OrderDetail),
+        data: { title: 'Детали заказа' }
       },
       {
         path: 'reception',
-        loadComponent: () => import('./reception/reception').then(m => m.Reception)
+        loadComponent: () => import('./reception/reception').then(m => m.Reception),
+        data: { title: 'Журнал приёмки' }
       },
       {
         path: 'analytics',
-        loadComponent: () => import('./analytics/analytics').then(m => m.Analytics)
+        loadComponent: () => import('./analytics/analytics').then(m => m.Analytics),
+        data: { title: 'Аналитика' }
       },
       {
         path: 'communications',
-        loadComponent: () => import('./communications/communications').then(m => m.Communications)
+        loadComponent: () => import('./communications/communications').then(m => m.Communications),
+        data: { title: 'Коммуникации' }
       },
       {
         path: 'support',
-        loadComponent: () => import('./support/support').then(m => m.Support)
+        loadComponent: () => import('./support/support').then(m => m.Support),
+        data: { title: 'Поддержка' }
       },
       {
         path: 'support/create',
-        loadComponent: () => import('./support/create-ticket/create-ticket').then(m => m.CreateTicket)
+        loadComponent: () => import('./support/create-ticket/create-ticket').then(m => m.CreateTicket),
+        data: { title: 'Новое обращение' }
       },
       {
         path: 'notifications',
-        loadComponent: () => import('./notifications/notifications').then(m => m.Notifications)
+        loadComponent: () => import('./notifications/notifications').then(m => m.Notifications),
+        data: { title: 'Уведомления' }
+      },
+      {
+        path: 'profile',
+        loadComponent: () => import('./profile/profile').then(m => m.Profile),
+        data: { title: 'Профиль' }
       },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]

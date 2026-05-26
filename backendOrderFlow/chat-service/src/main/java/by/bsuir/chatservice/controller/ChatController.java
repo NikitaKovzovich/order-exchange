@@ -63,8 +63,9 @@ public class ChatController {
 	public ResponseEntity<ApiResponse<MessageResponse>> sendMessage(
 			@PathVariable Long orderId,
 			@Parameter(description = "ID пользователя") @RequestHeader("X-User-Id") Long userId,
+			@RequestHeader(value = "X-User-Company-Id", required = false) Long companyId,
 			@Valid @RequestBody SendMessageRequest request) {
-		MessageResponse response = chatService.sendMessage(orderId, userId, request);
+		MessageResponse response = chatService.sendMessage(orderId, userId, companyId, request);
 		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
 	}
 

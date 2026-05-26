@@ -3,6 +3,7 @@ import {
   CompanyProfile,
   LoginRequest,
   LoginResponse,
+  ProfileUpdateRequest,
   UserProfile
 } from '../models/api.models';
 import { ApiClientService } from './api-client.service';
@@ -25,6 +26,10 @@ export class AuthApiService {
 
   getCompanyProfile(companyId: number) {
     return this.apiClient.get<CompanyProfile>(`${this.AUTH_PATH}/company/${companyId}`);
+  }
+
+  updateProfile(request: ProfileUpdateRequest) {
+    return this.apiClient.put<{ message: string }>(`${this.AUTH_PATH}/profile`, request);
   }
 
   validateToken() {

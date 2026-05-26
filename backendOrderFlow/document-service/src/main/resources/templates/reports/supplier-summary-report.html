@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+	<meta charset="UTF-8" />
+	<title>Сводка по поставщикам</title>
+	<style>
+		@page {
+			size: A4 landscape;
+			margin: 1.5cm 1.6cm 1.6cm 1.6cm;
+		}
+		* { font-family: "DejaVu Sans", sans-serif; }
+		body { font-size: 10pt; color: #1f2937; }
+		.header { border-bottom: 2px solid #1f2937; padding-bottom: 8pt; margin-bottom: 14pt; }
+		.title { font-size: 16pt; font-weight: bold; }
+		.subtitle { font-size: 10pt; color: #6b7280; margin-top: 4pt; }
+		.meta { margin-top: 6pt; font-size: 9pt; color: #374151; }
+		.purpose {
+			background: #f3f4f6;
+			border-left: 3pt solid #4f46e5;
+			padding: 6pt 8pt;
+			font-size: 9pt;
+			margin-bottom: 12pt;
+		}
+		table { width: 100%; border-collapse: collapse; margin-top: 6pt; }
+		th, td {
+			border: 0.5pt solid #9ca3af;
+			padding: 5pt 6pt;
+			text-align: left;
+			vertical-align: top;
+		}
+		thead th {
+			background: #e5e7eb;
+			font-weight: bold;
+			font-size: 9pt;
+			text-transform: uppercase;
+			letter-spacing: 0.3pt;
+		}
+		td.num { text-align: right; font-variant-numeric: tabular-nums; }
+		tfoot td {
+			background: #f9fafb;
+			font-weight: bold;
+		}
+		.empty { text-align: center; color: #6b7280; padding: 18pt; font-style: italic; }
+		.footer {
+			margin-top: 20pt;
+			font-size: 8pt;
+			color: #9ca3af;
+			text-align: right;
+		}
+	</style>
+</head>
+<body>
+<div class="header">
+	<div class="title">Аналитическая сводка по взаимодействию с поставщиками</div>
+	<div class="subtitle" th:text="${customerName}">Торговая сеть</div>
+	<div class="meta">
+		Отчётный период:
+		<span th:text="${periodFrom} ?: '—'">—</span>
+		—
+		<span th:text="${periodTo} ?: '—'">—</span>
+		· сформировано <span th:text="${generatedAt}">—</span>
+	</div>
+</div>
+
+<div class="purpose">
+	Цель отчёта: оценка объёмов закупочной деятельности и сравнение эффективности работы с
+	различными контрагентами.
+</div>
+
+<table>
+	<thead>
+	<tr>
+		<th style="width: 30%;">Название поставщика</th>
+		<th style="width: 12%; text-align: right;">Кол-во заказов</th>
+		<th style="width: 18%; text-align: right;">Общая сумма (BYN)</th>
+		<th style="width: 16%; text-align: right;">Средний чек (BYN)</th>
+		<th style="width: 14%; text-align: right;">Дата последнего заказа</th>
+	</tr>
+	</thead>
+	<tbody>
+	<tr th:each="row : ${rows}">
+		<td th:text="${row.supplierName} ?: '—'">Поставщик</td>
+		<td class="num" th:text="${row.orderCount} ?: '0'">0</td>
+		<td class="num" th:text="${#numbers.formatDecimal(row.totalAmount ?: 0, 1, 'WHITESPACE', 2, 'POINT')}">0.00</td>
+		<td class="num" th:text="${#numbers.formatDecimal(row.averageCheck ?: 0, 1, 'WHITESPACE', 2, 'POINT')}">0.00</td>
+		<td class="num" th:text="${row.lastOrderDate} ?: '—'">—</td>
+	</tr>
+	<tr th:if="${#lists.isEmpty(rows)}">
+		<td colspan="5" class="empty">Нет данных за выбранный период</td>
+	</tr>
+	</tbody>
+	<tfoot th:if="${not #lists.isEmpty(rows)}">
+	<tr>
+		<td>ВСЕГО по сети</td>
+		<td class="num"
+		    th:text="${rows.size()}">0</td>
+		<td class="num"
+		    th:text="${#numbers.formatDecimal(totalAmount ?: 0, 1, 'WHITESPACE', 2, 'POINT')}">0.00</td>
+		<td class="num"
+		    th:text="${#numbers.formatDecimal(overallAverageCheck ?: 0, 1, 'WHITESPACE', 2, 'POINT')}">0.00</td>
+		<td>—</td>
+	</tr>
+	</tfoot>
+</table>
+
+<div class="footer">
+	OrderFlow · сгенерировано автоматически
+</div>
+</body>
+</html>

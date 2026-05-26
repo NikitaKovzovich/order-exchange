@@ -1,237 +1,200 @@
-<div class="flex h-screen bg-gray-100">
-  <div class="flex-1 flex flex-col overflow-hidden">
-    <header class="bg-white shadow-sm h-16 flex justify-between items-center px-6">
-      <h1 class="text-xl font-semibold text-gray-800">Детали заказа</h1>
-      <div class="flex items-center">
-        <div class="relative mr-4">
-          <button class="p-2 bg-gray-100 rounded-full hover:bg-gray-200">
-            <svg class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-            </svg>
-          </button>
-          <span class="absolute top-0 right-0 h-3 w-3 bg-red-500 rounded-full border-2 border-white"></span>
+<div class="mb-4">
+  <a routerLink="/supplier/orders" class="text-sm text-indigo-600 hover:underline inline-flex items-center">
+    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+    </svg>
+    Назад к заказам
+  </a>
+</div>
+
+<div *ngIf="isLoading" class="bg-white rounded-lg shadow-sm p-8 text-center text-gray-500">Загрузка заказа...</div>
+
+<div *ngIf="order && !isLoading" class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+  <!-- Левая колонка -->
+  <div class="lg:col-span-2 space-y-6">
+    <!-- Блок 1: Шапка -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <div class="flex justify-between items-start">
+        <div>
+          <h2 class="text-2xl font-bold text-gray-800">Заказ #{{ order.orderNumber }} от {{ formatDate(order.createdAt) }}</h2>
+          <span class="mt-2 inline-block text-xs font-semibold py-1 px-3 rounded-full" [ngClass]="getStatusColor(order.statusCode)">
+            {{ getStatusLabel(order.statusCode) }}
+          </span>
         </div>
-        <div class="flex items-center">
-          <img class="h-10 w-10 rounded-full" src="https://placehold.co/100x100/E2E8F0/4A5568?text=Лого" alt="Logo">
-          <div class="ml-3">
-            <p class="text-sm font-semibold text-gray-800">Продукты Оптом</p>
-            <a routerLink="/" class="text-xs text-indigo-600 hover:underline">Выйти</a>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <main class="flex-1 overflow-y-auto p-6">
-      <div *ngIf="isLoading" class="text-center py-12">
-        <p class="text-gray-500">Загрузка заказа...</p>
-      </div>
-
-      <div *ngIf="order && !isLoading">
-        <div class="bg-white p-6 rounded-lg shadow mb-6">
-          <div class="flex justify-between items-start">
-            <div>
-              <a routerLink="/supplier/orders" class="text-indigo-600 hover:text-indigo-800 text-sm mb-2 inline-block">
-                ← Вернуться к заказам
-              </a>
-              <h2 class="text-2xl font-bold">Заказ {{ order.orderNumber }}</h2>
-              <p class="text-gray-600 mt-2">Клиент: {{ order.customerName || 'Клиент #' + order.customerId }}</p>
-            </div>
-            <div class="text-right">
-              <span [ngClass]="getStatusColor(order.statusCode)" class="inline-block px-4 py-2 rounded-full font-semibold text-sm">
-                {{ getStatusLabel(order.statusCode) }}
-              </span>
-              <p class="text-sm text-gray-600 mt-2">Дата заказа: {{ formatDate(order.createdAt) }}</p>
-              <p class="text-sm text-gray-600">Желаемая доставка: {{ formatDate(order.desiredDeliveryDate) }}</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <div class="lg:col-span-2 space-y-6">
-            <div class="bg-white p-6 rounded-lg shadow">
-              <h3 class="text-lg font-semibold mb-4">Товары в заказе</h3>
-              <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                  <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                    <tr>
-                      <th class="px-6 py-3 text-left">Наименование</th>
-                      <th class="px-6 py-3 text-left">Артикул</th>
-                      <th class="px-6 py-3 text-right">Кол-во</th>
-                      <th class="px-6 py-3 text-right">Цена</th>
-                      <th class="px-6 py-3 text-right">Сумма</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let item of order.items" class="border-b hover:bg-gray-50">
-                      <td class="px-6 py-4">{{ item.productName }}</td>
-                      <td class="px-6 py-4">{{ item.productSku }}</td>
-                      <td class="px-6 py-4 text-right">{{ item.quantity }}</td>
-                      <td class="px-6 py-4 text-right">{{ formatAmount(item.unitPrice) }} BYN</td>
-                      <td class="px-6 py-4 text-right font-semibold">{{ formatAmount(item.totalPrice) }} BYN</td>
-                    </tr>
-                  </tbody>
-                  <tfoot>
-                    <tr class="bg-gray-50">
-                      <td colspan="4" class="px-6 py-4 text-right font-semibold">Итого:</td>
-                      <td class="px-6 py-4 text-right font-bold text-lg text-indigo-600">{{ formatAmount(order.totalAmount) }} BYN</td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            </div>
-
-            <div class="bg-white p-6 rounded-lg shadow">
-              <h3 class="text-lg font-semibold mb-4">Адрес доставки</h3>
-              <p class="text-gray-700">{{ order.deliveryAddress }}</p>
-            </div>
-
-            <div class="bg-white p-6 rounded-lg shadow" *ngIf="orderDocuments.length > 0 || generatedDocumentsForOrder.length > 0">
-              <h3 class="text-lg font-semibold mb-4">Документы</h3>
-
-              <div class="space-y-3" *ngIf="orderDocuments.length > 0">
-                <div *ngFor="let document of orderDocuments" class="flex items-center justify-between p-3 border rounded-md">
-                  <div>
-                    <div class="font-medium text-gray-900">{{ document.originalFilename || document.fileName || ('Документ #' + document.id) }}</div>
-                    <div class="text-xs text-gray-500">{{ document.documentTypeName || document.documentType || 'Документ заказа' }}</div>
-                  </div>
-                  <button (click)="downloadOrderDocument(document)" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
-                    Скачать
-                  </button>
-                </div>
-              </div>
-
-              <div class="space-y-3 mt-4" *ngIf="generatedDocumentsForOrder.length > 0">
-                <div *ngFor="let document of generatedDocumentsForOrder" class="flex items-center justify-between p-3 border rounded-md bg-indigo-50">
-                  <div>
-                    <div class="font-medium text-gray-900">{{ document.templateDisplayName }}</div>
-                    <div class="text-xs text-gray-500">№ {{ document.documentNumber }} от {{ formatDate(document.documentDate) }}</div>
-                  </div>
-                  <button (click)="downloadGeneratedDocument(document)" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
-                    Скачать PDF
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div class="bg-white p-6 rounded-lg shadow" *ngIf="orderHistory.length > 0">
-              <h3 class="text-lg font-semibold mb-4">История заказа</h3>
-              <div class="space-y-4">
-                <div *ngFor="let historyItem of orderHistory" class="border-l-2 border-indigo-200 pl-4">
-                  <div class="font-medium text-gray-900">{{ getHistoryDescription(historyItem) }}</div>
-                  <div class="text-xs text-gray-500 mt-1">{{ formatDateTime(getHistoryTimestamp(historyItem)) }}</div>
-                  <div class="text-xs text-gray-500 mt-1" *ngIf="historyItem.previousStatusName || historyItem.newStatusName">
-                    {{ historyItem.previousStatusName || historyItem.previousStatus || '—' }} → {{ historyItem.newStatusName || historyItem.newStatus || '—' }}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="bg-white p-6 rounded-lg shadow" *ngIf="discrepancies.length > 0">
-              <h3 class="text-lg font-semibold mb-4">Расхождения</h3>
-              <div class="space-y-4">
-                <div *ngFor="let discrepancy of discrepancies" class="border rounded-md p-4">
-                  <div class="flex items-center justify-between mb-2">
-                    <div class="font-medium text-gray-900">Отчёт #{{ discrepancy.id }}</div>
-                    <div class="text-sm text-gray-500">{{ formatDateTime(discrepancy.createdAt) }}</div>
-                  </div>
-                  <div class="text-sm text-gray-600 mb-2">Статус: {{ discrepancy.status }}</div>
-                  <div class="text-sm text-gray-600 mb-3" *ngIf="discrepancy.notes">{{ discrepancy.notes }}</div>
-                  <div class="space-y-2">
-                    <div *ngFor="let item of discrepancy.items" class="text-sm text-gray-700">
-                      {{ item.productName }} — ожидалось {{ item.expectedQuantity }}, принято {{ item.actualQuantity }}, причина: {{ item.reason }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="space-y-6">
-            <div class="bg-white p-6 rounded-lg shadow">
-              <h3 class="text-lg font-semibold mb-4">Действия</h3>
-              <div class="space-y-3">
-                <a [routerLink]="['/supplier/orders', order.id, 'invoice']"
-                  class="block w-full rounded-md border border-indigo-200 bg-indigo-50 py-2 text-center text-sm font-medium text-indigo-700 hover:bg-indigo-100">
-                  Открыть счёт
-                </a>
-                <a [routerLink]="['/supplier/orders', order.id, 'upd']"
-                  class="block w-full rounded-md border border-cyan-200 bg-cyan-50 py-2 text-center text-sm font-medium text-cyan-700 hover:bg-cyan-100">
-                  Открыть УПД / ТТН
-                </a>
-                <button *ngIf="order.statusCode === 'PENDING_CONFIRMATION'"
-                  (click)="confirmOrder()"
-                  class="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700">
-                  Подтвердить заказ
-                </button>
-                <button *ngIf="order.statusCode === 'PENDING_CONFIRMATION'"
-                  (click)="openRejectModal()"
-                  class="w-full bg-red-600 text-white py-2 rounded-md hover:bg-red-700">
-                  Отклонить заказ
-                </button>
-                <button *ngIf="order.statusCode === 'PENDING_PAYMENT_VERIFICATION'"
-                  (click)="verifyPayment()"
-                  class="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700">
-                  Подтвердить оплату
-                </button>
-                <button *ngIf="order.statusCode === 'PENDING_PAYMENT_VERIFICATION'"
-                  (click)="openRejectPaymentModal()"
-                  class="w-full bg-red-600 text-white py-2 rounded-md hover:bg-red-700">
-                  Отклонить оплату
-                </button>
-                <button *ngIf="order.statusCode === 'PAID' || order.statusCode === 'AWAITING_SHIPMENT'"
-                  (click)="markAsShipped()"
-                  class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700">
-                  Отметить как отгружен
-                </button>
-                <button *ngIf="order.statusCode === 'AWAITING_SHIPMENT'"
-                  (click)="generateTTN()"
-                  class="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700">
-                  Сформировать ТТН
-                </button>
-                <button *ngIf="order.statusCode === 'AWAITING_CORRECTION'"
-                  (click)="correctOrder()"
-                  class="w-full bg-orange-600 text-white py-2 rounded-md hover:bg-orange-700">
-                  Сформировать корректировку
-                </button>
-                <button *ngIf="order.statusCode === 'DELIVERED'"
-                  (click)="closeOrder()"
-                  class="w-full bg-gray-800 text-white py-2 rounded-md hover:bg-black">
-                  Закрыть заказ
-                </button>
-              </div>
-            </div>
-
-            <div *ngIf="order.notes" class="bg-white p-6 rounded-lg shadow">
-              <h3 class="text-lg font-semibold mb-4">Примечания</h3>
-              <p class="text-gray-700">{{ order.notes }}</p>
-            </div>
-          </div>
+        <div class="text-right">
+          <p class="text-sm text-gray-500">Сумма заказа</p>
+          <p class="text-2xl font-bold text-gray-900">{{ formatAmount(order.totalAmount + order.vatAmount) }} BYN</p>
         </div>
       </div>
 
-      <div *ngIf="showRejectModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 w-full max-w-md">
-          <h3 class="text-lg font-semibold mb-4">Причина отклонения</h3>
-          <textarea [(ngModel)]="rejectionReason" rows="4" class="w-full px-3 py-2 border rounded-md" placeholder="Укажите причину отклонения заказа..."></textarea>
-          <p *ngIf="actionErrorMessage" class="mt-3 text-sm text-red-600">{{ actionErrorMessage }}</p>
-          <div class="flex justify-end space-x-3 mt-4">
-            <button (click)="closeRejectModal()" class="px-4 py-2 border rounded-md hover:bg-gray-100">Отмена</button>
-            <button (click)="rejectOrder()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Отклонить</button>
-          </div>
+      <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="rounded-lg border border-gray-100 p-3">
+          <p class="text-xs uppercase text-gray-400 mb-1">Поставщик (Вы)</p>
+          <p class="font-semibold text-gray-800">{{ order.supplierName || 'Поставщик #' + order.supplierId }}</p>
+          <p class="text-sm text-gray-500" *ngIf="supplierUnp">УНП: {{ supplierUnp }}</p>
         </div>
+        <div class="rounded-lg border border-gray-100 p-3">
+          <p class="text-xs uppercase text-gray-400 mb-1">Торговая сеть</p>
+          <p class="font-semibold text-gray-800">{{ order.customerName || 'Торговая сеть #' + order.customerId }}</p>
+          <p class="text-sm text-gray-500" *ngIf="customerUnp">УНП: {{ customerUnp }}</p>
+        </div>
+        <div class="rounded-lg border border-indigo-100 bg-indigo-50 p-3">
+          <p class="text-xs uppercase text-gray-400 mb-1">Основание отпуска</p>
+          <p class="font-semibold text-gray-800">{{ order.contractNumber ? 'Договор № ' + order.contractNumber : 'Договор не указан' }}</p>
+          <p class="text-sm text-gray-500" *ngIf="order.contractDate">от {{ formatDate(order.contractDate) }}</p>
+          <p class="text-sm text-gray-500" *ngIf="order.contractEndDate">действует до {{ formatDate(order.contractEndDate) }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Блок 2: Действия -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <h3 class="text-lg font-semibold text-gray-800 mb-3">{{ nextActionTitle }}</h3>
+
+      <div *ngIf="actionErrorMessage && !showRejectModal && !showRejectPaymentModal" class="mb-3 rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+        {{ actionErrorMessage }}
       </div>
 
-      <div *ngIf="showRejectPaymentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 w-full max-w-md">
-          <h3 class="text-lg font-semibold mb-4">Причина отклонения оплаты</h3>
-          <textarea [(ngModel)]="paymentRejectionReason" rows="4" class="w-full px-3 py-2 border rounded-md" placeholder="Укажите причину отклонения оплаты..."></textarea>
-          <p *ngIf="actionErrorMessage" class="mt-3 text-sm text-red-600">{{ actionErrorMessage }}</p>
-          <div class="flex justify-end space-x-3 mt-4">
-            <button (click)="closeRejectPaymentModal()" class="px-4 py-2 border rounded-md hover:bg-gray-100">Отмена</button>
-            <button (click)="rejectPayment()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Отклонить оплату</button>
+      <p *ngIf="nextActionText" class="text-sm text-gray-600 mb-4">{{ nextActionText }}</p>
+
+      <div *ngIf="order.statusCode === 'PENDING_CONFIRMATION'" class="flex gap-3">
+        <button (click)="confirmOrder()" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-5 rounded-lg">Подтвердить</button>
+        <button (click)="openRejectModal()" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-5 rounded-lg">Отклонить</button>
+      </div>
+
+      <div *ngIf="order.statusCode === 'REJECTED' || order.statusCode === 'DELIVERED'">
+        <button (click)="closeOrder()" class="bg-gray-800 hover:bg-gray-900 text-white font-semibold py-2 px-5 rounded-lg">Закрыть заказ</button>
+      </div>
+
+      <div *ngIf="order.statusCode === 'PENDING_PAYMENT_VERIFICATION'" class="flex gap-3">
+        <button (click)="verifyPayment()" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-5 rounded-lg">Подтвердить получение оплаты</button>
+        <button (click)="openRejectPaymentModal()" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-5 rounded-lg">Отклонить</button>
+      </div>
+
+      <div *ngIf="order.statusCode === 'AWAITING_SHIPMENT'">
+        <button *ngIf="!order.ttnGenerated" (click)="generateTTN()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-5 rounded-lg">Сформировать ТТН</button>
+        <button *ngIf="order.ttnGenerated" (click)="markAsShipped()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-5 rounded-lg">Подтвердить отгрузку</button>
+      </div>
+
+      <div *ngIf="order.statusCode === 'AWAITING_CORRECTION'">
+        <button (click)="correctOrder()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-5 rounded-lg">Оформить корректировку</button>
+      </div>
+    </div>
+
+    <!-- Блок 3: Состав заказа -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4">Состав заказа</h3>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr class="text-left text-xs uppercase text-gray-500 border-b">
+              <th class="py-2 pr-4">Наименование товара</th>
+              <th class="py-2 px-4 text-right">Кол-во</th>
+              <th class="py-2 px-4 text-right">Цена</th>
+              <th class="py-2 pl-4 text-right">Сумма</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of order.items" class="border-b last:border-0">
+              <td class="py-3 pr-4">
+                <div class="font-medium text-gray-800">{{ item.productName }}</div>
+                <div class="text-xs text-gray-400">Арт.: {{ item.productSku }}</div>
+              </td>
+              <td class="py-3 px-4 text-right">{{ item.quantity }}</td>
+              <td class="py-3 px-4 text-right">{{ formatAmount(item.unitPrice) }}</td>
+              <td class="py-3 pl-4 text-right font-semibold">{{ formatAmount(item.totalPrice) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex flex-col items-end gap-1 text-sm">
+        <div class="flex justify-between w-56"><span class="text-gray-500">Подытог:</span><span>{{ formatAmount(order.totalAmount) }} BYN</span></div>
+        <div class="flex justify-between w-56"><span class="text-gray-500">С НДС:</span><span>{{ formatAmount(order.vatAmount) }} BYN</span></div>
+        <div class="flex justify-between w-56 text-lg font-bold text-gray-900"><span>Итого:</span><span>{{ formatAmount(order.totalAmount + order.vatAmount) }} BYN</span></div>
+      </div>
+    </div>
+
+    <!-- Блок 4: Документы -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4">Документы</h3>
+      <div *ngIf="unifiedDocuments.length === 0" class="text-sm text-gray-500">
+        Здесь будут отображаться документы по данному заказу.
+      </div>
+      <ul *ngIf="unifiedDocuments.length > 0" class="divide-y divide-gray-100">
+        <li *ngFor="let doc of unifiedDocuments" class="flex items-center justify-between py-2">
+          <span class="text-sm text-gray-700">{{ doc.name }}</span>
+          <button (click)="downloadUnifiedDocument(doc)" class="text-sm text-indigo-600 hover:underline">Скачать</button>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Правая колонка -->
+  <div class="lg:col-span-1 space-y-6">
+    <!-- Блок 5: История -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4">История заказа</h3>
+      <ol class="relative border-l border-gray-200 ml-2">
+        <li *ngFor="let item of timeline" class="mb-5 ml-4">
+          <span class="absolute -left-1.5 w-3 h-3 rounded-full" [ngClass]="item.current ? 'bg-blue-500' : 'bg-gray-300'"></span>
+          <p class="text-sm font-medium text-gray-800">{{ item.label }}</p>
+          <p class="text-xs text-gray-400">{{ formatDateTime(item.timestamp) }}</p>
+        </li>
+        <li *ngIf="timeline.length === 0" class="ml-4 text-sm text-gray-400">Нет событий</li>
+      </ol>
+    </div>
+
+    <!-- Блок 6: Чат -->
+    <div class="bg-white rounded-lg shadow-sm p-6 flex flex-col" [class.opacity-60]="isChatDisabled" style="min-height: 24rem;">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4">Чат по заказу</h3>
+      <div class="flex-1 overflow-y-auto space-y-3 mb-4 max-h-96">
+        <div *ngFor="let message of chatMessages" class="flex" [ngClass]="isOwnMessage(message) ? 'justify-end' : 'justify-start'">
+          <div class="max-w-[80%] rounded-lg px-3 py-2 text-sm" [ngClass]="isOwnMessage(message) ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-800'">
+            <p>{{ message.messageText }}</p>
+            <p class="text-[10px] mt-1" [ngClass]="isOwnMessage(message) ? 'text-indigo-200' : 'text-gray-400'">{{ formatDateTime(message.sentAt) }}</p>
           </div>
         </div>
+        <p *ngIf="chatMessages.length === 0" class="text-sm text-gray-400 text-center">Сообщений пока нет</p>
       </div>
-    </main>
+      <div class="flex items-stretch gap-2" *ngIf="!isChatDisabled">
+        <input type="text" [(ngModel)]="newMessage" (keyup.enter)="sendMessage()" placeholder="Введите сообщение..."
+               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+        <button (click)="sendMessage()" [disabled]="isSendingMessage || !newMessage.trim()"
+                class="px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">Отправить</button>
+      </div>
+      <p *ngIf="isChatDisabled" class="text-sm text-gray-400 text-center">Чат недоступен — заказ закрыт</p>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно отклонения заказа -->
+<div *ngIf="showRejectModal" class="fixed inset-0 z-30 flex items-center justify-center bg-black/40 px-4">
+  <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+    <div class="px-6 py-4 border-b"><h3 class="text-lg font-semibold text-gray-800">Отклонение заказа</h3></div>
+    <div class="px-6 py-4 space-y-3">
+      <div *ngIf="actionErrorMessage" class="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{{ actionErrorMessage }}</div>
+      <p class="text-sm text-gray-600">Укажите причину отклонения — она будет отправлена в чат заказа.</p>
+      <textarea [(ngModel)]="rejectionReason" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" placeholder="Причина отклонения"></textarea>
+    </div>
+    <div class="px-6 py-4 border-t flex justify-end gap-3">
+      <button (click)="closeRejectModal()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Отмена</button>
+      <button (click)="rejectOrder()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Отклонить заказ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно отклонения оплаты -->
+<div *ngIf="showRejectPaymentModal" class="fixed inset-0 z-30 flex items-center justify-center bg-black/40 px-4">
+  <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+    <div class="px-6 py-4 border-b"><h3 class="text-lg font-semibold text-gray-800">Отклонение оплаты</h3></div>
+    <div class="px-6 py-4 space-y-3">
+      <div *ngIf="actionErrorMessage" class="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{{ actionErrorMessage }}</div>
+      <p class="text-sm text-gray-600">Укажите причину — она будет отправлена в чат заказа.</p>
+      <textarea [(ngModel)]="paymentRejectionReason" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" placeholder="Причина отклонения оплаты"></textarea>
+    </div>
+    <div class="px-6 py-4 border-t flex justify-end gap-3">
+      <button (click)="closeRejectPaymentModal()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Отмена</button>
+      <button (click)="rejectPayment()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Отклонить оплату</button>
+    </div>
   </div>
 </div>

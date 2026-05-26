@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+	<meta charset="UTF-8" />
+	<title>История закупок товарной позиции</title>
+	<style>
+		@page {
+			size: A4 portrait;
+			margin: 1.8cm 1.6cm 1.6cm 1.6cm;
+		}
+		* { font-family: "DejaVu Sans", sans-serif; }
+		body { font-size: 10pt; color: #1f2937; }
+		.header { border-bottom: 2px solid #1f2937; padding-bottom: 8pt; margin-bottom: 14pt; }
+		.title { font-size: 16pt; font-weight: bold; }
+		.product { font-size: 11pt; font-weight: bold; margin-top: 6pt; }
+		.subtitle { font-size: 10pt; color: #6b7280; margin-top: 4pt; }
+		.meta { margin-top: 6pt; font-size: 9pt; color: #374151; }
+		.purpose {
+			background: #f3f4f6;
+			border-left: 3pt solid #4f46e5;
+			padding: 6pt 8pt;
+			font-size: 9pt;
+			margin-bottom: 12pt;
+		}
+		table { width: 100%; border-collapse: collapse; margin-top: 6pt; }
+		th, td {
+			border: 0.5pt solid #9ca3af;
+			padding: 5pt 6pt;
+			text-align: left;
+			vertical-align: top;
+		}
+		thead th {
+			background: #e5e7eb;
+			font-weight: bold;
+			font-size: 9pt;
+			text-transform: uppercase;
+			letter-spacing: 0.3pt;
+		}
+		td.num { text-align: right; font-variant-numeric: tabular-nums; }
+		.empty { text-align: center; color: #6b7280; padding: 18pt; font-style: italic; }
+		.summary {
+			margin-top: 14pt;
+			padding: 8pt 10pt;
+			background: #f9fafb;
+			border: 0.5pt solid #d1d5db;
+			border-radius: 3pt;
+			font-size: 10pt;
+		}
+		.summary strong { color: #111827; }
+		.footer {
+			margin-top: 20pt;
+			font-size: 8pt;
+			color: #9ca3af;
+			text-align: right;
+		}
+	</style>
+</head>
+<body>
+<div class="header">
+	<div class="title">История закупок товарной позиции</div>
+	<div class="product" th:text="${productName} ?: '—'">Товар</div>
+	<div class="subtitle">
+		Артикул: <span th:text="${productSku} ?: '—'">—</span>
+	</div>
+	<div class="meta">
+		Период анализа:
+		<span th:text="${periodFrom} ?: '—'">—</span>
+		—
+		<span th:text="${periodTo} ?: '—'">—</span>
+		· сформировано <span th:text="${generatedAt}">—</span>
+	</div>
+</div>
+
+<div class="purpose">
+	Цель отчёта: отслеживание динамики изменения цен и объёмов поставок конкретного товара от
+	разных контрагентов.
+</div>
+
+<table>
+	<thead>
+	<tr>
+		<th style="width: 18%;">Дата закупки</th>
+		<th>Наименование поставщика</th>
+		<th style="width: 14%; text-align: right;">Количество (ед.)</th>
+		<th style="width: 18%; text-align: right;">Цена за ед. (BYN)</th>
+		<th style="width: 18%; text-align: right;">Итоговая сумма</th>
+	</tr>
+	</thead>
+	<tbody>
+	<tr th:each="row : ${rows}">
+		<td th:text="${row.date} ?: '—'">—</td>
+		<td th:text="${row.supplierName} ?: '—'">Поставщик</td>
+		<td class="num" th:text="${#numbers.formatDecimal(row.quantity ?: 0, 1, 'WHITESPACE', 2, 'POINT')}">0</td>
+		<td class="num" th:text="${#numbers.formatDecimal(row.unitPrice ?: 0, 1, 'WHITESPACE', 2, 'POINT')}">0.00</td>
+		<td class="num" th:text="${#numbers.formatDecimal(row.totalPrice ?: 0, 1, 'WHITESPACE', 2, 'POINT')}">0.00</td>
+	</tr>
+	<tr th:if="${#lists.isEmpty(rows)}">
+		<td colspan="5" class="empty">Закупок за выбранный период не было</td>
+	</tr>
+	</tbody>
+</table>
+
+<div class="summary" th:if="${not #lists.isEmpty(rows)}">
+	<strong>Минимальная цена за период:</strong>
+	<span th:text="${#numbers.formatDecimal(minPrice ?: 0, 1, 'WHITESPACE', 2, 'POINT')}">0.00</span> BYN;
+	<strong>Максимальная цена:</strong>
+	<span th:text="${#numbers.formatDecimal(maxPrice ?: 0, 1, 'WHITESPACE', 2, 'POINT')}">0.00</span> BYN.
+</div>
+
+<div class="footer">
+	OrderFlow · сгенерировано автоматически
+</div>
+</body>
+</html>

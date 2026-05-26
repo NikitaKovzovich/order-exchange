@@ -22,8 +22,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ChatService {
 
+	private static final String ORDER_EXCHANGE = "order.events";
+	private static final String CHAT_MESSAGE_ROUTING_KEY = "chat.message";
+
 	private final ChatChannelRepository channelRepository;
 	private final MessageRepository messageRepository;
+
+	@org.springframework.beans.factory.annotation.Autowired(required = false)
+	private org.springframework.amqp.rabbit.core.RabbitTemplate rabbitTemplate;
 
 	@Transactional
 	public ChatChannelResponse createChannel(CreateChannelRequest request) {
@@ -113,6 +119,10 @@ public class ChatService {
 
 	@Transactional
 	public MessageResponse sendMessage(Long orderId, Long senderId, SendMessageRequest request) {
+		return sendMessage(orderId, senderId, null, request);
+	}
+
+	public MessageResponse sendMessage(Long orderId, Long senderId, Long senderCompanyId, SendMessageRequest request) {
 		ChatChannel channel = channelRepository.findByOrderId(orderId).orElse(null);
 
 		if (channel == null) {
@@ -148,7 +158,23 @@ public class ChatService {
 		message = messageRepository.save(message);
 		log.info("Message sent in channel {} by user {}", channel.getId(), senderId);
 
+		publishChatNotification(orderId, senderCompanyId);
+
 		return toMessageResponse(message);
+	}
+
+	private void publishChatNotification(Long orderId, Long senderCompanyId) {
+		if (rabbitTemplate == null) {
+			return;
+		}
+		try {
+			java.util.Map<String, Object> payload = new java.util.HashMap<>();
+			payload.put("orderId", orderId);
+			payload.put("senderCompanyId", senderCompanyId != null ? senderCompanyId : 0L);
+			rabbitTemplate.convertAndSend(ORDER_EXCHANGE, CHAT_MESSAGE_ROUTING_KEY, payload);
+		} catch (Exception e) {
+			log.warn("Failed to publish chat notification for order {}: {}", orderId, e.getMessage());
+		}
 	}
 
 	@Transactional

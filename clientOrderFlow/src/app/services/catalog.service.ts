@@ -118,10 +118,12 @@ export class CatalogService {
     const normalizedSearch = params.search?.trim();
 
     if (params.status) httpParams = httpParams.set('status', params.status);
+    if (params.categoryId) httpParams = httpParams.set('categoryId', params.categoryId.toString());
     if (normalizedSearch) httpParams = httpParams.set('search', normalizedSearch);
     if (params.page !== undefined) httpParams = httpParams.set('page', params.page.toString());
     if (params.size) httpParams = httpParams.set('size', params.size.toString());
-    if (params.sort) httpParams = httpParams.set('sort', params.sort);
+    if (params.sortBy) httpParams = httpParams.set('sortBy', params.sortBy);
+    if (params.sortDir) httpParams = httpParams.set('sortDir', params.sortDir);
 
     return this.http.get<ApiResponse<PageResponse<unknown>>>(`${this.API_URL}/products/supplier`, { params: httpParams }).pipe(
       map(response => this.mapProductPage(response.data, params.page, params.size))
@@ -152,6 +154,12 @@ export class CatalogService {
 
   archiveProduct(id: number): Observable<Product> {
     return this.http.post<ApiResponse<unknown>>(`${this.API_URL}/products/${id}/archive`, {}).pipe(
+      map(response => this.mapProduct(response.data))
+    );
+  }
+
+  hideProduct(id: number): Observable<Product> {
+    return this.http.post<ApiResponse<unknown>>(`${this.API_URL}/products/${id}/hide`, {}).pipe(
       map(response => this.mapProduct(response.data))
     );
   }

@@ -87,6 +87,7 @@ public class Notification {
 	public enum NotificationType {
 
 		PARTNERSHIP_REQUEST("Запрос на сотрудничество"),
+		CHAT_MESSAGE("Новое сообщение в чате"),
 		NEW_ORDER("Новый заказ"),
 		PAYMENT_PROOF_UPLOADED("Загрузка подтверждения оплаты"),
 		PAYMENT_CONFIRMED_NEXT_STEP("Оплата подтверждена"),

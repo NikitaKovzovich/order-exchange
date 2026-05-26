@@ -15,9 +15,12 @@ public class MinioService {
 
 	private final MinioClient minioClient;
 	private final String bucketName;
+	private final String internalEndpoint;
+	private final String publicEndpoint;
 
 	public MinioService(
 			@Value("${minio.endpoint}") String endpoint,
+			@Value("${minio.public-endpoint:}") String publicEndpoint,
 			@Value("${minio.access-key}") String accessKey,
 			@Value("${minio.secret-key}") String secretKey,
 			@Value("${minio.bucket-name}") String bucketName) {
@@ -27,8 +30,15 @@ public class MinioService {
 				.credentials(accessKey, secretKey)
 				.build();
 		this.bucketName = bucketName;
+		this.internalEndpoint = stripTrailingSlash(endpoint);
+		this.publicEndpoint = stripTrailingSlash(
+				publicEndpoint != null && !publicEndpoint.isBlank() ? publicEndpoint : endpoint);
 
 		initBucket();
+	}
+
+	private String stripTrailingSlash(String value) {
+		return value != null && value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
 	}
 
 	private void initBucket() {
@@ -96,12 +106,17 @@ public class MinioService {
 	}
 
 	public String getPresignedUrl(String fileKey, int expirySeconds) throws Exception {
-		return minioClient.getPresignedObjectUrl(GetPresignedObjectUrlArgs.builder()
+		String url = minioClient.getPresignedObjectUrl(GetPresignedObjectUrlArgs.builder()
 				.bucket(bucketName)
 				.object(fileKey)
 				.method(io.minio.http.Method.GET)
 				.expiry(expirySeconds)
 				.build());
+
+		if (!publicEndpoint.equals(internalEndpoint) && url.startsWith(internalEndpoint)) {
+			url = publicEndpoint + url.substring(internalEndpoint.length());
+		}
+		return url;
 	}
 
 	private String generateFileName(String originalFileName) {

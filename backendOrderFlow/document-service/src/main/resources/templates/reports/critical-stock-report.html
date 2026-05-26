@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+	<meta charset="UTF-8" />
+	<title>Отчёт по критическим остаткам</title>
+	<style>
+		@page {
+			size: A4 portrait;
+			margin: 1.8cm 1.6cm 1.6cm 1.6cm;
+		}
+		* { font-family: "DejaVu Sans", sans-serif; }
+		body { font-size: 10pt; color: #1f2937; }
+		.header { border-bottom: 2px solid #1f2937; padding-bottom: 8pt; margin-bottom: 14pt; }
+		.title { font-size: 16pt; font-weight: bold; }
+		.subtitle { font-size: 10pt; color: #6b7280; margin-top: 4pt; }
+		.meta { margin-top: 6pt; font-size: 9pt; color: #374151; }
+		.purpose {
+			background: #f3f4f6;
+			border-left: 3pt solid #4f46e5;
+			padding: 6pt 8pt;
+			font-size: 9pt;
+			margin-bottom: 12pt;
+		}
+		table { width: 100%; border-collapse: collapse; margin-top: 6pt; }
+		th, td {
+			border: 0.5pt solid #9ca3af;
+			padding: 5pt 6pt;
+			text-align: left;
+			vertical-align: top;
+		}
+		thead th {
+			background: #e5e7eb;
+			font-weight: bold;
+			font-size: 9pt;
+			text-transform: uppercase;
+			letter-spacing: 0.3pt;
+		}
+		td.num { text-align: right; font-variant-numeric: tabular-nums; }
+		tr.critical td { background: #fef2f2; }
+		.empty { text-align: center; color: #6b7280; padding: 18pt; font-style: italic; }
+		.footer {
+			margin-top: 20pt;
+			font-size: 8pt;
+			color: #9ca3af;
+			text-align: right;
+		}
+	</style>
+</head>
+<body>
+<div class="header">
+	<div class="title">Отчёт по товарным позициям с критическим остатком</div>
+	<div class="subtitle" th:text="${supplierName}">Поставщик</div>
+	<div class="meta">
+		Дата и время формирования: <span th:text="${generatedAt}">—</span>
+	</div>
+</div>
+
+<div class="purpose">
+	Цель отчёта: выявление товаров, количество которых на складе приближается к установленному
+	минимальному порогу. Сортировка по возрастанию остатка.
+</div>
+
+<table>
+	<thead>
+	<tr>
+		<th style="width: 14%;">Артикул</th>
+		<th>Наименование товара</th>
+		<th style="width: 14%; text-align: right;">Текущий остаток</th>
+		<th style="width: 16%; text-align: right;">Мин. порог (норма)</th>
+		<th style="width: 12%; text-align: right;">Дефицит (ед.)</th>
+	</tr>
+	</thead>
+	<tbody>
+	<tr th:each="item : ${items}" th:classappend="${item.deficit != null and item.deficit gt 0 ? 'critical' : ''}">
+		<td th:text="${item.sku} ?: '—'">SKU</td>
+		<td th:text="${item.name} ?: '—'">Наименование</td>
+		<td class="num" th:text="${item.currentStock} ?: '0'">0</td>
+		<td class="num" th:text="${item.minThreshold} ?: '—'">—</td>
+		<td class="num" th:text="${item.deficit} ?: '0'">0</td>
+	</tr>
+	<tr th:if="${#lists.isEmpty(items)}">
+		<td colspan="5" class="empty">Товары с критическим остатком не выявлены</td>
+	</tr>
+	</tbody>
+</table>
+
+<div class="footer">
+	OrderFlow · сгенерировано автоматически
+</div>
+</body>
+</html>

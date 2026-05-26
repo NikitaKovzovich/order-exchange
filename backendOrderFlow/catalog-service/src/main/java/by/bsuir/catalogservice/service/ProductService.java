@@ -27,12 +27,37 @@ public class ProductService {
 	private final EventPublisher eventPublisher;
 
 	public PageResponse<ProductResponse> getSupplierProducts(Long supplierId, String search, int page, int size) {
-		Pageable pageable = PageRequest.of(page, size, Sort.by("name"));
+		return getSupplierProducts(supplierId, search, null, null, "name", "asc", page, size);
+	}
+
+	public PageResponse<ProductResponse> getSupplierProducts(Long supplierId, String search, String status,
+			Long categoryId, String sortBy, String sortDir, int page, int size) {
+		Pageable pageable = PageRequest.of(page, size, resolveSupplierSort(sortBy, sortDir));
 		String normalizedSearch = search != null && !search.trim().isEmpty() ? search.trim() : null;
-		Page<Product> products = normalizedSearch == null
-				? productRepository.findBySupplierId(supplierId, pageable)
-				: productRepository.searchSupplierProducts(supplierId, normalizedSearch, pageable);
+		Product.ProductStatus statusFilter = parseProductStatus(status);
+		Page<Product> products = productRepository.filterSupplierProducts(
+				supplierId, statusFilter, categoryId, normalizedSearch, pageable);
 		return toPageResponse(products);
+	}
+
+	private Sort resolveSupplierSort(String sortBy, String sortDir) {
+		String field = switch (sortBy == null ? "" : sortBy.trim()) {
+			case "price", "pricePerUnit" -> "pricePerUnit";
+			case "sku" -> "sku";
+			default -> "name";
+		};
+		return "desc".equalsIgnoreCase(sortDir) ? Sort.by(field).descending() : Sort.by(field).ascending();
+	}
+
+	private Product.ProductStatus parseProductStatus(String status) {
+		if (status == null || status.isBlank()) {
+			return null;
+		}
+		try {
+			return Product.ProductStatus.valueOf(status.trim().toUpperCase());
+		} catch (IllegalArgumentException ex) {
+			return null;
+		}
 	}
 
 
@@ -195,6 +220,21 @@ public class ProductService {
 	}
 
 	@Transactional
+	public ProductResponse hideProduct(Long id, Long supplierId) {
+		Product product = productRepository.findById(id)
+				.orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
+
+		if (!product.getSupplierId().equals(supplierId)) {
+			throw new InvalidOperationException("hide", "Product does not belong to this supplier");
+		}
+
+		product.hide();
+		product = productRepository.save(product);
+		eventPublisher.publishProductArchived(product);
+		return mapToResponse(product);
+	}
+
+	@Transactional
 	public ProductResponse toDraft(Long id, Long supplierId) {
 		Product product = productRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
@@ -226,7 +266,7 @@ public class ProductService {
 	public ProductResponse adminHideProduct(Long id) {
 		Product product = productRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
-		product.archive();
+		product.hide();
 		product = productRepository.save(product);
 		return mapToResponse(product);
 	}

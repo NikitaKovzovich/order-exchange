@@ -43,6 +43,40 @@ export class Verification implements OnInit {
     this.notification = null;
   }
 
+  getLegalFormLabel(value?: string | null): string {
+    switch ((value || '').toUpperCase()) {
+      case 'IE': return 'ИП';
+      case 'LLC': return 'ООО';
+      case 'OJSC': return 'ОАО';
+      case 'CJSC': return 'ЗАО';
+      case 'PJSC': return 'ПАО';
+      case 'PUE': return 'ЧУП';
+      default: return value || '—';
+    }
+  }
+
+  getAddressTypeLabel(value?: string | null): string {
+    switch ((value || '').toLowerCase()) {
+      case 'legal': return 'Юридический';
+      case 'postal': return 'Почтовый';
+      case 'shipping': return 'Отгрузки';
+      case 'delivery': return 'Доставки';
+      default: return value || 'Адрес';
+    }
+  }
+
+  getCompanyStatusLabel(value?: string | null): string {
+    switch ((value || '').toUpperCase()) {
+      case 'PENDING': return 'На проверке';
+      case 'PENDING_VERIFICATION': return 'Ожидает проверки';
+      case 'ACTIVE': return 'Активна';
+      case 'REJECTED': return 'Отклонена';
+      case 'BLOCKED': return 'Заблокирована';
+      case 'SUSPENDED': return 'Приостановлена';
+      default: return value || '—';
+    }
+  }
+
   loadRequest() {
     const id = parseInt(this.requestId);
     if (!id) {

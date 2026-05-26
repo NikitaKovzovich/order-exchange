@@ -25,18 +25,20 @@
     </div>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-    <input type="text" [(ngModel)]="filters.search" placeholder="Номер заказа" class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-    <input type="date" [(ngModel)]="filters.dateFrom" class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-    <input type="date" [(ngModel)]="filters.dateTo" class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-    <select [(ngModel)]="filters.status" (change)="onStatusFilterChange()" class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-      <option value="">Все статусы</option>
-      <option *ngFor="let option of statusOptions" [ngValue]="option.value">{{ option.label }}</option>
-    </select>
-  </div>
-  <div class="flex gap-3 mt-4">
-    <button (click)="applyFilters()" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Применить</button>
-    <button (click)="clearFilters()" class="border border-gray-300 bg-gray-100 px-4 py-2 rounded-md hover:bg-gray-200">Сбросить</button>
+  <div class="flex flex-col lg:flex-row lg:items-end gap-4">
+    <div class="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4">
+      <input type="text" [(ngModel)]="filters.search" placeholder="Номер заказа" class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      <input type="date" [(ngModel)]="filters.dateFrom" class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      <input type="date" [(ngModel)]="filters.dateTo" class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      <select [(ngModel)]="filters.status" (change)="onStatusFilterChange()" class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <option value="">Все статусы</option>
+        <option *ngFor="let option of statusOptions" [ngValue]="option.value">{{ option.label }}</option>
+      </select>
+    </div>
+    <div class="flex gap-3 shrink-0">
+      <button (click)="applyFilters()" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Применить</button>
+      <button (click)="clearFilters()" class="border border-gray-300 bg-gray-100 px-4 py-2 rounded-md hover:bg-gray-200">Сбросить</button>
+    </div>
   </div>
 </div>
 
@@ -92,14 +94,7 @@
             </span>
           </td>
           <td class="px-6 py-4 whitespace-nowrap text-sm">
-            <a [routerLink]="['/retail/orders', order.id]" class="text-indigo-600 hover:underline mr-3">Детали</a>
-            <button
-              type="button"
-              (click)="downloadOrderDocuments(order)"
-              [disabled]="isDownloading(order.id)"
-              class="text-gray-600 hover:underline disabled:text-gray-400 disabled:no-underline">
-              {{ isDownloading(order.id) ? 'Подготовка архива...' : 'Скачать все' }}
-            </button>
+            <a [routerLink]="['/retail/orders', order.id]" class="text-indigo-600 hover:underline">Детали</a>
           </td>
         </tr>
       </tbody>

@@ -74,9 +74,9 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
             colorClass: 'bg-blue-100 text-blue-600'
           },
           {
-            title: 'Заказов за период',
+            title: 'Заказов за всё время',
             value: Number(ordersStats['totalOrdersThisMonth'] ?? 0).toLocaleString('ru-RU'),
-            change: `${ordersStats['orderGrowthPercent'] ?? 0}%`,
+            change: this.formatDelta(Number(ordersStats['orderGrowthPercent'] ?? 0), '%'),
             icon: 'orders',
             trend: Number(ordersStats['orderGrowthPercent'] ?? 0) >= 0 ? 'up' : 'down',
             colorClass: 'bg-green-100 text-green-600'
@@ -84,7 +84,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
           {
             title: 'Ожидают верификации',
             value: dashboard.pendingVerifications,
-            change: '',
+            change: dashboard.pendingVerifications > 0 ? 'требуют проверки' : 'нет новых заявок',
             icon: 'verification',
             trend: dashboard.pendingVerifications > 0 ? 'up' : 'down',
             colorClass: 'bg-yellow-100 text-yellow-600'
@@ -92,23 +92,23 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
           {
             title: 'Новые тикеты',
             value: recentSupportTickets.length,
-            change: 'последние обращения',
+            change: recentSupportTickets.length > 0 ? 'требуют ответа' : 'нет новых обращений',
             icon: 'support',
             trend: recentSupportTickets.length > 0 ? 'up' : 'down',
             colorClass: 'bg-red-100 text-red-600'
           },
           {
-            title: 'Выручка за период',
+            title: 'Выручка за всё время',
             value: `${Number(ordersStats['totalRevenue'] ?? 0).toLocaleString('ru-RU')} BYN`,
-            change: `${ordersStats['revenueGrowthPercent'] ?? 0}%`,
+            change: this.formatDelta(Number(ordersStats['revenueGrowthPercent'] ?? 0), '%'),
             icon: 'revenue',
             trend: Number(ordersStats['revenueGrowthPercent'] ?? 0) >= 0 ? 'up' : 'down',
             colorClass: 'bg-green-100 text-green-600'
           },
           {
-            title: 'Approval rate',
+            title: 'Уровень одобрения',
             value: `${verificationRate['approvalRate'] ?? 0}%`,
-            change: `approved: ${verificationRate['approved'] ?? 0}`,
+            change: `одобрено: ${verificationRate['approved'] ?? 0}`,
             icon: 'verification',
             trend: Number(verificationRate['approvalRate'] ?? 0) >= 50 ? 'up' : 'down',
             colorClass: 'bg-indigo-100 text-indigo-600'
@@ -190,5 +190,13 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
 
   formatDate(dateStr: string): string {
     return new Date(dateStr).toLocaleDateString('ru-RU');
+  }
+
+  private formatDelta(value: number, suffix: string): string {
+    if (!Number.isFinite(value) || value === 0) {
+      return `0${suffix}`;
+    }
+    const sign = value > 0 ? '+' : '−';
+    return `${sign}${Math.abs(value)}${suffix}`;
   }
 }

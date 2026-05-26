@@ -1,8 +1,10 @@
 import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AnalyticsService, CustomerAnalyticsResponse } from '../../services/analytics.service';
+import { HttpClient } from '@angular/common/http';
+import { AnalyticsService, CustomerAnalyticsResponse, ProductPurchaseHistory } from '../../services/analytics.service';
 import { AnalyticsPeriod } from '../../models/api.models';
+import { AuthService } from '../../services/auth.service';
 
 type ChartModule = typeof import('chart.js/auto');
 type ChartInstance = { destroy(): void };
@@ -28,12 +30,144 @@ export class Analytics implements OnInit, AfterViewInit, OnDestroy {
   analytics: CustomerAnalyticsResponse | null = null;
   isLoading: boolean = false;
   errorMessage: string = '';
+  reportError: string = '';
+  isGeneratingSupplierSummary: boolean = false;
+  isGeneratingProductHistory: boolean = false;
+  selectedProductId: number | null = null;
 
   private expensesChartInstance?: ChartInstance;
   private suppliersChartInstance?: ChartInstance;
   private chartModulePromise?: Promise<ChartModule>;
 
-  constructor(private analyticsService: AnalyticsService) {}
+  constructor(
+    private analyticsService: AnalyticsService,
+    private authService: AuthService,
+    private http: HttpClient
+  ) {}
+
+  get selectedProductHistory(): ProductPurchaseHistory | null {
+    if (this.selectedProductId == null) {
+      return null;
+    }
+    return this.analytics?.productHistory.find(p => p.productId === this.selectedProductId) || null;
+  }
+
+  private get reportPeriodRange(): { from: string; to: string } {
+    const to = new Date();
+    const from = new Date(to);
+    switch (this.selectedPeriod) {
+      case 'week': from.setDate(to.getDate() - 7); break;
+      case 'quarter': from.setMonth(to.getMonth() - 3); break;
+      case 'year': from.setFullYear(to.getFullYear() - 1); break;
+      case 'month':
+      default: from.setMonth(to.getMonth() - 1); break;
+    }
+    return { from: from.toLocaleDateString('ru-RU'), to: to.toLocaleDateString('ru-RU') };
+  }
+
+  downloadSupplierSummary(): void {
+    if (!this.analytics) {
+      return;
+    }
+    const companyId = this.authService.getCompanyId();
+    if (!companyId) {
+      this.reportError = 'Не удалось определить текущую компанию.';
+      return;
+    }
+
+    this.reportError = '';
+    this.isGeneratingSupplierSummary = true;
+
+    this.authService.getCompanyProfile(companyId).subscribe({
+      next: profile => {
+        const rows = (this.analytics?.supplierAnalytics || []).map(item => ({
+          supplierName: item.supplierName,
+          orderCount: item.orderCount,
+          totalAmount: item.totalAmount,
+          averageCheck: item.averageCheck,
+          lastOrderDate: this.formatDate(item.lastOrderDate)
+        }));
+        const totalAmount = rows.reduce((sum, r) => sum + Number(r.totalAmount || 0), 0);
+        const totalOrders = rows.reduce((sum, r) => sum + Number(r.orderCount || 0), 0);
+        const overallAverageCheck = totalOrders > 0 ? totalAmount / totalOrders : 0;
+
+        const range = this.reportPeriodRange;
+        const payload = {
+          customerName: profile.legalName || profile.name || 'Торговая сеть',
+          periodFrom: range.from,
+          periodTo: range.to,
+          rows,
+          totalAmount,
+          overallAverageCheck
+        };
+
+        this.http.post('/api/documents/reports/supplier-summary', payload, { responseType: 'blob' }).subscribe({
+          next: blob => {
+            this.savePdf(blob, 'supplier-summary-report.pdf');
+            this.isGeneratingSupplierSummary = false;
+          },
+          error: error => this.handleReportError(error, 'isGeneratingSupplierSummary')
+        });
+      },
+      error: error => this.handleReportError(error, 'isGeneratingSupplierSummary')
+    });
+  }
+
+  downloadProductHistory(): void {
+    const history = this.selectedProductHistory;
+    if (!history) {
+      this.reportError = 'Выберите товар для формирования отчёта.';
+      return;
+    }
+
+    this.reportError = '';
+    this.isGeneratingProductHistory = true;
+
+    const rows = history.purchases.map(p => ({
+      date: this.formatDate(p.date),
+      supplierName: p.supplierName,
+      quantity: p.quantity,
+      unitPrice: p.unitPrice,
+      totalPrice: p.totalPrice
+    }));
+    const prices = history.purchases.map(p => Number(p.unitPrice || 0)).filter(v => v > 0);
+    const minPrice = prices.length ? Math.min(...prices) : 0;
+    const maxPrice = prices.length ? Math.max(...prices) : 0;
+
+    const range = this.reportPeriodRange;
+    const payload = {
+      productName: history.productName,
+      productSku: history.productSku,
+      periodFrom: range.from,
+      periodTo: range.to,
+      rows,
+      minPrice,
+      maxPrice
+    };
+
+    this.http.post('/api/documents/reports/product-purchase-history', payload, { responseType: 'blob' }).subscribe({
+      next: blob => {
+        this.savePdf(blob, 'product-purchase-history-report.pdf');
+        this.isGeneratingProductHistory = false;
+      },
+      error: error => this.handleReportError(error, 'isGeneratingProductHistory')
+    });
+  }
+
+  private savePdf(blob: Blob, fileName: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const anchor = window.document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    anchor.click();
+    window.URL.revokeObjectURL(url);
+  }
+
+  private handleReportError(error: unknown, busyFlag: 'isGeneratingSupplierSummary' | 'isGeneratingProductHistory'): void {
+    console.error('Failed to download report:', error);
+    this.reportError = 'Не удалось сформировать отчёт.';
+    this[busyFlag] = false;
+  }
 
   ngOnInit(): void {
     this.loadAnalytics();

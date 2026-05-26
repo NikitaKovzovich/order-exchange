@@ -145,12 +145,42 @@ public class CartService {
 			throw new InvalidOperationException("checkout", "cart is empty");
 		}
 
+		List<Order> createdOrders = createOrders(cart, customerId, request, cart.getSupplierIds());
+
+		cart.clear();
+		cartRepository.save(cart);
+
+		return buildCheckoutResponse(createdOrders);
+	}
+
+	@Transactional
+	public CheckoutResponse checkoutSupplier(Long customerId, Long supplierId, CheckoutRequest request) {
+		Cart cart = cartRepository.findByCustomerIdWithItems(customerId)
+				.orElseThrow(() -> new ResourceNotFoundException("Cart", "customerId", customerId));
+
+		if (cart.isEmpty()) {
+			throw new InvalidOperationException("checkout", "cart is empty");
+		}
+
+		List<CartItem> supplierItems = cart.getItemsBySupplierId(supplierId);
+		if (supplierItems.isEmpty()) {
+			throw new InvalidOperationException("checkout", "no items for supplier " + supplierId);
+		}
+
+		List<Long> productIds = supplierItems.stream().map(CartItem::getProductId).toList();
+		List<Order> createdOrders = createOrders(cart, customerId, request, List.of(supplierId));
+
+		productIds.forEach(cart::removeItem);
+		cartRepository.save(cart);
+
+		return buildCheckoutResponse(createdOrders);
+	}
+
+	private List<Order> createOrders(Cart cart, Long customerId, CheckoutRequest request, List<Long> supplierIds) {
 		OrderStatus pendingStatus = statusRepository.findByCode(OrderStatus.Codes.PENDING_CONFIRMATION)
 				.orElseThrow(() -> new ResourceNotFoundException("OrderStatus", "code", OrderStatus.Codes.PENDING_CONFIRMATION));
 
 		List<Order> createdOrders = new ArrayList<>();
-		List<Long> supplierIds = cart.getSupplierIds();
-
 
 		for (Long supplierId : supplierIds) {
 			List<CartItem> supplierItems = cart.getItemsBySupplierId(supplierId);
@@ -210,10 +240,10 @@ public class CartService {
 					order.getId(), supplierId, customerId);
 		}
 
+		return createdOrders;
+	}
 
-		cart.clear();
-		cartRepository.save(cart);
-
+	private CheckoutResponse buildCheckoutResponse(List<Order> createdOrders) {
 		List<OrderResponse> orderResponses = createdOrders.stream()
 				.map(this::mapOrderToResponse)
 				.toList();
@@ -243,7 +273,7 @@ public class CartService {
 
 	private CartResponse mapToResponse(Cart cart) {
 		List<CartItemResponse> itemResponses = cart.getItems().stream()
-				.map(this::mapItemToResponse)
+				.map(item -> mapItemToResponse(item, authServiceClient.getCompanyName(item.getSupplierId())))
 				.toList();
 
 		return new CartResponse(
@@ -259,11 +289,12 @@ public class CartService {
 		);
 	}
 
-	private CartItemResponse mapItemToResponse(CartItem item) {
+	private CartItemResponse mapItemToResponse(CartItem item, String supplierName) {
 		return new CartItemResponse(
 				item.getId(),
 				item.getProductId(),
 				item.getSupplierId(),
+				supplierName,
 				item.getProductName(),
 				item.getProductSku(),
 				item.getQuantity(),

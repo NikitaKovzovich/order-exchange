@@ -22,6 +22,15 @@ export class Suppliers implements OnInit {
   customerCompanyName: string = '';
   customerUnp: string = '';
 
+  showRequestModal: boolean = false;
+  modalSupplier: SupplierDirectoryItem | null = null;
+  modalError: string = '';
+  contractForm = {
+    contractNumber: '',
+    contractDate: '',
+    contractEndDate: ''
+  };
+
   constructor(
     private partnershipService: PartnershipService,
     private authService: AuthService,
@@ -60,18 +69,54 @@ export class Suppliers implements OnInit {
     this.loadSuppliers();
   }
 
-  requestPartnership(supplier: SupplierDirectoryItem): void {
-    this.isSubmitting[supplier.companyId] = true;
+  openRequestModal(supplier: SupplierDirectoryItem): void {
+    this.modalSupplier = supplier;
+    this.modalError = '';
+    this.contractForm = {
+      contractNumber: '',
+      contractDate: '',
+      contractEndDate: ''
+    };
+    this.showRequestModal = true;
+  }
 
-    const today = new Date();
-    const nextYear = new Date(today);
-    nextYear.setFullYear(today.getFullYear() + 1);
+  closeRequestModal(): void {
+    this.showRequestModal = false;
+    this.modalSupplier = null;
+    this.modalError = '';
+  }
+
+  submitPartnershipRequest(): void {
+    if (!this.modalSupplier) {
+      return;
+    }
+
+    if (!this.contractForm.contractNumber.trim()) {
+      this.modalError = 'Укажите номер договора.';
+      return;
+    }
+    if (!this.contractForm.contractDate) {
+      this.modalError = 'Укажите дату подписания.';
+      return;
+    }
+    if (!this.contractForm.contractEndDate) {
+      this.modalError = 'Укажите дату окончания действия.';
+      return;
+    }
+    if (this.contractForm.contractEndDate < this.contractForm.contractDate) {
+      this.modalError = 'Дата окончания не может быть раньше даты подписания.';
+      return;
+    }
+
+    const supplier = this.modalSupplier;
+    this.isSubmitting[supplier.companyId] = true;
+    this.modalError = '';
 
     this.partnershipService.createPartnershipRequest({
       supplierId: supplier.companyId,
-      contractNumber: `DOG-${today.getFullYear()}-${supplier.companyId}`,
-      contractDate: today.toISOString().slice(0, 10),
-      contractEndDate: nextYear.toISOString().slice(0, 10),
+      contractNumber: this.contractForm.contractNumber.trim(),
+      contractDate: this.contractForm.contractDate,
+      contractEndDate: this.contractForm.contractEndDate,
       customerCompanyName: this.customerCompanyName || 'Текущая торговая сеть',
       customerUnp: this.customerUnp || '000000000'
     }).subscribe({
@@ -79,10 +124,12 @@ export class Suppliers implements OnInit {
         supplier.partnershipId = response.id;
         supplier.partnershipStatus = response.status;
         this.isSubmitting[supplier.companyId] = false;
+        this.closeRequestModal();
       },
       error: error => {
         console.error('Error creating partnership:', error);
         this.isSubmitting[supplier.companyId] = false;
+        this.modalError = error.error?.message || 'Не удалось отправить запрос.';
       }
     });
   }

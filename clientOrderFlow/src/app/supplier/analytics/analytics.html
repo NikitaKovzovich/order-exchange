@@ -4,7 +4,20 @@
 
 <div *ngIf="!isLoading">
   <div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-800 mb-4">Аналитика продаж</h2>
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+      <h2 class="text-2xl font-bold text-gray-800">Аналитика продаж</h2>
+      <button (click)="downloadCriticalStockReport()" [disabled]="isGeneratingReport"
+              class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg">
+        <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        {{ isGeneratingReport ? 'Формируется…' : 'Отчёт по критическим остаткам (PDF)' }}
+      </button>
+    </div>
+
+    <div *ngIf="reportError" class="mb-3 rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+      {{ reportError }}
+    </div>
 
     <div class="flex space-x-4 mb-6">
       <button *ngFor="let period of periods" (click)="onPeriodChange(period.value)"
@@ -50,30 +63,19 @@
 
     <div *ngIf="analytics" class="bg-white p-6 rounded-lg shadow">
       <h3 class="text-lg font-semibold text-gray-800 mb-4">Воронка заказов</h3>
-      <div class="space-y-2">
-        <div class="flex items-center justify-between text-sm">
-          <span class="text-gray-600">Ожидает подтверждения</span>
-          <span class="font-semibold">{{ analytics.funnel.pendingConfirmation }}</span>
-        </div>
-        <div class="flex items-center justify-between text-sm">
-          <span class="text-gray-600">Подтверждено</span>
-          <span class="font-semibold">{{ analytics.funnel.confirmed }}</span>
-        </div>
-        <div class="flex items-center justify-between text-sm">
-          <span class="text-gray-600">Оплачено</span>
-          <span class="font-semibold">{{ analytics.funnel.paid }}</span>
-        </div>
-        <div class="flex items-center justify-between text-sm">
-          <span class="text-gray-600">Отгружено</span>
-          <span class="font-semibold">{{ analytics.funnel.shipped }}</span>
-        </div>
-        <div class="flex items-center justify-between text-sm">
-          <span class="text-gray-600">Доставлено</span>
-          <span class="font-semibold">{{ analytics.funnel.delivered }}</span>
-        </div>
-        <div class="flex items-center justify-between text-sm">
-          <span class="text-gray-600">Закрыто</span>
-          <span class="font-semibold">{{ analytics.funnel.closed }}</span>
+      <div class="flex flex-col items-center space-y-1.5">
+        <div *ngFor="let stage of funnelStages; let i = index"
+             [style.width.%]="funnelStageWidth(i, funnelStages.length)"
+             class="rounded-md text-white shadow-sm flex items-center justify-between px-4 py-2.5 text-sm"
+             [ngClass]="{
+               'bg-indigo-700': i < 2,
+               'bg-indigo-600': i >= 2 && i < 4,
+               'bg-indigo-500': i >= 4 && i < 6,
+               'bg-indigo-400': i >= 6 && i < 8,
+               'bg-indigo-300': i >= 8
+             }">
+          <span class="truncate">{{ stage.label }}</span>
+          <span class="font-bold ml-3">{{ stage.value }}</span>
         </div>
       </div>
     </div>

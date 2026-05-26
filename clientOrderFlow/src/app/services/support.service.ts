@@ -163,6 +163,7 @@ export class SupportService {
       companyId: Number(raw['companyId'] || raw['requesterCompanyId'] || 0),
       userId: Number(raw['userId'] || raw['requesterUserId'] || 0),
       userEmail: raw['userEmail'] ? String(raw['userEmail']) : undefined,
+      requesterCompanyName: raw['requesterCompanyName'] ? String(raw['requesterCompanyName']) : undefined,
       subject: String(raw['subject'] || ''),
       category: String(raw['category'] || 'OTHER') as SupportTicket['category'],
       priority: this.mapPriority(raw['priority']),

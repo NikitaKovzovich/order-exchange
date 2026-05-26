@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ChatService } from '../../services/chat.service';
 import { AuthService } from '../../services/auth.service';
 import { ChatChannel, ChatMessage } from '../../models/api.models';
+import { compareBySentAt, formatChatTime } from '../../utils/chat-datetime.util';
 
 @Component({
   selector: 'app-retail-communications',
@@ -55,7 +56,7 @@ export class Communications {
   loadMessages(orderId: number) {
     this.chatService.getMessages(orderId).subscribe({
       next: response => {
-        this.messages = response.content;
+        this.messages = [...response.content].sort(compareBySentAt);
         this.markAsRead(orderId);
       },
       error: error => console.error('Error loading messages:', error)
@@ -89,13 +90,6 @@ export class Communications {
   }
 
   formatTime(dateStr: string): string {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const isToday = date.toDateString() === now.toDateString();
-
-    if (isToday) {
-      return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-    }
-    return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+    return formatChatTime(dateStr);
   }
 }

@@ -319,6 +319,8 @@ services:
       - SPRING_RABBITMQ_PORT=5672
       - SPRING_RABBITMQ_USERNAME=admin
       - SPRING_RABBITMQ_PASSWORD=admin123
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_PUBLIC_ENDPOINT=http://localhost:9000
     depends_on:
       eureka-server:
         condition: service_healthy

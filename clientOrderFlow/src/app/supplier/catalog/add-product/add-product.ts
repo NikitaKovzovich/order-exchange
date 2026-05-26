@@ -39,6 +39,11 @@ export class AddProduct implements OnInit {
     weight: 0,
     countryOfOrigin: '',
     barcode: '',
+    packageLength: null as number | null,
+    packageWidth: null as number | null,
+    packageHeight: null as number | null,
+    productionDate: '',
+    expiryDate: '',
     photos: [] as File[]
   };
 
@@ -88,6 +93,14 @@ export class AddProduct implements OnInit {
     });
   }
 
+  cancel() {
+    if (this.isEditMode && this.productId) {
+      this.router.navigate(['/supplier/catalog', this.productId]);
+    } else {
+      this.router.navigate(['/supplier/catalog']);
+    }
+  }
+
   nextStep() {
     if (this.currentStep < 3) {
       this.currentStep++;
@@ -122,6 +135,13 @@ export class AddProduct implements OnInit {
   }
 
   saveProduct() {
+    const validationError = this.validateProduct();
+    if (validationError) {
+      this.errorMessage = validationError.message;
+      this.currentStep = validationError.step;
+      return;
+    }
+
     this.isSaving = true;
     this.errorMessage = '';
 
@@ -136,7 +156,10 @@ export class AddProduct implements OnInit {
       initialQuantity: this.product.initialQuantity,
       weight: this.product.weight || undefined,
       countryOfOrigin: this.product.countryOfOrigin || undefined,
-      barcode: this.product.barcode || undefined
+      barcode: this.product.barcode || undefined,
+      packageDimensions: this.buildPackageDimensions(),
+      productionDate: this.product.productionDate || undefined,
+      expiryDate: this.product.expiryDate || undefined
     };
 
     if (this.isEditMode && this.productId) {
@@ -193,6 +216,69 @@ export class AddProduct implements OnInit {
 
   get selectedPhotoNames(): string[] {
     return this.product.photos.map(file => file.name);
+  }
+
+  private validateProduct(): { message: string; step: number } | null {
+    if (!this.product.name.trim()) {
+      return { message: 'Укажите наименование товара.', step: 1 };
+    }
+    if (this.product.name.trim().length < 2) {
+      return { message: 'Наименование товара должно содержать не менее 2 символов.', step: 1 };
+    }
+    if (!this.product.sku.trim()) {
+      return { message: 'Укажите артикул (SKU) товара.', step: 1 };
+    }
+    if (!this.product.categoryId) {
+      return { message: 'Выберите категорию товара.', step: 1 };
+    }
+    if (!this.product.pricePerUnit || this.product.pricePerUnit <= 0) {
+      return { message: 'Укажите цену за единицу больше 0.', step: 2 };
+    }
+    if (!this.product.unitId) {
+      return { message: 'Выберите единицу измерения.', step: 2 };
+    }
+    if (!this.product.vatRateId) {
+      return { message: 'Выберите ставку НДС.', step: 2 };
+    }
+    if (this.product.initialQuantity == null || this.product.initialQuantity < 0) {
+      return { message: 'Укажите корректное количество на складе.', step: 2 };
+    }
+    return null;
+  }
+
+  private buildPackageDimensions(): string | undefined {
+    const length = this.product.packageLength;
+    const width = this.product.packageWidth;
+    const height = this.product.packageHeight;
+
+    if (length == null && width == null && height == null) {
+      return undefined;
+    }
+
+    return JSON.stringify({
+      length: length ?? null,
+      width: width ?? null,
+      height: height ?? null
+    });
+  }
+
+  private parsePackageDimensions(value?: string | null): void {
+    this.product.packageLength = null;
+    this.product.packageWidth = null;
+    this.product.packageHeight = null;
+
+    if (!value) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(value);
+      this.product.packageLength = parsed.length ?? null;
+      this.product.packageWidth = parsed.width ?? null;
+      this.product.packageHeight = parsed.height ?? null;
+    } catch {
+      // legacy non-JSON value, leave dimensions empty
+    }
   }
 
   private uploadImages(productId: number, returnToDetail: boolean): void {
@@ -281,8 +367,12 @@ export class AddProduct implements OnInit {
       weight: product.weight || 0,
       countryOfOrigin: product.countryOfOrigin || '',
       barcode: product.barcode || '',
+      productionDate: product.productionDate ? product.productionDate.substring(0, 10) : '',
+      expiryDate: product.expiryDate ? product.expiryDate.substring(0, 10) : '',
       photos: []
     };
+
+    this.parsePackageDimensions(product.packageDimensions);
   }
 
   private resolveUnitId(product: Product): number {

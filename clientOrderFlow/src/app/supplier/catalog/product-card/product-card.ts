@@ -31,6 +31,7 @@ export class ProductCard implements OnInit {
   newStock: number = 0;
   selectedPhoto: number = 0;
   notification: UiNotification | null = null;
+  showDeleteConfirm: boolean = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -118,6 +119,8 @@ export class ProductCard implements OnInit {
         return 'Опубликован';
       case 'DRAFT':
         return 'Черновик';
+      case 'HIDDEN':
+        return 'Скрыт';
       case 'ARCHIVED':
         return 'В архиве';
       default:
@@ -131,11 +134,61 @@ export class ProductCard implements OnInit {
         return 'bg-green-200 text-green-700';
       case 'DRAFT':
         return 'bg-yellow-200 text-yellow-700';
+      case 'HIDDEN':
+        return 'bg-gray-300 text-gray-700';
       case 'ARCHIVED':
         return 'bg-gray-200 text-gray-700';
       default:
         return 'bg-gray-200 text-gray-700';
     }
+  }
+
+  hideProduct() {
+    if (!this.product) {
+      return;
+    }
+    this.catalogService.hideProduct(this.product.id).subscribe({
+      next: () => this.loadProductDetails(),
+      error: error => {
+        console.error('Error hiding product:', error);
+        this.notification = { type: 'error', message: 'Не удалось скрыть товар.' };
+      }
+    });
+  }
+
+  publishProduct() {
+    if (!this.product) {
+      return;
+    }
+    this.catalogService.publishProduct(this.product.id).subscribe({
+      next: () => this.loadProductDetails(),
+      error: error => {
+        console.error('Error publishing product:', error);
+        this.notification = { type: 'error', message: 'Не удалось опубликовать товар.' };
+      }
+    });
+  }
+
+  askDeleteProduct() {
+    this.showDeleteConfirm = true;
+  }
+
+  cancelDelete() {
+    this.showDeleteConfirm = false;
+  }
+
+  confirmDelete() {
+    if (!this.product) {
+      return;
+    }
+    this.catalogService.deleteProduct(this.product.id).subscribe({
+      next: () => this.router.navigate(['/supplier/catalog']),
+      error: error => {
+        console.error('Error deleting product:', error);
+        this.showDeleteConfirm = false;
+        this.notification = { type: 'error', message: 'Не удалось удалить товар.' };
+      }
+    });
   }
 
   formatPrice(value?: number): string {
@@ -148,6 +201,20 @@ export class ProductCard implements OnInit {
     }
 
     return new Date(value).toLocaleDateString('ru-RU');
+  }
+
+  formatDimensions(value?: string | null): string {
+    if (!value) {
+      return '—';
+    }
+
+    try {
+      const parsed = JSON.parse(value);
+      const parts = [parsed.length, parsed.width, parsed.height].filter(part => part != null && part !== '');
+      return parts.length > 0 ? `${parts.join(' × ')} см` : '—';
+    } catch {
+      return value;
+    }
   }
 
   private loadProductDetails(): void {

@@ -65,7 +65,7 @@
               <td class="px-6 py-4">
                 <div class="text-sm font-medium text-gray-900">{{ ticket.subject }}</div>
               </td>
-              <td class="px-6 py-4 text-gray-500">{{ ticket.userEmail }}</td>
+              <td class="px-6 py-4 text-gray-500">{{ ticket.requesterCompanyName || ticket.userEmail || ('Компания #' + ticket.companyId) }}</td>
               <td class="px-6 py-4 text-gray-500">{{ formatDate(ticket.createdAt) }}</td>
               <td class="px-6 py-4">
                 <span [ngClass]="getStatusClass(ticket.status)" class="text-xs font-semibold px-2 py-1 rounded-full">

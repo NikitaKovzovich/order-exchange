@@ -45,6 +45,9 @@
               <a [routerLink]="['/retail/orders', order.id]" class="font-medium text-indigo-600 hover:underline">Просмотр</a>
             </td>
           </tr>
+          <tr *ngIf="recentOrders.length === 0">
+            <td colspan="5" class="px-6 py-8 text-center text-gray-500">Вы не оформили ни одного заказа</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -52,14 +55,22 @@
 
   <div class="bg-white p-6 rounded-lg shadow">
     <h3 class="text-lg font-semibold text-gray-800 mb-4">Структура расходов</h3>
-    <div class="h-64">
+    <div class="h-64" [class.hidden]="expenseStructure.length === 0">
       <canvas #expensesChart></canvas>
+    </div>
+    <div *ngIf="expenseStructure.length === 0" class="h-64 flex items-center justify-center text-sm text-gray-500 text-center">
+      Нет данных о расходах за период
     </div>
   </div>
 </div>
 
 <div class="bg-white p-6 rounded-lg shadow">
-  <h3 class="text-lg font-semibold text-gray-800 mb-4">Динамика расходов (последние 7 дней)</h3>
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-lg font-semibold text-gray-800">Динамика расходов</h3>
+    <select [ngModel]="expensesPeriod" (ngModelChange)="onExpensesPeriodChange($event)" class="px-3 py-1.5 border border-gray-300 rounded-md text-sm">
+      <option *ngFor="let p of periods" [value]="p.value">{{ p.label }}</option>
+    </select>
+  </div>
   <div class="h-80">
     <canvas #expensesDynamicsChart></canvas>
   </div>

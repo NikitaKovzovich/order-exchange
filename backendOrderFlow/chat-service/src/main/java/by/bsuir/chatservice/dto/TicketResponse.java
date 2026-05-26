@@ -6,6 +6,7 @@ public record TicketResponse(
 		Long id,
 		Long requesterCompanyId,
 		Long requesterUserId,
+		String requesterCompanyName,
 		String subject,
 		String status,
 		String priority,

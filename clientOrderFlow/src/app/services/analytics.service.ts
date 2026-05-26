@@ -28,6 +28,7 @@ export interface OrderFunnel {
   paymentProblem: number;
   awaitingShipment: number;
   shipped: number;
+  awaitingCorrection: number;
   delivered: number;
   closed: number;
 }
@@ -157,14 +158,16 @@ export class AnalyticsService {
     );
   }
 
-  getSupplierDashboard(): Observable<SupplierDashboard> {
-    return this.http.get<ApiResponse<SupplierDashboard>>(`${this.API_URL}/dashboard/supplier`).pipe(
+  getSupplierDashboard(period: string = 'week'): Observable<SupplierDashboard> {
+    const params = new HttpParams().set('period', period);
+    return this.http.get<ApiResponse<SupplierDashboard>>(`${this.API_URL}/dashboard/supplier`, { params }).pipe(
       map(response => response.data!)
     );
   }
 
-  getCustomerDashboard(): Observable<CustomerDashboard> {
-    return this.http.get<ApiResponse<CustomerDashboard>>(`${this.API_URL}/dashboard/customer`).pipe(
+  getCustomerDashboard(period: string = 'week'): Observable<CustomerDashboard> {
+    const params = new HttpParams().set('period', period);
+    return this.http.get<ApiResponse<CustomerDashboard>>(`${this.API_URL}/dashboard/customer`, { params }).pipe(
       map(response => response.data!)
     );
   }

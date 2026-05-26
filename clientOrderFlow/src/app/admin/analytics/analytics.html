@@ -27,26 +27,6 @@
     </div>
 
     <ng-container *ngIf="!isLoading && !loadError">
-      <!-- KPI Cards -->
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <div class="rounded-lg bg-white p-5 shadow-sm">
-          <p class="text-sm text-gray-500">Всего пользователей</p>
-          <p class="mt-1 text-3xl font-bold text-gray-800">{{ kpiData.totalUsers }}</p>
-        </div>
-        <div class="rounded-lg bg-white p-5 shadow-sm">
-          <p class="text-sm text-gray-500">Количество заказов</p>
-          <p class="mt-1 text-3xl font-bold text-gray-800">{{ kpiData.totalOrders }}</p>
-        </div>
-        <div class="rounded-lg bg-white p-5 shadow-sm">
-          <p class="text-sm text-gray-500">Выручка по заказам</p>
-          <p class="mt-1 text-3xl font-bold text-gray-800">{{ kpiData.totalRevenue }} BYN</p>
-        </div>
-        <div class="rounded-lg bg-white p-5 shadow-sm">
-          <p class="text-sm text-gray-500">Средний чек</p>
-          <p class="mt-1 text-3xl font-bold text-gray-800">{{ kpiData.averageCheck }} BYN</p>
-        </div>
-      </div>
-
       <!-- Main Chart -->
       <div class="mt-8 rounded-lg bg-white p-6 shadow-sm">
         <h3 class="mb-4 text-lg font-semibold text-gray-800">Динамика регистраций</h3>

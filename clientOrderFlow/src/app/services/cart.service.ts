@@ -64,6 +64,12 @@ export class CartService {
     );
   }
 
+  checkoutSupplier(supplierId: number, request: CheckoutRequest): Observable<CheckoutResponse> {
+    return this.http.post<ApiResponse<CheckoutResponse>>(`${this.API_URL}/checkout/${supplierId}`, request).pipe(
+      map(response => response.data!)
+    );
+  }
+
   getItemCount(): number {
     return this.cartSubject.value?.itemCount || 0;
   }

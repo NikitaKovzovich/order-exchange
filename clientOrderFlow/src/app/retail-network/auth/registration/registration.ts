@@ -194,10 +194,20 @@ export class Registration {
 
   onFileSelect(event: any, field: keyof typeof this.files) {
     const file = event.target.files?.[0];
-    if (file) {
-      this.files[field] = file;
-      this.fileNames[field] = file.name;
+    if (!file) {
+      return;
     }
+    const maxSizeBytes = 10 * 1024 * 1024;
+    if (file.size > maxSizeBytes) {
+      this.errors[field as string] = `Файл «${file.name}» превышает 10 MB. Выберите файл меньшего размера.`;
+      event.target.value = '';
+      this.files[field] = null;
+      this.fileNames[field] = '';
+      return;
+    }
+    delete this.errors[field as string];
+    this.files[field] = file;
+    this.fileNames[field] = file.name;
   }
 
   onSubmit() {

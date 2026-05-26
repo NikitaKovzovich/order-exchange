@@ -12,12 +12,12 @@
         [(ngModel)]="searchQuery"
         (input)="applyFilters()"
         placeholder="Введите название поставщика..."
-        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+        class="w-full h-11 px-4 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
     </div>
     <div class="flex items-end">
       <button
         (click)="applyFilters()"
-        class="w-full px-4 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+        class="w-full h-11 px-4 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
         Найти
       </button>
     </div>
@@ -41,11 +41,11 @@
   Загрузка поставщиков...
 </div>
 
-<div *ngIf="!isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-  <div *ngFor="let supplier of filteredSuppliers" class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6">
+<div *ngIf="!isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+  <div *ngFor="let supplier of filteredSuppliers" class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 flex flex-col h-full">
     <div class="flex items-start justify-between mb-4">
       <div class="flex items-center">
-        <div class="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg">
+        <div class="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg flex-shrink-0">
           {{ supplier.companyName.charAt(0) }}
         </div>
         <div class="ml-3">
@@ -55,24 +55,24 @@
       </div>
     </div>
 
-    <div class="space-y-2 mb-4">
+    <div class="space-y-2 mb-4 flex-1">
       <div>
         <span [ngClass]="getStatusClass(supplier.partnershipStatus)" class="inline-flex text-xs font-semibold px-2.5 py-1 rounded-full">
           {{ getStatusLabel(supplier.partnershipStatus) }}
         </span>
       </div>
       <div class="flex items-center text-sm text-gray-600">
-        <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg class="h-4 w-4 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
         </svg>
         {{ supplier.contactPhone }}
       </div>
     </div>
 
-    <div class="flex space-x-2">
+    <div class="flex space-x-2 mt-auto">
       <button
         *ngIf="supplier.partnershipStatus === 'NEW'"
-        (click)="requestPartnership(supplier)"
+        (click)="openRequestModal(supplier)"
         [disabled]="isSubmitting[supplier.companyId]"
         class="flex-1 bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 disabled:bg-indigo-300 text-sm text-center block">
         {{ isSubmitting[supplier.companyId] ? 'Отправка...' : 'Отправить запрос' }}
@@ -89,6 +89,55 @@
         disabled
         class="flex-1 border border-yellow-300 bg-yellow-50 text-yellow-700 py-2 rounded-md text-sm">
         Запрос отправлен
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно «Запрос на сотрудничество» -->
+<div *ngIf="showRequestModal && modalSupplier" class="fixed inset-0 z-30 flex items-center justify-center bg-black/40 px-4">
+  <div class="bg-white rounded-lg shadow-xl w-full max-w-lg">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h3 class="text-lg font-semibold text-gray-800">Начать сотрудничество с {{ modalSupplier.companyName }}</h3>
+    </div>
+    <div class="px-6 py-4 space-y-4">
+      <p class="text-sm text-gray-600">
+        Для получения доступа к каталогу и оформлению заказов, пожалуйста, укажите реквизиты действующего
+        договора поставки с этим контрагентом.
+      </p>
+
+      <div *ngIf="modalError" class="bg-red-50 text-red-700 border border-red-200 rounded-md px-3 py-2 text-sm">
+        {{ modalError }}
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Номер договора</label>
+        <input type="text" [(ngModel)]="contractForm.contractNumber"
+               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+               placeholder="Например, ДП-2026-145">
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Дата подписания</label>
+          <input type="date" [(ngModel)]="contractForm.contractDate"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Дата окончания действия</label>
+          <input type="date" [(ngModel)]="contractForm.contractEndDate"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+        </div>
+      </div>
+    </div>
+    <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+      <button type="button" (click)="closeRequestModal()"
+              class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+        Отмена
+      </button>
+      <button type="button" (click)="submitPartnershipRequest()"
+              [disabled]="isSubmitting[modalSupplier.companyId]"
+              class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-indigo-300">
+        {{ isSubmitting[modalSupplier.companyId] ? 'Отправка...' : 'Отправить запрос' }}
       </button>
     </div>
   </div>

@@ -41,11 +41,43 @@
   </div>
 </div>
 
+<div class="flex flex-col md:flex-row md:items-end gap-4 mb-6 bg-white p-4 rounded-lg shadow-sm">
+  <div class="flex-1">
+    <label class="block text-xs font-medium text-gray-500 mb-1">Категория</label>
+    <select [(ngModel)]="categoryFilter" (change)="onFilterChange()" class="w-full px-3 py-2 border rounded-lg text-sm">
+      <option [ngValue]="''">Все категории</option>
+      <option *ngFor="let category of categories" [ngValue]="category.id">{{ category.name }}</option>
+    </select>
+  </div>
+  <div class="flex-1">
+    <label class="block text-xs font-medium text-gray-500 mb-1">Статус</label>
+    <select [(ngModel)]="statusFilter" (change)="onFilterChange()" class="w-full px-3 py-2 border rounded-lg text-sm">
+      <option [ngValue]="''">Все статусы</option>
+      <option [ngValue]="'PUBLISHED'">Опубликован</option>
+      <option [ngValue]="'DRAFT'">Черновик</option>
+      <option [ngValue]="'HIDDEN'">Скрыт</option>
+      <option [ngValue]="'ARCHIVED'">В архиве</option>
+    </select>
+  </div>
+  <div class="flex-1">
+    <label class="block text-xs font-medium text-gray-500 mb-1">Сортировка</label>
+    <select [(ngModel)]="sortOption" (change)="onFilterChange()" class="w-full px-3 py-2 border rounded-lg text-sm">
+      <option value="name:asc">Название (А-Я)</option>
+      <option value="name:desc">Название (Я-А)</option>
+      <option value="price:asc">Цена (по возрастанию)</option>
+      <option value="price:desc">Цена (по убыванию)</option>
+      <option value="sku:asc">Артикул (А-Я)</option>
+      <option value="sku:desc">Артикул (Я-А)</option>
+    </select>
+  </div>
+</div>
+
 <div class="bg-white p-6 rounded-lg shadow-sm">
   <div *ngIf="viewMode === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
     <div *ngFor="let product of filteredProducts" class="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer" [routerLink]="['/supplier/catalog', product.id]">
-      <div class="w-full h-40 flex items-center justify-center bg-gray-200 text-gray-600">
-        <span class="text-sm font-medium">Фото товара</span>
+      <div class="w-full h-40 bg-gray-200">
+        <img *ngIf="product.primaryImageUrl" [src]="product.primaryImageUrl" [alt]="product.name" class="w-full h-full object-cover">
+        <div *ngIf="!product.primaryImageUrl" class="w-full h-full flex items-center justify-center text-gray-500 text-sm font-medium">Нет фото</div>
       </div>
       <div class="p-4">
         <h3 class="font-semibold text-gray-800 truncate">{{ product.name }}</h3>
@@ -79,8 +111,9 @@
         <tr *ngFor="let product of filteredProducts" class="hover:bg-gray-50">
           <td class="px-6 py-4 whitespace-nowrap">
             <div class="flex items-center">
-              <div class="h-10 w-10 flex-shrink-0 bg-gray-200 rounded flex items-center justify-center">
-                <span class="text-xs text-gray-600">Фото</span>
+              <div class="h-10 w-10 flex-shrink-0 bg-gray-200 rounded overflow-hidden flex items-center justify-center">
+                <img *ngIf="product.primaryImageUrl" [src]="product.primaryImageUrl" [alt]="product.name" class="h-full w-full object-cover">
+                <span *ngIf="!product.primaryImageUrl" class="text-xs text-gray-600">Фото</span>
               </div>
               <div class="ml-4">
                 <div class="text-sm font-medium text-gray-900">{{ product.name }}</div>
@@ -96,11 +129,31 @@
             </span>
           </td>
           <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-            <a [routerLink]="['/supplier/catalog', product.id]" class="text-indigo-600 hover:text-indigo-900">Подробнее</a>
+            <div class="flex items-center justify-end gap-3">
+              <a [routerLink]="['/supplier/catalog', product.id]" class="text-indigo-600 hover:text-indigo-900">Подробнее</a>
+              <button *ngIf="product.status === 'PUBLISHED'" (click)="hideProduct(product)" class="text-gray-600 hover:text-gray-900">Скрыть</button>
+              <button *ngIf="product.status === 'HIDDEN' || product.status === 'DRAFT'" (click)="publishProduct(product)" class="text-green-600 hover:text-green-800">Опубликовать</button>
+              <button (click)="askDeleteProduct(product)" class="text-red-600 hover:text-red-800">Удалить</button>
+            </div>
           </td>
         </tr>
       </tbody>
     </table>
+  </div>
+</div>
+
+<!-- Модальное окно подтверждения удаления -->
+<div *ngIf="productToDelete" class="fixed inset-0 z-30 flex items-center justify-center bg-black/40 px-4">
+  <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+    <div class="px-6 py-4 border-b"><h3 class="text-lg font-semibold text-gray-800">Удаление товара</h3></div>
+    <div class="px-6 py-4">
+      <p class="text-sm text-gray-600">Вы уверены, что хотите удалить этот товар из каталога?</p>
+      <p class="mt-2 text-sm font-medium text-gray-800">{{ productToDelete.name }}</p>
+    </div>
+    <div class="px-6 py-4 border-t flex justify-end gap-3">
+      <button (click)="cancelDelete()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Отмена</button>
+      <button (click)="confirmDelete()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Удалить</button>
+    </div>
   </div>
 </div>
 

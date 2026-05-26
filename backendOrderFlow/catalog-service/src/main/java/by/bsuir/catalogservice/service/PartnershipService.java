@@ -24,6 +24,11 @@ import java.util.*;
 @Service
 public class PartnershipService {
 
+	private static final String NOTIFICATION_EXCHANGE = "order.events";
+	private static final String NOTIFICATION_ROUTING_KEY = "partnership.notification";
+	private static final String RPC_EXCHANGE = "rpc.exchange";
+	private static final String RPC_GET_COMPANY_NAME = "rpc.auth.getCompanyName";
+
 	private final PartnershipRepository partnershipRepository;
 	private final RabbitTemplate rabbitTemplate;
 
@@ -57,6 +62,13 @@ public class PartnershipService {
 		partnership = partnershipRepository.save(partnership);
 		log.info("Partnership request created: supplier={}, customer={}", request.supplierId(), customerId);
 
+		String customerName = request.customerCompanyName() != null && !request.customerCompanyName().isBlank()
+				? request.customerCompanyName()
+				: resolveCompanyName(customerId, "Торговая сеть");
+		publishNotification(request.supplierId(), "PARTNERSHIP_REQUEST", "Запрос на сотрудничество",
+				"Торговая сеть \"" + customerName + "\" отправила запрос на сотрудничество и указала данные договора. "
+						+ "Пожалуйста, проверьте информацию и подтвердите заявку для начала работы.");
+
 		return toResponse(partnership);
 	}
 
@@ -70,6 +82,14 @@ public class PartnershipService {
 		partnership = partnershipRepository.save(partnership);
 
 		log.info("Partnership {} accepted by supplier {}", partnershipId, supplierId);
+
+		String supplierName = partnership.getSupplierCompanyName() != null && !partnership.getSupplierCompanyName().isBlank()
+				? partnership.getSupplierCompanyName()
+				: resolveCompanyName(supplierId, "Поставщик");
+		publishNotification(partnership.getCustomerId(), "CONTRACT_CONFIRMED", "Подтверждение договора",
+				"Поставщик \"" + supplierName + "\" подтвердил ваш запрос на сотрудничество. "
+						+ "Теперь вам доступен каталог товаров этого поставщика.");
+
 		return toResponse(partnership);
 	}
 
@@ -202,6 +222,50 @@ public class PartnershipService {
 		}
 
 		return result;
+	}
+
+	private void publishNotification(Long recipientId, String type, String title, String message) {
+		if (rabbitTemplate == null || recipientId == null) {
+			return;
+		}
+		try {
+			Map<String, Object> payload = Map.of(
+					"recipientId", recipientId,
+					"type", type,
+					"title", title,
+					"message", message,
+					"orderId", 0L,
+					"orderNumber", ""
+			);
+			rabbitTemplate.convertAndSend(NOTIFICATION_EXCHANGE, NOTIFICATION_ROUTING_KEY, payload);
+			log.debug("Published partnership notification: type={}, recipient={}", type, recipientId);
+		} catch (Exception e) {
+			log.warn("Failed to publish partnership notification: {}", e.getMessage());
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private String resolveCompanyName(Long companyId, String fallback) {
+		if (rabbitTemplate == null || companyId == null) {
+			return fallback;
+		}
+		try {
+			Object response = rabbitTemplate.convertSendAndReceive(RPC_EXCHANGE, RPC_GET_COMPANY_NAME,
+					Map.of("companyId", companyId));
+			if (response instanceof Map<?, ?> map && Boolean.TRUE.equals(map.get("success"))) {
+				Object legalName = map.get("legalName");
+				if (legalName != null && !legalName.toString().isEmpty()) {
+					return legalName.toString();
+				}
+				Object name = map.get("name");
+				if (name != null && !name.toString().isEmpty()) {
+					return name.toString();
+				}
+			}
+		} catch (Exception e) {
+			log.warn("Failed to resolve company name for {}: {}", companyId, e.getMessage());
+		}
+		return fallback;
 	}
 
 	private Long toLong(Object value) {

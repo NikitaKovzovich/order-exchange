@@ -20,6 +20,8 @@ public class RabbitMQConfig {
 	public static final String ORDER_CONFIRMED_QUEUE = "order.confirmed.queue";
 	public static final String STOCK_RESERVE_QUEUE = "stock.reserve.queue";
 	public static final String ORDER_NOTIFICATION_QUEUE = "auth.order.notification";
+	public static final String PARTNERSHIP_NOTIFICATION_QUEUE = "order.partnership.notification";
+	public static final String CHAT_NOTIFICATION_QUEUE = "order.chat.notification";
 
 
 	public static final String RPC_EXCHANGE = "rpc.exchange";
@@ -95,6 +97,30 @@ public class RabbitMQConfig {
 		return BindingBuilder.bind(orderNotificationQueue())
 				.to(orderExchange())
 				.with("order.notification");
+	}
+
+	@Bean
+	public Queue partnershipNotificationQueue() {
+		return QueueBuilder.durable(PARTNERSHIP_NOTIFICATION_QUEUE).build();
+	}
+
+	@Bean
+	public Binding partnershipNotificationBinding() {
+		return BindingBuilder.bind(partnershipNotificationQueue())
+				.to(orderExchange())
+				.with("partnership.notification");
+	}
+
+	@Bean
+	public Queue chatNotificationQueue() {
+		return QueueBuilder.durable(CHAT_NOTIFICATION_QUEUE).build();
+	}
+
+	@Bean
+	public Binding chatNotificationBinding() {
+		return BindingBuilder.bind(chatNotificationQueue())
+				.to(orderExchange())
+				.with("chat.message");
 	}
 
 	@Bean

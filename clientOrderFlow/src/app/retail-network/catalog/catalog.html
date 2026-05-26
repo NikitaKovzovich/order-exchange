@@ -21,19 +21,19 @@
   <p class="text-gray-500">Загрузка товаров...</p>
 </div>
 
-<div *ngIf="!isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-  <div *ngFor="let product of products" class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
-    <div class="p-6">
-      <div class="flex justify-between items-start mb-3">
-        <h3 class="text-lg font-semibold">{{ product.name }}</h3>
-      </div>
-      <p class="text-sm text-gray-600 mb-2">{{ product.supplierName || 'Поставщик #' + product.supplierId }}</p>
+<div *ngIf="!isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+  <div *ngFor="let product of products" class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow flex flex-col">
+    <a [routerLink]="['/retail/catalog', product.id]" class="block w-full h-44 bg-gray-200 rounded-t-lg overflow-hidden">
+      <img *ngIf="product.primaryImageUrl" [src]="product.primaryImageUrl" [alt]="product.name" class="w-full h-full object-cover">
+      <div *ngIf="!product.primaryImageUrl" class="w-full h-full flex items-center justify-center text-gray-500 text-sm font-medium">Нет фото</div>
+    </a>
+    <div class="p-6 flex flex-col flex-1">
+      <a [routerLink]="['/retail/catalog', product.id]" class="text-lg font-semibold hover:text-indigo-600">{{ product.name }}</a>
+      <p class="text-sm text-gray-600 mb-1 mt-1">{{ product.supplierName || 'Поставщик #' + product.supplierId }}</p>
       <p class="text-sm text-gray-500 mb-4">{{ product.category.name }}</p>
-      <div class="flex justify-between items-center mb-4">
-        <div>
-          <p class="text-2xl font-bold text-indigo-600">{{ formatPrice(product.pricePerUnit) }} BYN</p>
-          <p class="text-sm text-gray-500">В наличии: {{ product.quantityAvailable }} {{ product.unitOfMeasure }}</p>
-        </div>
+      <div class="mb-4 mt-auto">
+        <p class="text-2xl font-bold text-indigo-600">{{ formatPrice(product.pricePerUnit) }} BYN</p>
+        <p class="text-sm text-gray-500">В наличии: {{ product.quantityAvailable }} {{ product.unitOfMeasure }}</p>
       </div>
       <button (click)="addToCart(product)" class="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition-colors">
         Добавить в заказ

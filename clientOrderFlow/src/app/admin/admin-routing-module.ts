@@ -46,6 +46,10 @@ export const adminRoutes: Routes = [
         loadComponent: () => import('./content/content').then(m => m.Content)
       },
       {
+        path: 'content/product/:id',
+        loadComponent: () => import('./content/product-view/product-view').then(m => m.ProductView)
+      },
+      {
         path: 'dictionaries',
         loadComponent: () => import('./dictionaries/dictionaries').then(m => m.Dictionaries)
       },

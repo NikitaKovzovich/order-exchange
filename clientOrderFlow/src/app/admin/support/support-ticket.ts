@@ -5,6 +5,7 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { Header } from '../shared/header/header';
 import { SupportService } from '../../services/support.service';
 import { SupportTicket as SupportTicketModel, TicketMessage, TicketStatus } from '../../models/api.models';
+import { formatChatDateTime } from '../../utils/chat-datetime.util';
 
 interface UiNotification {
   type: 'success' | 'error' | 'info' | 'warning';
@@ -115,7 +116,7 @@ export class SupportTicket implements OnInit {
   }
 
   formatDateTime(value?: string): string {
-    return value ? new Date(value).toLocaleString('ru-RU') : '—';
+    return formatChatDateTime(value);
   }
 
   isAdminMessage(message: TicketMessage): boolean {

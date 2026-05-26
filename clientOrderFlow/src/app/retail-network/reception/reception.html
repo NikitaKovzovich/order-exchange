@@ -1,28 +1,40 @@
 <div class="bg-white p-6 rounded-lg shadow mb-6">
-  <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-	<div>
-	  <h2 class="text-2xl font-bold">Цифровой журнал приёмки</h2>
-	  <p class="text-gray-600 mt-1">Агрегаты и история приёмок по поставщикам и поставкам</p>
-	</div>
+  <h2 class="text-2xl font-bold">Зачисленный товар на баланс</h2>
+  <p class="text-gray-600 mt-1">Журнал приёмок: записи добавляются автоматически после подтверждения получения или подписания корректировочной накладной.</p>
 
-	<div class="grid grid-cols-1 md:grid-cols-3 gap-3 w-full md:w-auto">
-	  <input
-		type="date"
-		[(ngModel)]="filterDate"
-		class="px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+  <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Поставщик</label>
+      <select [(ngModel)]="filterSupplierId" (change)="onFilterChange()"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+        <option [ngValue]="null">Все поставщики</option>
+        <option *ngFor="let supplier of suppliers" [ngValue]="supplier.companyId">{{ supplier.companyName }}</option>
+      </select>
+    </div>
 
-	  <input
-		type="number"
-		[(ngModel)]="filterSupplier"
-		placeholder="ID поставщика"
-		class="px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Период</label>
+      <select [(ngModel)]="filterPeriod" (change)="onFilterChange()"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+        <option value="all">Всё время</option>
+        <option value="last7">Последние 7 дней</option>
+        <option value="thisMonth">Этот месяц</option>
+        <option value="custom">Произвольный период</option>
+      </select>
+    </div>
 
-	  <button
-		(click)="applyFilters()"
-		class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
-		Применить
-	  </button>
-	</div>
+    <div *ngIf="filterPeriod === 'custom'" class="grid grid-cols-2 gap-2">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">С</label>
+        <input type="date" [(ngModel)]="customDateFrom" (change)="onFilterChange()"
+               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">По</label>
+        <input type="date" [(ngModel)]="customDateTo" (change)="onFilterChange()"
+               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+      </div>
+    </div>
   </div>
 </div>
 
@@ -30,79 +42,88 @@
   {{ errorMessage }}
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-  <div class="bg-white p-5 rounded-lg shadow">
-	<p class="text-sm text-gray-500">Количество записей</p>
-	<p class="text-3xl font-bold text-gray-800 mt-1">{{ totalItems }}</p>
-  </div>
-  <div class="bg-white p-5 rounded-lg shadow">
-	<p class="text-sm text-gray-500">Общий объём</p>
-	<p class="text-3xl font-bold text-gray-800 mt-1">{{ totalQuantity }}</p>
-  </div>
-  <div class="bg-white p-5 rounded-lg shadow">
-	<p class="text-sm text-gray-500">Общая сумма</p>
-	<p class="text-3xl font-bold text-gray-800 mt-1">{{ totalAmount | number:'1.2-2' }} BYN</p>
-  </div>
-</div>
-
 <div *ngIf="isLoading" class="bg-white p-12 rounded-lg shadow text-center text-gray-500 mb-6">
   Загрузка журнала приёмки...
 </div>
 
-<div *ngIf="!isLoading" class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-  <div class="xl:col-span-2 bg-white rounded-lg shadow overflow-hidden">
-	<div class="p-4 border-b bg-gray-50">
-	  <h3 class="text-lg font-semibold text-gray-800">Детализация поставок</h3>
-	</div>
-
-	<div class="overflow-x-auto">
-	  <table class="w-full text-sm text-left text-gray-600">
-		<thead class="bg-gray-50 text-xs uppercase text-gray-500">
-		  <tr>
-			<th class="px-4 py-3">Дата приёмки</th>
-			<th class="px-4 py-3">Поставщик</th>
-			<th class="px-4 py-3">Товар</th>
-			<th class="px-4 py-3">Кол-во</th>
-			<th class="px-4 py-3">Сумма</th>
-			<th class="px-4 py-3">Заказ</th>
-		  </tr>
-		</thead>
-		<tbody>
-		  <tr *ngFor="let record of details" class="border-t">
-			<td class="px-4 py-3">{{ formatDateTime(record.acceptanceDate) }}</td>
-			<td class="px-4 py-3">{{ record.supplierName }}</td>
-			<td class="px-4 py-3">
-			  <div class="font-medium text-gray-900">{{ record.productName }}</div>
-			  <div class="text-xs text-gray-500">SKU: {{ record.productSku }}</div>
-			</td>
-			<td class="px-4 py-3">{{ record.quantity }}</td>
-			<td class="px-4 py-3">{{ record.totalPrice | number:'1.2-2' }} BYN</td>
-			<td class="px-4 py-3">#{{ record.orderNumber }}</td>
-		  </tr>
-		</tbody>
-	  </table>
-	</div>
+<!-- Таблица 1: Детализированный журнал зачислений -->
+<div *ngIf="!isLoading" class="bg-white rounded-lg shadow overflow-hidden mb-6">
+  <div class="p-4 border-b bg-gray-50">
+    <h3 class="text-lg font-semibold text-gray-800">Детализированный журнал зачислений</h3>
+    <p class="text-sm text-gray-500 mt-1">Хронологический лог всех поступлений товаров от поставщиков</p>
   </div>
 
-  <div class="bg-white rounded-lg shadow overflow-hidden">
-	<div class="p-4 border-b bg-gray-50">
-	  <h3 class="text-lg font-semibold text-gray-800">Сводка по товарам</h3>
-	</div>
-
-	<div class="divide-y">
-	  <div *ngFor="let item of summary" class="p-4">
-		<div class="font-medium text-gray-900">{{ item.productName }}</div>
-		<div class="text-xs text-gray-500 mb-2">SKU: {{ item.productSku }}</div>
-		<div class="text-sm text-gray-600">Количество: {{ item.totalQuantity }}</div>
-		<div class="text-sm text-gray-600">Сумма: {{ item.totalAmount | number:'1.2-2' }} BYN</div>
-		<div class="text-sm text-gray-600">Поставщиков: {{ item.uniqueSuppliers }}</div>
-	  </div>
-	</div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm text-left text-gray-600">
+      <thead class="bg-gray-50 text-xs uppercase text-gray-500">
+        <tr>
+          <th class="px-4 py-3">Дата зачисления</th>
+          <th class="px-4 py-3">Товар</th>
+          <th class="px-4 py-3">Поставщик</th>
+          <th class="px-4 py-3 text-right">Кол-во (шт./кг)</th>
+          <th class="px-4 py-3">Заказ №</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let record of details" class="border-t hover:bg-gray-50">
+          <td class="px-4 py-3 whitespace-nowrap">{{ formatDateTime(record.acceptanceDate) }}</td>
+          <td class="px-4 py-3">
+            <div class="font-medium text-gray-900">{{ record.productName }}</div>
+            <div class="text-xs text-gray-500" *ngIf="record.productSku">SKU: {{ record.productSku }}</div>
+          </td>
+          <td class="px-4 py-3">{{ record.supplierName }}</td>
+          <td class="px-4 py-3 text-right font-medium">{{ record.quantity }}</td>
+          <td class="px-4 py-3">
+            <a [routerLink]="['/retail/orders', record.orderId]" class="text-indigo-600 hover:underline">#{{ record.orderNumber }}</a>
+          </td>
+        </tr>
+        <tr *ngIf="details.length === 0">
+          <td colspan="5" class="px-4 py-8 text-center text-gray-500">Записей за выбранный период не найдено</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
-<div *ngIf="!isLoading && details.length === 0" class="bg-white p-12 rounded-lg shadow text-center mt-6">
-  <h3 class="text-lg font-medium text-gray-900">Записи журнала не найдены</h3>
-  <p class="mt-2 text-sm text-gray-500">Измените фильтры или выберите другой период</p>
-</div>
+<!-- Таблица 2: Сводка по принятому товару -->
+<div *ngIf="!isLoading" class="bg-white rounded-lg shadow overflow-hidden">
+  <div class="p-4 border-b bg-gray-50">
+    <h3 class="text-lg font-semibold text-gray-800">Сводка по принятому товару (за выбранный период)</h3>
+    <p class="text-sm text-gray-500 mt-1">Группировка по наименованиям товаров</p>
+  </div>
 
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm text-left text-gray-600">
+      <thead class="bg-gray-50 text-xs uppercase text-gray-500">
+        <tr>
+          <th class="px-4 py-3">Товар</th>
+          <th class="px-4 py-3 text-right">Общее кол-во (шт./кг)</th>
+          <th class="px-4 py-3 text-right">Общая сумма закупки (BYN)</th>
+          <th class="px-4 py-3 text-right">Уникальные поставщики</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of summary" class="border-t hover:bg-gray-50">
+          <td class="px-4 py-3">
+            <div class="font-medium text-gray-900">{{ item.productName }}</div>
+            <div class="text-xs text-gray-500" *ngIf="item.productSku">SKU: {{ item.productSku }}</div>
+          </td>
+          <td class="px-4 py-3 text-right font-medium">{{ item.totalQuantity }}</td>
+          <td class="px-4 py-3 text-right">{{ formatAmount(item.totalAmount) }}</td>
+          <td class="px-4 py-3 text-right">{{ item.uniqueSuppliers }}</td>
+        </tr>
+        <tr *ngIf="summary.length === 0">
+          <td colspan="4" class="px-4 py-8 text-center text-gray-500">Нет принятых товаров за выбранный период</td>
+        </tr>
+      </tbody>
+      <tfoot *ngIf="summary.length > 0">
+        <tr class="bg-gray-50 border-t-2 border-gray-300 font-bold">
+          <td class="px-4 py-3">ИТОГО</td>
+          <td class="px-4 py-3 text-right">{{ totalQuantity }}</td>
+          <td class="px-4 py-3 text-right">{{ formatAmount(totalAmount) }}</td>
+          <td class="px-4 py-3"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>

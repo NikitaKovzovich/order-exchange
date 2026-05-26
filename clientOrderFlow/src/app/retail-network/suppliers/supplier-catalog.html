@@ -5,6 +5,7 @@
         ← Вернуться к поставщикам
       </a>
       <h2 class="text-2xl font-bold">Каталог: {{ supplierName }}</h2>
+      <p *ngIf="contractNumber" class="text-sm font-medium text-indigo-600 mt-1">Вы работаете по договору {{ contractNumber }}</p>
       <p class="text-gray-600 mt-2">Выберите товары для заказа</p>
     </div>
     <div *ngIf="getTotalItems() > 0" class="text-right">
@@ -81,20 +82,20 @@
 </div>
 
 <!-- Список товаров -->
-<div *ngIf="!isLoading && products.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-  <div *ngFor="let product of products" class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
-    <div class="h-48 bg-gray-200 rounded-t-lg flex items-center justify-center">
+<div *ngIf="!isLoading && products.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
+  <div *ngFor="let product of products" class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow flex flex-col">
+    <a [routerLink]="['/retail/catalog', product.id]" class="h-48 bg-gray-200 rounded-t-lg flex items-center justify-center overflow-hidden">
       <img *ngIf="product.primaryImageUrl" [src]="product.primaryImageUrl" [alt]="product.name" class="h-full w-full rounded-t-lg object-cover">
       <svg *ngIf="!product.primaryImageUrl" class="h-20 w-20 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
       </svg>
-    </div>
+    </a>
 
-    <div class="p-4">
-      <h3 class="text-lg font-semibold text-gray-800 mb-1">{{ product.name }}</h3>
+    <div class="p-4 flex flex-col flex-1">
+      <a [routerLink]="['/retail/catalog', product.id]" class="text-lg font-semibold text-gray-800 mb-1 hover:text-indigo-600">{{ product.name }}</a>
       <p class="text-sm text-gray-500 mb-2">{{ product.category.name }}</p>
 
-      <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center justify-between mb-3 mt-auto">
         <div>
           <p class="text-2xl font-bold text-indigo-600">{{ formatPrice(product.pricePerUnit) }} BYN</p>
           <p class="text-xs text-gray-500">за {{ product.unitOfMeasure }}</p>

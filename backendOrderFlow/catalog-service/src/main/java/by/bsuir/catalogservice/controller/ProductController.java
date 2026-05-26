@@ -74,9 +74,14 @@ public class ProductController {
 	public ResponseEntity<ApiResponse<PageResponse<ProductResponse>>> getSupplierProducts(
 			@RequestHeader("X-User-Company-Id") @Parameter(hidden = true) Long supplierId,
 			@RequestParam(required = false) @Parameter(description = "Search by product name, SKU or description") String search,
+			@RequestParam(required = false) @Parameter(description = "Filter by status (DRAFT/PUBLISHED/ARCHIVED)") String status,
+			@RequestParam(required = false) @Parameter(description = "Filter by category ID") Long categoryId,
+			@RequestParam(defaultValue = "name") @Parameter(description = "Sort field (name/price/sku)") String sortBy,
+			@RequestParam(defaultValue = "asc") @Parameter(description = "Sort direction (asc/desc)") String sortDir,
 			@RequestParam(defaultValue = "0") @Parameter(description = "Page number") int page,
 			@RequestParam(defaultValue = "20") @Parameter(description = "Page size") int size) {
-		PageResponse<ProductResponse> products = productService.getSupplierProducts(supplierId, search, page, size);
+		PageResponse<ProductResponse> products = productService.getSupplierProducts(
+				supplierId, search, status, categoryId, sortBy, sortDir, page, size);
 		return ResponseEntity.ok(ApiResponse.success(products));
 	}
 
@@ -195,15 +200,15 @@ public class ProductController {
 
 
 	@PostMapping("/{id}/hide")
-	@Operation(summary = "Hide product (admin)", description = "Admin hides product → ARCHIVED (#18)")
-	public ResponseEntity<ApiResponse<ProductResponse>> adminHideProduct(
+	@Operation(summary = "Hide product", description = "Admin hides any product, supplier hides own → HIDDEN (#15, #18)")
+	public ResponseEntity<ApiResponse<ProductResponse>> hideProduct(
 			@PathVariable @Parameter(description = "Product ID") Long id,
-			@RequestHeader("X-User-Role") @Parameter(hidden = true) String role) {
-		if (!"ADMIN".equalsIgnoreCase(role)) {
-			return ResponseEntity.status(403).body(ApiResponse.error("Admin role required"));
-		}
-		ProductResponse product = productService.adminHideProduct(id);
-		return ResponseEntity.ok(ApiResponse.success(product, "Product hidden by admin"));
+			@RequestHeader("X-User-Role") @Parameter(hidden = true) String role,
+			@RequestHeader(value = "X-User-Company-Id", required = false) @Parameter(hidden = true) Long companyId) {
+		ProductResponse product = "ADMIN".equalsIgnoreCase(role)
+				? productService.adminHideProduct(id)
+				: productService.hideProduct(id, companyId);
+		return ResponseEntity.ok(ApiResponse.success(product, "Product hidden"));
 	}
 
 	@PostMapping("/{id}/show")

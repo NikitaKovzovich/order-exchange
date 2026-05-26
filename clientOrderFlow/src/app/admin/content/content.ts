@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Header } from '../shared/header/header';
 import { AdminService, User } from '../../services/admin.service';
 import { CatalogService } from '../../services/catalog.service';
@@ -34,7 +35,7 @@ interface Category {
 @Component({
   selector: 'admin-content',
   standalone: true,
-  imports: [CommonModule, FormsModule, Header],
+  imports: [CommonModule, FormsModule, RouterLink, Header],
   templateUrl: './content.html',
   styleUrls: ['./content.css']
 })
@@ -262,9 +263,9 @@ export class Content implements OnInit {
     ).subscribe({
       next: page => {
         this.products = page.content.map(product => this.mapProduct(product));
-        this.currentPage = page.number;
-        this.totalPages = page.totalPages;
-        this.totalElements = page.totalElements;
+        this.currentPage = Number(page.number ?? 0);
+        this.totalPages = Number(page.totalPages ?? 0);
+        this.totalElements = Number(page.totalElements ?? 0);
         this.isLoading = false;
       },
       error: error => {

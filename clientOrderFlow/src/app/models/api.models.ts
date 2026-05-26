@@ -66,6 +66,17 @@ export interface CompanyDocumentInfo {
   downloadUrl: string;
 }
 
+export interface ProfileUpdateRequest {
+  name?: string;
+  contactPhone?: string;
+  bankName?: string;
+  bic?: string;
+  accountNumber?: string;
+  directorName?: string;
+  chiefAccountantName?: string;
+  paymentTerms?: string;
+}
+
 export interface CompanyProfile {
   id: number;
   name?: string | null;
@@ -119,7 +130,7 @@ export interface CreateCategoryRequest {
 // Product Types
 // ============================================
 
-export type ProductStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+export type ProductStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' | 'HIDDEN';
 
 export interface Product {
   id: number;
@@ -160,6 +171,9 @@ export interface CreateProductRequest {
   countryOfOrigin?: string;
   barcode?: string;
   initialQuantity?: number;
+  packageDimensions?: string;
+  productionDate?: string;
+  expiryDate?: string;
 }
 
 export interface UpdateProductRequest {
@@ -173,6 +187,9 @@ export interface UpdateProductRequest {
   weight?: number;
   countryOfOrigin?: string;
   barcode?: string;
+  packageDimensions?: string;
+  productionDate?: string;
+  expiryDate?: string;
 }
 
 export interface ProductSearchParams {
@@ -185,6 +202,8 @@ export interface ProductSearchParams {
   page?: number;
   size?: number;
   sort?: string;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
 }
 
 export interface ProductImage {
@@ -241,6 +260,7 @@ export interface CartItem {
   id: number;
   productId: number;
   supplierId: number;
+  supplierName?: string;
   productName: string;
   productSku: string;
   quantity: number;
@@ -336,6 +356,10 @@ export interface Order {
   actualDeliveryDate?: string;
   totalAmount: number;
   vatAmount: number;
+  contractNumber?: string | null;
+  contractDate?: string | null;
+  contractEndDate?: string | null;
+  ttnGenerated?: boolean;
   items: OrderItem[];
   notes?: string;
   rejectionReason?: string;
@@ -691,6 +715,7 @@ export interface SupportTicket {
   companyId: number;
   userId: number;
   userEmail?: string;
+  requesterCompanyName?: string;
   subject: string;
   category: TicketCategory;
   priority: TicketPriority;

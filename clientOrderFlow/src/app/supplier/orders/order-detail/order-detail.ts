@@ -4,7 +4,23 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { OrderService } from '../../../services/order.service';
 import { DocumentService } from '../../../services/document.service';
-import { DiscrepancyReport, GeneratedDocument, Order, OrderDocument, OrderHistoryEntry, OrderStatus } from '../../../models/api.models';
+import { ChatService } from '../../../services/chat.service';
+import { AuthService } from '../../../services/auth.service';
+import { ChatMessage, DiscrepancyReport, GeneratedDocument, Order, OrderDocument, OrderHistoryEntry, OrderStatus } from '../../../models/api.models';
+import { formatChatDateTime } from '../../../utils/chat-datetime.util';
+
+interface TimelineItem {
+  label: string;
+  timestamp: string;
+  current: boolean;
+}
+
+interface UnifiedDocument {
+  key: string;
+  name: string;
+  generated: boolean;
+  ref: OrderDocument | GeneratedDocument;
+}
 
 @Component({
   selector: 'app-order-detail',
@@ -14,6 +30,7 @@ import { DiscrepancyReport, GeneratedDocument, Order, OrderDocument, OrderHistor
   styleUrls: ['./order-detail.css']
 })
 export class OrderDetail implements OnInit {
+  readonly role: 'supplier' = 'supplier';
   orderId: number = 0;
   order: Order | null = null;
   isLoading: boolean = false;
@@ -27,18 +44,30 @@ export class OrderDetail implements OnInit {
   generatedDocuments: GeneratedDocument[] = [];
   discrepancies: DiscrepancyReport[] = [];
 
+  supplierUnp: string = '';
+  customerUnp: string = '';
+
+  currentUserId: number | null = null;
+  chatMessages: ChatMessage[] = [];
+  newMessage: string = '';
+  isSendingMessage: boolean = false;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private orderService: OrderService,
-    private documentService: DocumentService
+    private documentService: DocumentService,
+    private chatService: ChatService,
+    private authService: AuthService
   ) {}
 
   ngOnInit() {
+    this.currentUserId = this.authService.getUserId();
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.orderId = parseInt(id);
       this.loadOrder();
+      this.loadChat();
     }
   }
 
@@ -48,6 +77,7 @@ export class OrderDetail implements OnInit {
       next: (order) => {
         this.order = order;
         this.loadRelatedData();
+        this.loadCompanyUnps();
         this.isLoading = false;
       },
       error: (error) => {
@@ -55,6 +85,136 @@ export class OrderDetail implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  private loadCompanyUnps(): void {
+    if (!this.order) {
+      return;
+    }
+    this.authService.getCompanyProfile(this.order.supplierId).subscribe({
+      next: profile => this.supplierUnp = profile.taxId || '',
+      error: () => {}
+    });
+    this.authService.getCompanyProfile(this.order.customerId).subscribe({
+      next: profile => this.customerUnp = profile.taxId || '',
+      error: () => {}
+    });
+  }
+
+  private loadChat(): void {
+    this.chatService.getMessages(this.orderId).subscribe({
+      next: page => {
+        this.chatMessages = [...page.content].sort(
+          (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
+        );
+      },
+      error: () => {
+        this.chatMessages = [];
+      }
+    });
+  }
+
+  get isChatDisabled(): boolean {
+    return this.order?.statusCode === 'CLOSED';
+  }
+
+  isOwnMessage(message: ChatMessage): boolean {
+    return this.currentUserId != null && message.senderId === this.currentUserId;
+  }
+
+  sendMessage(): void {
+    const text = this.newMessage.trim();
+    if (!text || this.isChatDisabled) {
+      return;
+    }
+
+    this.isSendingMessage = true;
+    this.chatService.sendMessage(this.orderId, { messageText: text }).subscribe({
+      next: message => {
+        this.chatMessages = [...this.chatMessages, message];
+        this.newMessage = '';
+        this.isSendingMessage = false;
+      },
+      error: error => {
+        console.error('Error sending message:', error);
+        this.isSendingMessage = false;
+      }
+    });
+  }
+
+  get nextActionTitle(): string {
+    return this.order?.statusCode === 'PENDING_CONFIRMATION' ? 'Действия' : 'Следующее действие';
+  }
+
+  get nextActionText(): string {
+    switch (this.order?.statusCode) {
+      case 'REJECTED':
+        return 'Вы отклонили данный заказ. Вы можете закрыть заказ.';
+      case 'AWAITING_PAYMENT':
+        return 'Счёт на оплату сформирован и доступен торговой сети. Ожидается загрузка подтверждения оплаты.';
+      case 'PENDING_PAYMENT_VERIFICATION':
+        return 'Торговая сеть загрузила подтверждение оплаты. Оно доступно в блоке «Документы».';
+      case 'PAYMENT_PROBLEM':
+        return 'Возникли проблемы с оплатой. Ожидается загрузка нового платёжного поручения от Торговой сети.';
+      case 'AWAITING_SHIPMENT':
+        return this.order?.ttnGenerated ? 'Подтвердите отгрузку.' : 'Сформируйте ТТН.';
+      case 'SHIPPED':
+        return 'Товар отгружен и находится в пути. Ожидается подтверждение получения от Торговой сети.';
+      case 'AWAITING_CORRECTION':
+        return 'Оформите корректировку.';
+      case 'DELIVERED':
+        return 'Вы можете закрыть заказ.';
+      case 'CLOSED':
+        return 'Заказ выполнен и закрыт.';
+      default:
+        return '';
+    }
+  }
+
+  get timeline(): TimelineItem[] {
+    const items = [...this.orderHistory]
+      .map(entry => ({
+        label: this.getHistoryDescription(entry),
+        timestamp: this.getHistoryTimestamp(entry)
+      }))
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    return items.map((item, index) => ({ ...item, current: index === 0 }));
+  }
+
+  get unifiedDocuments(): UnifiedDocument[] {
+    const generated = this.generatedDocumentsForOrder.map(doc => ({
+      key: `gen-${doc.id}`,
+      name: this.generatedDocumentName(doc),
+      generated: true,
+      ref: doc
+    }));
+    const uploaded = this.orderDocuments.map(doc => ({
+      key: `doc-${doc.id}`,
+      name: doc.documentName || doc.documentTypeName || doc.originalFilename || doc.fileName || `Документ #${doc.id}`,
+      generated: false,
+      ref: doc
+    }));
+    return [...generated, ...uploaded];
+  }
+
+  private generatedDocumentName(doc: GeneratedDocument): string {
+    const labels: { [key: string]: string } = {
+      INVOICE: 'Счёт на оплату',
+      TTN: 'ТТН',
+      DISCREPANCY_ACT: 'Акт о расхождении',
+      CORRECTION_TTN: 'Корректировочная ТТН'
+    };
+    const base = labels[doc.templateType] || doc.templateType;
+    return doc.documentNumber ? `${base} № ${doc.documentNumber}` : base;
+  }
+
+  downloadUnifiedDocument(doc: UnifiedDocument): void {
+    if (doc.generated) {
+      this.downloadGeneratedDocument(doc.ref as GeneratedDocument);
+    } else {
+      this.downloadOrderDocument(doc.ref as OrderDocument);
+    }
   }
 
   getStatusLabel(status: OrderStatus): string {
@@ -245,8 +405,7 @@ export class OrderDetail implements OnInit {
   }
 
   formatDateTime(dateStr: string): string {
-    if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleString('ru-RU');
+    return formatChatDateTime(dateStr);
   }
 
   formatAmount(amount: number): string {
@@ -281,5 +440,7 @@ export class OrderDetail implements OnInit {
       },
       error: error => console.error('Error loading discrepancies:', error)
     });
+
+    this.loadChat();
   }
 }

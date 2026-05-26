@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CatalogService } from '../../services/catalog.service';
-import { Product, ProductStatus } from '../../models/api.models';
+import { Category, Product, ProductStatus } from '../../models/api.models';
 
 @Component({
   selector: 'app-catalog',
@@ -20,22 +20,41 @@ export class Catalog implements OnInit {
   totalPages: number = 0;
   totalElements: number = 0;
 
+  statusFilter: ProductStatus | '' = '';
+  categoryFilter: number | '' = '';
+  sortOption: string = 'name:asc';
+  categories: Category[] = [];
+
   products: Product[] = [];
   filteredProducts: Product[] = [];
+  productToDelete: Product | null = null;
   private searchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
 
   constructor(private catalogService: CatalogService) {}
 
   ngOnInit() {
+    this.loadCategories();
     this.loadProducts();
+  }
+
+  loadCategories() {
+    this.catalogService.getCategories().subscribe({
+      next: (categories) => this.categories = categories,
+      error: (error) => console.error('Error loading categories:', error)
+    });
   }
 
   loadProducts() {
     this.isLoading = true;
+    const [sortBy, sortDir] = this.sortOption.split(':') as [string, 'asc' | 'desc'];
     this.catalogService.getSupplierProducts({
       page: this.currentPage,
       size: 20,
-      search: this.searchQuery || undefined
+      search: this.searchQuery || undefined,
+      status: this.statusFilter || undefined,
+      categoryId: this.categoryFilter || undefined,
+      sortBy,
+      sortDir
     }).subscribe({
       next: (response) => {
         this.products = response.content;
@@ -64,6 +83,11 @@ export class Catalog implements OnInit {
       this.currentPage = 0;
       this.loadProducts();
     }, 300);
+  }
+
+  onFilterChange() {
+    this.currentPage = 0;
+    this.loadProducts();
   }
 
   publishCatalog() {
@@ -98,10 +122,34 @@ export class Catalog implements OnInit {
     });
   }
 
-  deleteProduct(product: Product) {
-    this.catalogService.deleteProduct(product.id).subscribe({
+  hideProduct(product: Product) {
+    this.catalogService.hideProduct(product.id).subscribe({
       next: () => this.loadProducts(),
-      error: (error) => console.error('Error deleting product:', error)
+      error: (error) => console.error('Error hiding product:', error)
+    });
+  }
+
+  askDeleteProduct(product: Product) {
+    this.productToDelete = product;
+  }
+
+  cancelDelete() {
+    this.productToDelete = null;
+  }
+
+  confirmDelete() {
+    if (!this.productToDelete) {
+      return;
+    }
+    this.catalogService.deleteProduct(this.productToDelete.id).subscribe({
+      next: () => {
+        this.productToDelete = null;
+        this.loadProducts();
+      },
+      error: (error) => {
+        console.error('Error deleting product:', error);
+        this.productToDelete = null;
+      }
     });
   }
 
@@ -111,6 +159,8 @@ export class Catalog implements OnInit {
         return 'text-green-600 bg-green-200';
       case 'DRAFT':
         return 'text-yellow-600 bg-yellow-200';
+      case 'HIDDEN':
+        return 'text-gray-700 bg-gray-300';
       case 'ARCHIVED':
         return 'text-gray-600 bg-gray-200';
       default:
@@ -124,6 +174,8 @@ export class Catalog implements OnInit {
         return 'Опубликован';
       case 'DRAFT':
         return 'Черновик';
+      case 'HIDDEN':
+        return 'Скрыт';
       case 'ARCHIVED':
         return 'В архиве';
       default:
