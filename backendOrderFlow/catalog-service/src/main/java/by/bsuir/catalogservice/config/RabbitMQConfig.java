@@ -18,10 +18,21 @@ public class RabbitMQConfig {
 	public static final String INVENTORY_RELEASED_QUEUE = "inventory.released.queue";
 	public static final String STOCK_RESERVE_QUEUE = "stock.reserve.queue";
 	public static final String RPC_EXCHANGE = "rpc.exchange";
+	public static final String RPC_GET_PARTNERSHIP = "rpc.catalog.getPartnership";
 
 	@Bean
 	public DirectExchange rpcExchange() {
 		return new DirectExchange(RPC_EXCHANGE);
+	}
+
+	@Bean
+	public Queue rpcGetPartnershipQueue() {
+		return QueueBuilder.durable(RPC_GET_PARTNERSHIP).build();
+	}
+
+	@Bean
+	public Binding rpcGetPartnershipBinding() {
+		return BindingBuilder.bind(rpcGetPartnershipQueue()).to(rpcExchange()).with(RPC_GET_PARTNERSHIP);
 	}
 
 	@Bean

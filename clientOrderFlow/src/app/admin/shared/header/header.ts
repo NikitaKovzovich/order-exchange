@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { UserNotificationService } from '../../../services/user-notification.service';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'admin-header',
@@ -18,7 +19,8 @@ export class Header implements OnInit {
 
   constructor(
     private router: Router,
-    private userNotificationService: UserNotificationService
+    private userNotificationService: UserNotificationService,
+    private authService: AuthService
   ) {}
 
   ngOnInit() {
@@ -29,6 +31,10 @@ export class Header implements OnInit {
   }
 
   private refreshUnread() {
+    if (!this.authService.getToken()) {
+      this.hasNotifications = false;
+      return;
+    }
     this.userNotificationService.getUnreadCount().subscribe({
       next: count => this.hasNotifications = count > 0,
       error: () => this.hasNotifications = false

@@ -32,6 +32,7 @@ export class Analytics implements OnInit, AfterViewInit, OnDestroy {
   isLoading: boolean = false;
   isGeneratingReport: boolean = false;
   reportError: string = '';
+  funnelStages: Array<{ label: string; value: number }> = [];
 
   private salesChartInstance?: ChartInstance;
   private topProductsChartInstance?: ChartInstance;
@@ -44,7 +45,7 @@ export class Analytics implements OnInit, AfterViewInit, OnDestroy {
     private http: HttpClient
   ) {}
 
-  get funnelStages(): Array<{ label: string; value: number }> {
+  private buildFunnelStages(): Array<{ label: string; value: number }> {
     const f = this.analytics?.funnel;
     if (!f) {
       return [];
@@ -143,6 +144,7 @@ export class Analytics implements OnInit, AfterViewInit, OnDestroy {
     this.analyticsService.getSupplierAnalytics(this.selectedPeriod).subscribe({
       next: (data) => {
         this.analytics = data;
+        this.funnelStages = this.buildFunnelStages();
         this.isLoading = false;
         setTimeout(() => {
           void this.initCharts();

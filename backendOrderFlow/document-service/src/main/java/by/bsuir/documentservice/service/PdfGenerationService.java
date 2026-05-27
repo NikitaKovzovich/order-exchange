@@ -316,9 +316,11 @@ public class PdfGenerationService {
 			addInfoRow(infoTable, font, "Водитель:", request.transport().driverName());
 		}
 
-		if (request.releaseReason() != null) {
-			addInfoRow(infoTable, font, "Основание:", request.releaseReason());
+		String reason = request.releaseReason();
+		if (reason == null || reason.isBlank()) {
+			reason = "Заказ № " + request.orderNumber();
 		}
+		addInfoRow(infoTable, font, "Основание отпуска:", reason);
 
 		document.add(infoTable);
 	}

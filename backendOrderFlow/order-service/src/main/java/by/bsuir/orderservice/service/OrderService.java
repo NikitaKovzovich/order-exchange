@@ -1,6 +1,7 @@
 package by.bsuir.orderservice.service;
 
 import by.bsuir.orderservice.client.AuthServiceClient;
+import by.bsuir.orderservice.client.CatalogServiceClient;
 import by.bsuir.orderservice.client.DocumentServiceClient;
 import by.bsuir.orderservice.dto.*;
 import by.bsuir.orderservice.entity.*;
@@ -20,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,6 +37,7 @@ public class OrderService {
 	private final EventPublisher eventPublisher;
 	private final AuthServiceClient authServiceClient;
 	private final DocumentServiceClient documentServiceClient;
+	private final CatalogServiceClient catalogServiceClient;
 	private final NotificationService notificationService;
 
 
@@ -125,7 +128,7 @@ public class OrderService {
 		OrderStatus pendingStatus = statusRepository.findByCode(OrderStatus.Codes.PENDING_CONFIRMATION)
 				.orElseThrow(() -> new ResourceNotFoundException("OrderStatus", "code", OrderStatus.Codes.PENDING_CONFIRMATION));
 
-		Order order = Order.builder()
+		Order.OrderBuilder orderBuilder = Order.builder()
 				.orderNumber(generateOrderNumber())
 				.supplierId(request.supplierId())
 				.customerId(customerId)
@@ -133,8 +136,17 @@ public class OrderService {
 				.deliveryAddress(request.deliveryAddress())
 				.desiredDeliveryDate(request.desiredDeliveryDate())
 				.totalAmount(BigDecimal.ZERO)
-				.vatAmount(BigDecimal.ZERO)
-				.build();
+				.vatAmount(BigDecimal.ZERO);
+
+		CatalogServiceClient.PartnershipInfo partnership = catalogServiceClient.getPartnership(request.supplierId(), customerId);
+		if (partnership != null) {
+			orderBuilder
+					.contractNumber(partnership.contractNumber())
+					.contractDate(partnership.contractDate())
+					.contractEndDate(partnership.contractEndDate());
+		}
+
+		Order order = orderBuilder.build();
 
 		BigDecimal totalAmount = BigDecimal.ZERO;
 		BigDecimal vatAmount = BigDecimal.ZERO;
@@ -378,7 +390,7 @@ public class OrderService {
 					null, ttnItems,
 					order.getTotalAmount().subtract(order.getVatAmount()),
 					order.getVatAmount(), order.getTotalAmount(), null, null,
-					order.getContractNumber() != null ? "Договор №" + order.getContractNumber() : null,
+					buildReleaseReason(order),
 					null);
 
 			var result = documentServiceClient.generateTtn(ttnReq, supplierId);
@@ -450,17 +462,8 @@ public class OrderService {
 		order = orderRepository.save(order);
 
 
-		OrderDocument signedUpd = OrderDocument.builder()
-				.order(order)
-				.documentType(OrderDocument.DocumentType.SIGNED_UPD)
-				.fileKey("signed-upd-" + order.getOrderNumber() + "-" + System.currentTimeMillis())
-				.originalFilename("Подписанный УПД " + order.getOrderNumber() + ".pdf")
-				.uploadedBy(customerId)
-				.build();
-		documentRepository.save(signedUpd);
-
 		recordHistory(order, previousStatus, OrderStatus.Codes.DELIVERED, customerId,
-				"Товар доставлен. Подписанные документы загружены.");
+				"Товар доставлен.");
 		eventPublisher.publishOrderDelivered(order);
 
 
@@ -603,7 +606,7 @@ public class OrderService {
 					null, ttnItems,
 					order.getTotalAmount().subtract(order.getVatAmount()),
 					order.getVatAmount(), order.getTotalAmount(), null, null,
-					order.getContractNumber() != null ? "Договор №" + order.getContractNumber() : null,
+					buildReleaseReason(order),
 					"Корректировочная ТТН по Акту о расхождении");
 
 			var result = documentServiceClient.generateTtn(ttnReq, supplierId);
@@ -830,6 +833,21 @@ public class OrderService {
 
 	private String generateOrderNumber() {
 		return "ORD-" + System.currentTimeMillis() + "-" + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+	}
+
+	private static final DateTimeFormatter CONTRACT_DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+
+	private String buildReleaseReason(Order order) {
+		String contractNumber = order.getContractNumber();
+		LocalDate contractDate = order.getContractDate();
+		if (contractNumber != null && !contractNumber.isBlank()) {
+			StringBuilder sb = new StringBuilder("Договор № ").append(contractNumber);
+			if (contractDate != null) {
+				sb.append(" от ").append(contractDate.format(CONTRACT_DATE_FORMAT)).append(" г.");
+			}
+			return sb.toString();
+		}
+		return "Заказ № " + order.getOrderNumber();
 	}
 
 

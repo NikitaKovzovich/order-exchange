@@ -15,7 +15,7 @@ import {LoginRequest} from '../../models/api.models';
 export class Login implements OnInit {
   email: string = '';
   password: string = '';
-  rememberMe: boolean = false;
+  rememberMe: boolean = true;
   isLoading: boolean = false;
   errorMessage: string = '';
   returnUrl: string = '';

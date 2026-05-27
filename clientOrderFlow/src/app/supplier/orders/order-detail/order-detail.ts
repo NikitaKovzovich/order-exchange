@@ -43,6 +43,8 @@ export class OrderDetail implements OnInit {
   orderDocuments: OrderDocument[] = [];
   generatedDocuments: GeneratedDocument[] = [];
   discrepancies: DiscrepancyReport[] = [];
+  timeline: TimelineItem[] = [];
+  unifiedDocuments: UnifiedDocument[] = [];
 
   supplierUnp: string = '';
   customerUnp: string = '';
@@ -171,7 +173,7 @@ export class OrderDetail implements OnInit {
     }
   }
 
-  get timeline(): TimelineItem[] {
+  private buildTimeline(): TimelineItem[] {
     const items = [...this.orderHistory]
       .map(entry => ({
         label: this.getHistoryDescription(entry),
@@ -182,19 +184,22 @@ export class OrderDetail implements OnInit {
     return items.map((item, index) => ({ ...item, current: index === 0 }));
   }
 
-  get unifiedDocuments(): UnifiedDocument[] {
+  private buildUnifiedDocuments(): UnifiedDocument[] {
     const generated = this.generatedDocumentsForOrder.map(doc => ({
       key: `gen-${doc.id}`,
       name: this.generatedDocumentName(doc),
       generated: true,
       ref: doc
     }));
-    const uploaded = this.orderDocuments.map(doc => ({
-      key: `doc-${doc.id}`,
-      name: doc.documentName || doc.documentTypeName || doc.originalFilename || doc.fileName || `Документ #${doc.id}`,
-      generated: false,
-      ref: doc
-    }));
+    const generatedKeys = new Set(this.generatedDocumentsForOrder.map(doc => doc.fileKey).filter(Boolean));
+    const uploaded = this.orderDocuments
+      .filter(doc => !doc.fileKey || !generatedKeys.has(doc.fileKey))
+      .map(doc => ({
+        key: `doc-${doc.id}`,
+        name: doc.documentName || doc.documentTypeName || doc.originalFilename || doc.fileName || `Документ #${doc.id}`,
+        generated: false,
+        ref: doc
+      }));
     return [...generated, ...uploaded];
   }
 
@@ -360,6 +365,17 @@ export class OrderDetail implements OnInit {
   }
 
   downloadOrderDocument(orderDocument: OrderDocument): void {
+    if (orderDocument.fileKey) {
+      this.documentService.getPresignedUrlByKey(orderDocument.fileKey).subscribe({
+        next: url => {
+          if (url) {
+            window.open(url, '_blank');
+          }
+        },
+        error: error => console.error('Error resolving document URL:', error)
+      });
+      return;
+    }
     this.documentService.downloadDocument(orderDocument.id).subscribe({
       next: blob => {
         const url = window.URL.createObjectURL(blob);
@@ -408,14 +424,20 @@ export class OrderDetail implements OnInit {
     return formatChatDateTime(dateStr);
   }
 
-  formatAmount(amount: number): string {
-    return amount.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  formatAmount(amount: number | undefined | null): string {
+    return Number(amount ?? 0).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  private recomputeDerived(): void {
+    this.timeline = this.buildTimeline();
+    this.unifiedDocuments = this.buildUnifiedDocuments();
   }
 
   private loadRelatedData(): void {
     this.orderService.getOrderHistory(this.orderId).subscribe({
       next: history => {
         this.orderHistory = history;
+        this.recomputeDerived();
       },
       error: error => console.error('Error loading order history:', error)
     });
@@ -423,6 +445,7 @@ export class OrderDetail implements OnInit {
     this.orderService.getOrderDocuments(this.orderId).subscribe({
       next: documents => {
         this.orderDocuments = documents;
+        this.recomputeDerived();
       },
       error: error => console.error('Error loading order documents:', error)
     });
@@ -430,6 +453,7 @@ export class OrderDetail implements OnInit {
     this.documentService.getGeneratedDocumentsByOrder(this.orderId).subscribe({
       next: documents => {
         this.generatedDocuments = documents;
+        this.recomputeDerived();
       },
       error: error => console.error('Error loading generated documents:', error)
     });

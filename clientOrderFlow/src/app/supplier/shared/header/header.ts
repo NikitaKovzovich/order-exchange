@@ -50,10 +50,19 @@ export class Header implements OnInit {
   }
 
   private refreshUnread() {
+    if (!this.authService.getToken()) {
+      this.hasNotifications = false;
+      return;
+    }
     this.notificationService.getUnreadCount().subscribe({
       next: count => this.hasNotifications = count > 0,
       error: () => this.hasNotifications = false
     });
+  }
+
+  logout() {
+    this.authService.logout();
+    this.router.navigateByUrl('/');
   }
 
   private updateTitle() {

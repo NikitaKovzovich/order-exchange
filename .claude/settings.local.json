@@ -47,7 +47,20 @@
       "Bash(sed -n '506,520p' services/admin.service.ts)",
       "Bash(grep -vE \"^import|^package|^$|@|class\" /c/Users/pavel/IdeaProjects/order-exchange/backendOrderFlow/auth-service/src/main/java/by/bsuir/authservice/dto/AddressResponseDTO.java)",
       "Bash(grep -nB1 -A4 \"clients\" shared/sidebar/sidebar.html)",
-      "Bash(xargs grep -lnE \"checkmark|M5 13l4|✓|selected|fill-rule\")"
+      "Bash(xargs grep -lnE \"checkmark|M5 13l4|✓|selected|fill-rule\")",
+      "Bash(grep -rniE \"insert into.*user|email|password|@|bcrypt|\\\\\\\\\\\\$2a\\\\\\\\\\\\$\" sql-scripts/user_db.sql)",
+      "Bash(grep -nA5 \"logout\\(\\)\" shared/sidebar/sidebar.ts)",
+      "Bash(sed -n '68,74p' services/document.service.ts)",
+      "Bash(grep -nA12 \"Блок 4: Документы\" supplier/orders/order-detail/order-detail.html)",
+      "Bash(grep -nA10 \"Блок 4: Документы\" order-detail.html)",
+      "Bash(grep -nA2 \"formatAmount\\(amount\" retail-network/orders/order-detail.ts)",
+      "Bash(grep -nA2 \"formatAmount\\(amount\" supplier/orders/order-detail/order-detail.ts)",
+      "Bash(grep -nA12 \"downloadDocument\\(document: OrderDocument\\)\" order-detail.ts)",
+      "Bash(grep -nB1 -A8 \"private PdfFont createFont\" PdfGenerationService.java)",
+      "PowerShell(Test-Path *)",
+      "PowerShell(Get-Item *)",
+      "PowerShell($f = \"C:\\\\Users\\\\pavel\\\\IdeaProjects\\\\order-exchange\\\\backendOrderFlow\\\\document-service\\\\src\\\\main\\\\resources\\\\fonts\\\\DejaVuSans.ttf\"; $bytes = [System.IO.File]::ReadAllBytes\\($f\\); \"Size: $\\($bytes.Length\\) bytes\"; \"First 4 bytes \\(hex\\): {0:X2} {1:X2} {2:X2} {3:X2}\" -f $bytes[0], $bytes[1], $bytes[2], $bytes[3])",
+      "PowerShell(Remove-Item *)"
     ]
   }
 }

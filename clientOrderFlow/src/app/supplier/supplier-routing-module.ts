@@ -8,7 +8,6 @@ import { Catalog } from './catalog/catalog';
 import { Orders } from './orders/orders';
 import { OrderDetail } from './orders/order-detail/order-detail';
 import { Invoice } from './orders/invoice/invoice';
-import { UPD } from './orders/upd/upd';
 import { Analytics } from './analytics/analytics';
 import { Communications } from './communications/communications';
 import { Support } from './support/support';
@@ -46,7 +45,6 @@ const routes: Routes = [
       { path: 'orders', component: Orders },
       { path: 'orders/:id', component: OrderDetail },
       { path: 'orders/:id/invoice', component: Invoice },
-      { path: 'orders/:id/upd', component: UPD },
       { path: 'analytics', component: Analytics },
       { path: 'communications', component: Communications },
       { path: 'support', component: Support },

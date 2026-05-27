@@ -34,9 +34,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     catchError((error: HttpErrorResponse) => {
       if (error.status === 401 && !isPublicUrl) {
         authService.logout();
-        router.navigate(['/login'], {
-          queryParams: { returnUrl: router.url }
-        });
+        const currentPath = router.url.split('?')[0];
+        const onAuthPage = currentPath === '/' || currentPath.startsWith('/login');
+        if (!onAuthPage) {
+          router.navigate(['/login'], { queryParams: { returnUrl: currentPath } });
+        }
       }
 
       return throwError(() => error);

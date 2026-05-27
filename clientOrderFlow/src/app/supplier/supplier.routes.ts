@@ -73,11 +73,6 @@ export const supplierRoutes: Routes = [
         data: { title: 'Счёт на оплату' }
       },
       {
-        path: 'orders/:id/upd',
-        loadComponent: () => import('./orders/upd/upd').then(m => m.UPD),
-        data: { title: 'УПД' }
-      },
-      {
         path: 'analytics',
         loadComponent: () => import('./analytics/analytics').then(m => m.Analytics),
         data: { title: 'Аналитика' }

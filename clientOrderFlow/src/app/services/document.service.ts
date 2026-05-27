@@ -55,6 +55,14 @@ export class DocumentService {
     );
   }
 
+  getPresignedUrlByKey(objectKey: string): Observable<string> {
+    return this.http.get<{ url: string; objectKey: string }>(`${this.API_URL}/url`, {
+      params: { objectKey }
+    }).pipe(
+      map(response => response.url || '')
+    );
+  }
+
   getEntityDocuments(entityType: EntityType, entityId: number): Observable<Document[]> {
     return this.http.get<ApiResponse<Document[]>>(`${this.API_URL}/entity/${entityType}/${entityId}`).pipe(
       map(response => response.data || [])
