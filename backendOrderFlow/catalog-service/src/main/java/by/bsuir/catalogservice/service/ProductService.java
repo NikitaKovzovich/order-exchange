@@ -24,6 +24,7 @@ public class ProductService {
 	private final VatRateRepository vatRateRepository;
 	private final InventoryRepository inventoryRepository;
 	private final PartnershipRepository partnershipRepository;
+	private final ProductImageRepository productImageRepository;
 	private final EventPublisher eventPublisher;
 
 	public PageResponse<ProductResponse> getSupplierProducts(Long supplierId, String search, int page, int size) {
@@ -338,8 +339,15 @@ public class ProductService {
 				product.getStatus().name(),
 				availableQty,
 				availableQty > 0,
-				null
+				resolvePrimaryImageUrl(product.getId())
 		);
+	}
+
+	private String resolvePrimaryImageUrl(Long productId) {
+		return productImageRepository.findByProductIdAndIsPrimaryTrue(productId)
+				.or(() -> productImageRepository.findByProductId(productId).stream().findFirst())
+				.map(image -> "/api/products/" + productId + "/images/" + image.getId() + "/data")
+				.orElse(null);
 	}
 
 	private PageResponse<ProductResponse> toPageResponse(Page<Product> page) {

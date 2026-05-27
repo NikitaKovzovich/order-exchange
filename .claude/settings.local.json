@@ -60,7 +60,17 @@
       "PowerShell(Test-Path *)",
       "PowerShell(Get-Item *)",
       "PowerShell($f = \"C:\\\\Users\\\\pavel\\\\IdeaProjects\\\\order-exchange\\\\backendOrderFlow\\\\document-service\\\\src\\\\main\\\\resources\\\\fonts\\\\DejaVuSans.ttf\"; $bytes = [System.IO.File]::ReadAllBytes\\($f\\); \"Size: $\\($bytes.Length\\) bytes\"; \"First 4 bytes \\(hex\\): {0:X2} {1:X2} {2:X2} {3:X2}\" -f $bytes[0], $bytes[1], $bytes[2], $bytes[3])",
-      "PowerShell(Remove-Item *)"
+      "PowerShell(Remove-Item *)",
+      "Bash(sed -n '685,735p' backendOrderFlow/order-service/src/main/java/by/bsuir/orderservice/service/OrderService.java)",
+      "Bash(sed -n '70,120p' backendOrderFlow/document-service/src/main/java/by/bsuir/documentservice/service/PdfGenerationService.java)",
+      "Bash(grep -nA20 \"callGenerate\\\\b\" DocumentServiceClient.java)",
+      "Bash(grep -nA10 \"mapProductImage\" catalog.service.ts)",
+      "Bash(grep -nA20 \"^export interface Product\\\\b\" clientOrderFlow/src/app/models/api.models.ts)",
+      "Bash(grep -nB1 -A4 \"createDiscrepancyActPdf\\\\|addDiscrepancyHeader\\\\|addDiscrepancyParties\\\\|request\\\\.buyer\\\\|request\\\\.ttn\" PdfGenerationService.java)",
+      "Bash(grep -nB1 -A18 \"new DocumentServiceClient.DiscrepancyLine\\\\b\\\\|new DocumentServiceClient.DiscrepancyActReq\\\\b\" OrderService.java)",
+      "Bash(grep -nA8 \"private String formatCompanyInfo\" PdfGenerationService.java)",
+      "Bash(grep -nA8 \"addDiscrepancyConclusion\\\\|addDiscrepancySignatures\" PdfGenerationService.java)",
+      "Bash(grep -nA20 \"private void addDiscrepancyTable\" PdfGenerationService.java)"
     ]
   }
 }

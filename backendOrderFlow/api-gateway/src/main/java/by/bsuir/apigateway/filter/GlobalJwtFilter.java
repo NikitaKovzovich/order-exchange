@@ -23,6 +23,14 @@ public class GlobalJwtFilter implements GlobalFilter, Ordered {
         String path = exchange.getRequest().getPath().value();
 
         if (isPublicPath(path)) {
+            if (gatewayInternalSecret != null && !gatewayInternalSecret.isBlank()) {
+                ServerWebExchange withGatewayAuth = exchange.mutate()
+                        .request(exchange.getRequest().mutate()
+                                .header("X-Gateway-Auth", gatewayInternalSecret)
+                                .build())
+                        .build();
+                return chain.filter(withGatewayAuth);
+            }
             return chain.filter(exchange);
         }
 
@@ -82,6 +90,7 @@ public class GlobalJwtFilter implements GlobalFilter, Ordered {
                p.startsWith("/api/auth/validate") ||
                p.startsWith("/api/auth/company") ||
                p.startsWith("/api/addresses/company") ||
+               p.matches("^/api/products/\\d+/images/\\d+/data/?$") ||
                p.startsWith("/actuator") ||
                p.startsWith("/eureka") ||
                p.startsWith("/swagger-ui") ||

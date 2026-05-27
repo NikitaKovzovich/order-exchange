@@ -1,5 +1,7 @@
 package by.bsuir.orderservice.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.math.BigDecimal;
 
 public record OrderItemResponse(
@@ -10,6 +12,6 @@ public record OrderItemResponse(
 		Integer quantity,
 		BigDecimal unitPrice,
 		BigDecimal vatRate,
-		BigDecimal lineTotal,
-		BigDecimal lineVat
+		@JsonProperty("totalPrice") BigDecimal lineTotal,
+		@JsonProperty("vatAmount") BigDecimal lineVat
 ) {}

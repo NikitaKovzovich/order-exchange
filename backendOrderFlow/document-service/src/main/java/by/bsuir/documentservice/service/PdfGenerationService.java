@@ -417,7 +417,9 @@ public class PdfGenerationService {
 				.setMarginBottom(10);
 		document.add(docInfo);
 
-		Paragraph ttnRef = new Paragraph("к ТТН № " + request.ttnNumber() + " от " + request.ttnDate().format(DATE_FORMATTER))
+		String ttnNumber = request.ttnNumber() != null ? request.ttnNumber() : request.orderNumber();
+		String ttnDateText = request.ttnDate() != null ? request.ttnDate().format(DATE_FORMATTER) : "—";
+		Paragraph ttnRef = new Paragraph("к ТТН № " + ttnNumber + " от " + ttnDateText)
 				.setTextAlignment(TextAlignment.CENTER)
 				.setMarginBottom(15);
 		document.add(ttnRef);
@@ -529,8 +531,9 @@ public class PdfGenerationService {
 	}
 
 	private String formatCompanyInfo(CompanyInfoDto company) {
+		if (company == null) return "—";
 		StringBuilder sb = new StringBuilder();
-		sb.append(company.name());
+		sb.append(company.name() != null ? company.name() : "—");
 		if (company.taxId() != null) {
 			sb.append(", УНП: ").append(company.taxId());
 		}

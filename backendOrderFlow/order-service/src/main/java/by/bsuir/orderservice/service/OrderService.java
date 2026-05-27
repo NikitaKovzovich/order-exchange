@@ -224,7 +224,7 @@ public class OrderService {
 				userId, "Счет на оплату сформирован");
 
 
-		String invoiceFileKey = "invoice-" + order.getOrderNumber() + "-" + System.currentTimeMillis();
+		String invoiceFileKey = null;
 		String invoiceFilename = "Счет на оплату " + order.getOrderNumber() + ".pdf";
 
 		try {
@@ -251,19 +251,22 @@ public class OrderService {
 				invoiceFilename = "Счет на оплату №" + result.documentNumber() + ".pdf";
 			}
 		} catch (Exception e) {
-			log.warn("Failed to generate invoice PDF via document-service, using stub: {}", e.getMessage());
+			log.warn("Failed to generate invoice PDF via document-service: {}", e.getMessage());
 		}
 
-		OrderDocument invoice = OrderDocument.builder()
-				.order(order)
-				.documentType(OrderDocument.DocumentType.INVOICE)
-				.fileKey(invoiceFileKey)
-				.originalFilename(invoiceFilename)
-				.uploadedBy(userId)
-				.build();
-		documentRepository.save(invoice);
-
-		log.info("Auto-generated invoice for order {}", order.getOrderNumber());
+		if (invoiceFileKey != null) {
+			OrderDocument invoice = OrderDocument.builder()
+					.order(order)
+					.documentType(OrderDocument.DocumentType.INVOICE)
+					.fileKey(invoiceFileKey)
+					.originalFilename(invoiceFilename)
+					.uploadedBy(userId)
+					.build();
+			documentRepository.save(invoice);
+			log.info("Auto-generated invoice for order {}", order.getOrderNumber());
+		} else {
+			log.warn("Invoice file was not generated for order {}; OrderDocument row not created", order.getOrderNumber());
+		}
 		return order;
 	}
 
@@ -365,7 +368,7 @@ public class OrderService {
 		}
 
 
-		String ttnFileKey = "ttn-" + order.getOrderNumber() + "-" + System.currentTimeMillis();
+		String ttnFileKey = null;
 		String ttnFilename = "ТТН " + order.getOrderNumber() + ".pdf";
 
 		try {
@@ -399,17 +402,21 @@ public class OrderService {
 				ttnFilename = "ТТН №" + result.documentNumber() + ".pdf";
 			}
 		} catch (Exception e) {
-			log.warn("Failed to generate TTN PDF via document-service, using stub: {}", e.getMessage());
+			log.warn("Failed to generate TTN PDF via document-service: {}", e.getMessage());
 		}
 
-		OrderDocument ttn = OrderDocument.builder()
-				.order(order)
-				.documentType(OrderDocument.DocumentType.TTN)
-				.fileKey(ttnFileKey)
-				.originalFilename(ttnFilename)
-				.uploadedBy(supplierId)
-				.build();
-		documentRepository.save(ttn);
+		if (ttnFileKey != null) {
+			OrderDocument ttn = OrderDocument.builder()
+					.order(order)
+					.documentType(OrderDocument.DocumentType.TTN)
+					.fileKey(ttnFileKey)
+					.originalFilename(ttnFilename)
+					.uploadedBy(supplierId)
+					.build();
+			documentRepository.save(ttn);
+		} else {
+			log.warn("TTN file was not generated for order {}; OrderDocument row not created to avoid broken downloads", order.getOrderNumber());
+		}
 
 		order.setTtnGenerated(true);
 		order.setUpdatedAt(LocalDateTime.now());
@@ -684,31 +691,39 @@ public class OrderService {
 		discrepancy.calculateTotal();
 
 
-		String discrepancyFileKey = "discrepancy-act-" + order.getOrderNumber() + "-" + System.currentTimeMillis();
+		String discrepancyFileKey = null;
 		String discrepancyFilename = "Акт о расхождении " + order.getOrderNumber() + ".pdf";
 
 		try {
-			var discrepancyLines = discrepancy.getItems().stream()
-					.map(item -> new DocumentServiceClient.DiscrepancyLine(
-							item.getOrderItem().getProductName(),
-							item.getOrderItem().getProductSku(),
-							item.getExpectedQuantity(),
-							item.getActualQuantity(),
-							item.getDiscrepancyQuantity(),
-							item.getUnitPrice(),
-							item.getDiscrepancyAmount(),
-							item.getReason() != null ? item.getReason().name() : null))
-					.toList();
+			var discrepancyLines = new java.util.ArrayList<DocumentServiceClient.DiscrepancyLine>();
+			int lineNumber = 1;
+			for (var item : discrepancy.getItems()) {
+				discrepancyLines.add(new DocumentServiceClient.DiscrepancyLine(
+						lineNumber++,
+						item.getOrderItem().getProductName(),
+						item.getOrderItem().getProductSku(),
+						"шт",
+						item.getExpectedQuantity(),
+						item.getActualQuantity(),
+						item.getDiscrepancyQuantity(),
+						item.getUnitPrice(),
+						item.getDiscrepancyAmount(),
+						mapDiscrepancyType(item.getReason()),
+						item.getReason() != null ? item.getReason().getDisplayName() : null));
+			}
 
 			String supplierName = authServiceClient.getCompanyName(order.getSupplierId());
 			String customerName = authServiceClient.getCompanyName(order.getCustomerId());
 
 			var discrepancyActReq = new DocumentServiceClient.DiscrepancyActReq(
-					order.getId(), order.getOrderNumber(), LocalDate.now(),
+					order.getId(), order.getOrderNumber(),
+					order.getOrderNumber(), LocalDate.now(),
+					LocalDate.now(),
 					DocumentServiceClient.CompanyInfo.of(supplierName),
 					DocumentServiceClient.CompanyInfo.of(customerName),
 					discrepancyLines,
 					discrepancy.getTotalDiscrepancyAmount(),
+					null, null, null,
 					request.notes());
 
 			var result = documentServiceClient.generateDiscrepancyAct(discrepancyActReq, customerId);
@@ -717,17 +732,21 @@ public class OrderService {
 				discrepancyFilename = "Акт о расхождении №" + result.documentNumber() + ".pdf";
 			}
 		} catch (Exception e) {
-			log.warn("Failed to generate Discrepancy Act PDF via document-service, using stub: {}", e.getMessage());
+			log.warn("Failed to generate Discrepancy Act PDF via document-service: {}", e.getMessage());
 		}
 
-		OrderDocument discrepancyAct = OrderDocument.builder()
-				.order(order)
-				.documentType(OrderDocument.DocumentType.DISCREPANCY_ACT)
-				.fileKey(discrepancyFileKey)
-				.originalFilename(discrepancyFilename)
-				.uploadedBy(customerId)
-				.build();
-		documentRepository.save(discrepancyAct);
+		if (discrepancyFileKey != null) {
+			OrderDocument discrepancyAct = OrderDocument.builder()
+					.order(order)
+					.documentType(OrderDocument.DocumentType.DISCREPANCY_ACT)
+					.fileKey(discrepancyFileKey)
+					.originalFilename(discrepancyFilename)
+					.uploadedBy(customerId)
+					.build();
+			documentRepository.save(discrepancyAct);
+		} else {
+			log.warn("Discrepancy Act file was not generated for order {}; OrderDocument row not created", order.getOrderNumber());
+		}
 
 		String previousStatus = order.getStatus().getCode();
 		OrderStatus awaitingCorrection = getStatus(OrderStatus.Codes.AWAITING_CORRECTION);
@@ -836,6 +855,17 @@ public class OrderService {
 	}
 
 	private static final DateTimeFormatter CONTRACT_DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+
+	private String mapDiscrepancyType(DiscrepancyReason reason) {
+		if (reason == null) return "OTHER";
+		return switch (reason) {
+			case DAMAGE -> "DAMAGE";
+			case SHORTAGE -> "SHORTAGE";
+			case EXCESS -> "SURPLUS";
+			case WRONG_ITEM -> "QUALITY";
+			case OTHER -> "OTHER";
+		};
+	}
 
 	private String buildReleaseReason(Order order) {
 		String contractNumber = order.getContractNumber();

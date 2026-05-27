@@ -157,11 +157,16 @@ public class DocumentServiceClient {
 	public record DiscrepancyActReq(
 			Long orderId,
 			String orderNumber,
+			String ttnNumber,
+			LocalDate ttnDate,
 			LocalDate actDate,
 			CompanyInfo supplier,
-			CompanyInfo customer,
+			CompanyInfo buyer,
 			List<DiscrepancyLine> items,
 			BigDecimal totalDiscrepancyAmount,
+			List<String> commissionMembers,
+			String conclusion,
+			String resolutionProposal,
 			String notes
 	) {}
 
@@ -204,13 +209,16 @@ public class DocumentServiceClient {
 	) {}
 
 	public record DiscrepancyLine(
+			Integer lineNumber,
 			String productName,
 			String productSku,
-			int expectedQuantity,
-			int actualQuantity,
-			int discrepancyQuantity,
+			String unitOfMeasure,
+			Integer expectedQuantity,
+			Integer actualQuantity,
+			Integer discrepancy,
 			BigDecimal unitPrice,
 			BigDecimal discrepancyAmount,
-			String reason
+			String discrepancyType,
+			String note
 	) {}
 }
